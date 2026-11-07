@@ -5,7 +5,7 @@ Arbetsnamn. Specifikationen ligger i `docs/`, byggplanen i `docs/byggplan.md`.
 
 ## Kom igång med Claude Code
 
-1. Installera **Docker Desktop** (behövs för lokal Supabase i steg 0 och framåt).
+1. Starta **Docker Desktop** och vänta på *Engine running* (behövs för lokal Supabase).
 2. Öppna mappen `C:\Users\rober\Documents\Appar\Bojen` som en ny session i Claude Code.
 3. Skriv:
 

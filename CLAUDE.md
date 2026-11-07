@@ -47,8 +47,13 @@ byggplanen säger olika saker om teknik gäller byggplanens MVP-stack.
 
 - Windows 10, PowerShell som standardskal (Git Bash finns också). Node 24.
 - pnpm är inte installerat globalt: kör `corepack enable` och använd sedan `pnpm`.
-- `supabase start` kräver Docker Desktop, som **inte är installerat än**. Steg 0 ska
-  kontrollera det och be användaren installera Docker Desktop om det saknas.
+- Docker Desktop är installerat (per användare, WSL2) och fungerar sedan 2026-11-07.
+  Binärerna ligger i `%LOCALAPPDATA%\Programs\DockerDesktop\resources\bin`. Säg till
+  användaren att starta Docker Desktop om motorn inte svarar.
+- **Datorn har bara 5 GB RAM, och Docker får cirka 2,5 GB.** Starta därför Supabase utan
+  tjänster som inte behövs:
+  `supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,supavisor,mailpit`
+  Lägg det som skriptet `pnpm db:start`. Ta med en tjänst först när ett steg kräver den.
 - Användaren (Robert) skriver på svenska. Svara på svenska.
 
 ## Git
