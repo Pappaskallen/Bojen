@@ -12,7 +12,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 `pnpm lint && pnpm typecheck && pnpm test` är grönt. Skriv samtidigt en rad i
 [changelog.md](changelog.md).
 
-- [ ] Steg 0 – Repo, verktyg och CI (1 dag)
+- [x] Steg 0 – Repo, verktyg och CI (1 dag)
 - [ ] Steg 1.1 – Kärnentiteter (1 dag)
 - [ ] Steg 1.2 – Platser, placering och åtkomst (1 dag)
 - [ ] Steg 1.3 – Tjänster, jobb, besök och delar (1 dag)

@@ -32,10 +32,10 @@ byggplanen säger olika saker om teknik gäller byggplanens MVP-stack.
 - Externa tjänster anropas bara via `packages/adapters`. Tester använder fejkadaptrar.
   Riktiga anrop sker aldrig i tester.
 - Varje tabell har `tenant_id` och Row Level Security. En ny tabell kräver ett isoleringstest.
-- Koder och åtkomstinformation krypteras alltid med `packages/core/crypto` och loggas aldrig.
+- Koder och åtkomstinformation krypteras alltid med `packages/core/src/crypto` och loggas aldrig.
   Inget verktyg för röstagenten får returnera koder eller adresser.
 - Kod och identifierare på engelska. Texter som visas för användare på svenska i
-  `packages/core/i18n/sv.ts`.
+  `packages/core/src/i18n/sv.ts`.
 - Telefonnummer sparas i E.164. Tider sparas som UTC och visas i Europe/Stockholm.
 - Claude-modeller: `claude-haiku-5-5` i realtid (röstagenten, effort `low`),
   `claude-sonnet-5-5` för rapporter, typskyltar och svårtolkade sms. Använd det officiella

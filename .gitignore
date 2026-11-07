@@ -14,3 +14,4 @@ test-results/
 .DS_Store
 supabase/.temp/
 .vercel/
+*.tsbuildinfo

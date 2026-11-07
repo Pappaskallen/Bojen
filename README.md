@@ -23,6 +23,18 @@ Arbetsnamn. Specifikationen ligger i `docs/`, byggplanen i `docs/byggplan.md`.
 | Konton: Supabase (eu-north-1), 46elks, Azure Speech (Sweden Central), Google Maps Platform, Mailgun EU, Anthropic | Behövs från fas 2–6; tester klarar sig med fejkadaptrar | Före respektive fas |
 | Röstprototyp i Vapi för pilotfirmorna | Testa manus och röst tidigt | December |
 
+## Kommandon
+
+Kör `corepack enable` en gång, sedan:
+
+| Kommando | Gör |
+|---|---|
+| `pnpm install` | Installerar beroenden |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` | Kontrollerna som CI kör (plus `pnpm format:check`) |
+| `pnpm format` | Formaterar koden med Prettier |
+| `pnpm db:start` / `pnpm db:stop` / `pnpm db:status` | Lokal Supabase utan tjänster som inte behövs |
+| `pnpm --filter @bojen/web dev` | Next.js på http://localhost:3000 |
+
 ## Mappar
 
 | Sökväg | Innehåll |
@@ -32,3 +44,9 @@ Arbetsnamn. Specifikationen ligger i `docs/`, byggplanen i `docs/byggplan.md`.
 | `docs/spec-del2.md` | Specifikation kap. 8–16 |
 | `docs/byggplan.md` | Stegen med statuslista |
 | `docs/changelog.md` | Logg per avslutat steg |
+| `apps/web` | Next.js 15: administration, bokningssida, API |
+| `apps/worker` | Bakgrundsjobb (Graphile Worker från steg 3.1) |
+| `packages/core` | Ren domänlogik och svenska texter (`src/i18n/sv.ts`) |
+| `packages/adapters` | Externa tjänster med fejkimplementationer |
+| `packages/db` | Drizzle-schema och migreringar |
+| `supabase/` | Konfiguration för lokal Supabase |
