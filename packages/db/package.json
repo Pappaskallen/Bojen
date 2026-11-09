@@ -9,12 +9,16 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "migrate": "tsx src/migrate.ts",
+    "generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "drizzle-orm": "0.45.4"
+    "drizzle-orm": "0.45.4",
+    "postgres": "4.1.0"
   },
   "devDependencies": {
-    "drizzle-kit": "0.31.11"
+    "drizzle-kit": "0.31.11",
+    "tsx": "4.23.15"
   }
 }
