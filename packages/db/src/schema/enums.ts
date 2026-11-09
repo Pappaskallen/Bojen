@@ -21,3 +21,17 @@ export const engineType = pgEnum("engine_type", ["inboard", "outboard", "sterndr
 export const engineFuel = pgEnum("engine_fuel", ["petrol", "diesel", "electric"]);
 
 export const hoursSource = pgEnum("hours_source", ["mechanic", "customer", "ai"]);
+
+export const locationType = pgEnum("location_type", [
+  "marina",
+  "club",
+  "yard",
+  "private_dock",
+  "home",
+]);
+
+export const accessMethod = pgEnum("access_method", ["car", "boat", "ferry"]);
+
+export const placementSeason = pgEnum("placement_season", ["summer", "winter"]);
+
+export const placementMode = pgEnum("placement_mode", ["water", "land", "indoor"]);

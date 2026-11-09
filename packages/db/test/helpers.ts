@@ -1,13 +1,18 @@
 import { sql } from "drizzle-orm";
 import { connect, type Database } from "../src/client";
 import {
+  accessInfo,
   appUser,
+  area,
   boat,
   boatOwnership,
+  boatPlacement,
   customer,
   drive,
   engine,
   engineHoursReading,
+  location,
+  locationAccessRule,
   tenant,
 } from "../src/schema";
 
@@ -58,7 +63,7 @@ export async function expectDbError(tx: Tx, fn: (tx: Tx) => Promise<unknown>): P
   throw new Error("Expected the database to reject the statement");
 }
 
-/** Inserts one row in every core table for a new tenant. Runs as the owner (bypasses RLS). */
+/** Inserts one row in every table for a new tenant. Runs as the owner (bypasses RLS). */
 export async function createTenantWithBoat(tx: Tx, name: string, phone: string) {
   const [t] = await tx.insert(tenant).values({ name }).returning();
   if (!t) throw new Error("tenant not created");
@@ -83,5 +88,47 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     .insert(engineHoursReading)
     .values({ tenantId, engineId: e.id, hours: "412.5", readAt: new Date(), source: "mechanic" });
 
-  return { tenantId, customerId: c.id, boatId: b.id, engineId: e.id };
+  const [a] = await tx
+    .insert(area)
+    .values({
+      tenantId,
+      name: `${name} område`,
+      boundary: [
+        [
+          { lng: 18.6, lat: 59.2 },
+          { lng: 19.0, lat: 59.2 },
+          { lng: 19.0, lat: 59.4 },
+          { lng: 18.6, lat: 59.4 },
+          { lng: 18.6, lat: 59.2 },
+        ],
+      ],
+    })
+    .returning();
+  if (!a) throw new Error("area not created");
+  const [l] = await tx
+    .insert(location)
+    .values({
+      tenantId,
+      type: "marina",
+      name: `${name} marina`,
+      position: { lng: 18.69, lat: 59.29 },
+      areaId: a.id,
+    })
+    .returning();
+  if (!l) throw new Error("location not created");
+  await tx.insert(locationAccessRule).values({ tenantId, locationId: l.id, parking: "Grusplanen" });
+  await tx.insert(boatPlacement).values({
+    tenantId,
+    boatId: b.id,
+    locationId: l.id,
+    season: "summer",
+    mode: "water",
+    launchDate: "2026-05-01",
+    haulOutDate: "2026-10-15",
+  });
+  await tx
+    .insert(accessInfo)
+    .values({ tenantId, boatId: b.id, codeEncrypted: Buffer.from("not-a-real-ciphertext") });
+
+  return { tenantId, customerId: c.id, boatId: b.id, engineId: e.id, locationId: l.id };
 }

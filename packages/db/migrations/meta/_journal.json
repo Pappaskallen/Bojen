@@ -8,6 +8,20 @@
       "when": 1794213784229,
       "tag": "0000_core_entities",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794256566344,
+      "tag": "0001_postgis_extensions",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794256570892,
+      "tag": "0002_locations",
+      "breakpoints": true
     }
   ]
 }

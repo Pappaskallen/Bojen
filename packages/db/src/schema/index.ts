@@ -4,3 +4,7 @@ export * from "./user";
 export * from "./customer";
 export * from "./boat";
 export * from "./engine";
+export * from "./area";
+export * from "./location";
+export * from "./boat_placement";
+export * from "./access_info";
