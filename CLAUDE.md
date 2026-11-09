@@ -52,7 +52,8 @@ byggplanen säger olika saker om teknik gäller byggplanens MVP-stack.
   användaren att starta Docker Desktop om motorn inte svarar.
 - **Datorn har bara 5 GB RAM, och Docker får cirka 2,5 GB.** Starta därför Supabase utan
   tjänster som inte behövs:
-  `supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,supavisor,mailpit`
+  `supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,supavisor,mailpit,storage-api,postgres-meta`
+  (`storage-api` behövs från steg 2.5 för bilduppladdning och `postgres-meta` bara för Studio.)
   Lägg det som skriptet `pnpm db:start`. Ta med en tjänst först när ett steg kräver den.
 - Användaren (Robert) skriver på svenska. Svara på svenska.
 
