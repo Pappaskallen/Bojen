@@ -32,10 +32,10 @@ byggplanen säger olika saker om teknik gäller byggplanens MVP-stack.
 - Externa tjänster anropas bara via `packages/adapters`. Tester använder fejkadaptrar.
   Riktiga anrop sker aldrig i tester.
 - Varje tabell har `tenant_id` och Row Level Security. En ny tabell kräver ett isoleringstest.
-- Koder och åtkomstinformation krypteras alltid med `packages/core/crypto` och loggas aldrig.
+- Koder och åtkomstinformation krypteras alltid med `packages/core/src/crypto` och loggas aldrig.
   Inget verktyg för röstagenten får returnera koder eller adresser.
 - Kod och identifierare på engelska. Texter som visas för användare på svenska i
-  `packages/core/i18n/sv.ts`.
+  `packages/core/src/i18n/sv.ts`.
 - Telefonnummer sparas i E.164. Tider sparas som UTC och visas i Europe/Stockholm.
 - Claude-modeller: `claude-haiku-5-5` i realtid (röstagenten, effort `low`),
   `claude-sonnet-5-5` för rapporter, typskyltar och svårtolkade sms. Använd det officiella
@@ -52,7 +52,8 @@ byggplanen säger olika saker om teknik gäller byggplanens MVP-stack.
   användaren att starta Docker Desktop om motorn inte svarar.
 - **Datorn har bara 5 GB RAM, och Docker får cirka 2,5 GB.** Starta därför Supabase utan
   tjänster som inte behövs:
-  `supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,supavisor,mailpit`
+  `supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,supavisor,mailpit,storage-api,postgres-meta`
+  (`storage-api` behövs från steg 2.5 för bilduppladdning och `postgres-meta` bara för Studio.)
   Lägg det som skriptet `pnpm db:start`. Ta med en tjänst först när ett steg kräver den.
 - Användaren (Robert) skriver på svenska. Svara på svenska.
 
