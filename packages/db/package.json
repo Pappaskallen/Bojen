@@ -11,6 +11,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed.ts",
     "generate": "drizzle-kit generate"
   },
   "dependencies": {

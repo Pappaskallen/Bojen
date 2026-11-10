@@ -16,7 +16,8 @@
     "db:stop": "supabase stop",
     "db:status": "supabase status",
     "db:migrate": "pnpm --filter @bojen/db migrate",
-    "db:generate": "pnpm --filter @bojen/db generate"
+    "db:generate": "pnpm --filter @bojen/db generate",
+    "db:seed": "pnpm --filter @bojen/db seed"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

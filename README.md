@@ -34,6 +34,7 @@ Kör `corepack enable` en gång, sedan:
 | `pnpm format` | Formaterar koden med Prettier |
 | `pnpm db:start` / `pnpm db:stop` / `pnpm db:status` | Lokal Supabase utan tjänster som inte behövs |
 | `pnpm db:generate` / `pnpm db:migrate` | Skapar en migrering från schemat / kör migreringarna |
+| `pnpm db:seed` | Tömmer den lokala databasen och lägger in testdata (Jonas Båtservice). Vägrar köra mot annat än localhost |
 | `pnpm --filter @bojen/web dev` | Next.js på http://localhost:3000 |
 
 ## Mappar

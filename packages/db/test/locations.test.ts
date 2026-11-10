@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { distanceBetweenLocations, placementOn } from "../src/queries/location";
 import { area, boat, boatPlacement, location, tenant } from "../src/schema";
@@ -130,7 +130,12 @@ describe("locations and placements (step 1.2)", () => {
       const near = await tx
         .select({ name: location.name })
         .from(location)
-        .where(sql`ST_DWithin(${location.position}, ST_MakePoint(18.69, 59.286)::geography, 20000)`)
+        .where(
+          and(
+            eq(location.tenantId, summerMarina.tenantId),
+            sql`ST_DWithin(${location.position}, ST_MakePoint(18.69, 59.286)::geography, 20000)`,
+          ),
+        )
         .orderBy(sql`${location.position} <-> ST_MakePoint(18.69, 59.286)::geography`);
       expect(near.map((r) => r.name)).toEqual(["Stavsnäs vinterhamn", "Sandhamns gästhamn"]);
     });
@@ -167,7 +172,7 @@ describe("locations and placements (step 1.2)", () => {
         .select({ name: location.name })
         .from(location)
         .innerJoin(area, sql`ST_Covers(${area.boundary}, ${location.position})`)
-        .where(eq(area.id, sandhamnArea!.id));
+        .where(and(eq(area.id, sandhamnArea!.id), eq(location.tenantId, tenantId)));
       expect(inside.map((r) => r.name)).toEqual(["Sandhamns gästhamn"]);
     });
   });
