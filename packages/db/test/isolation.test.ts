@@ -36,7 +36,7 @@ async function publicTables() {
 describe("tenant isolation", () => {
   it("has Row Level Security and a tenant column on every table", async () => {
     const tables = await publicTables();
-    expect(tables.length).toBeGreaterThanOrEqual(13);
+    expect(tables.length).toBeGreaterThanOrEqual(20);
     for (const t of tables) {
       expect({ table: t.table, rls: t.rls }).toEqual({ table: t.table, rls: true });
       expect({ table: t.table, tenantColumn: t.tenantColumn }).not.toEqual({

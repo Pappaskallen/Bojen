@@ -22,6 +22,13 @@
       "when": 1794256570892,
       "tag": "0002_locations",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794257200283,
+      "tag": "0003_jobs_and_visits",
+      "breakpoints": true
     }
   ]
 }

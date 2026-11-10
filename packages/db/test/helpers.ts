@@ -11,10 +11,18 @@ import {
   drive,
   engine,
   engineHoursReading,
+  job,
+  jobLine,
+  jobPart,
   location,
   locationAccessRule,
+  part,
+  serviceType,
+  supplier,
   tenant,
+  visit,
 } from "../src/schema";
+import { timeRange } from "../src/schema/_types";
 
 export type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
@@ -69,7 +77,11 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
   if (!t) throw new Error("tenant not created");
   const tenantId = t.id;
 
-  await tx.insert(appUser).values({ tenantId, name: `${name} mekaniker`, role: "mechanic" });
+  const [mechanic] = await tx
+    .insert(appUser)
+    .values({ tenantId, name: `${name} mekaniker`, role: "mechanic" })
+    .returning();
+  if (!mechanic) throw new Error("app_user not created");
   const [c] = await tx
     .insert(customer)
     .values({ tenantId, name: `${name} kund`, phone })
@@ -130,5 +142,41 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     .insert(accessInfo)
     .values({ tenantId, boatId: b.id, codeEncrypted: Buffer.from("not-a-real-ciphertext") });
 
-  return { tenantId, customerId: c.id, boatId: b.id, engineId: e.id, locationId: l.id };
+  const [st] = await tx
+    .insert(serviceType)
+    .values({ tenantId, name: "Vårservice", defaultDurationMinutes: 120 })
+    .returning();
+  const [sup] = await tx.insert(supplier).values({ tenantId, name: "Marinbutiken" }).returning();
+  const [p] = await tx
+    .insert(part)
+    .values({ tenantId, articleNumber: "21951346", description: "Impeller" })
+    .returning();
+  if (!st || !sup || !p) throw new Error("service type, supplier or part not created");
+  const [j] = await tx
+    .insert(job)
+    .values({ tenantId, customerId: c.id, boatId: b.id, serviceTypeId: st.id, channel: "phone" })
+    .returning();
+  if (!j) throw new Error("job not created");
+  await tx.insert(visit).values({
+    tenantId,
+    jobId: j.id,
+    mechanicId: mechanic.id,
+    timeWindow: timeRange(new Date("2027-04-20T06:00:00Z"), new Date("2027-04-20T08:00:00Z")),
+    plannedMinutes: 120,
+    status: "booked",
+  });
+  await tx
+    .insert(jobLine)
+    .values({ tenantId, jobId: j.id, type: "labour", description: "Arbete", unitPriceOre: 95_000 });
+  await tx.insert(jobPart).values({ tenantId, jobId: j.id, partId: p.id, supplierId: sup.id });
+
+  return {
+    tenantId,
+    mechanicId: mechanic.id,
+    customerId: c.id,
+    boatId: b.id,
+    engineId: e.id,
+    locationId: l.id,
+    jobId: j.id,
+  };
 }

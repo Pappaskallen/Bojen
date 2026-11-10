@@ -94,3 +94,13 @@ export class EwkbReader {
     return value;
   }
 }
+
+/** A Postgres `tstzrange`, kept as its text form, for example `["2026-05-04 06:00:00+00","2026-05-04 08:00:00+00")`. */
+export const timestampRange = customType<{ data: string; driverData: string }>({
+  dataType: () => "tstzrange",
+});
+
+/** Builds a half-open `tstzrange` literal `[start, end)` from two instants. */
+export function timeRange(start: Date, end: Date): string {
+  return `[${start.toISOString()},${end.toISOString()})`;
+}
