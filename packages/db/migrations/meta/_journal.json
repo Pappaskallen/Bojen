@@ -36,6 +36,13 @@
       "when": 1794342363327,
       "tag": "0004_communication",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794343438191,
+      "tag": "0005_tenant_data_key",
+      "breakpoints": true
     }
   ]
 }

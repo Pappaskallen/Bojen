@@ -1,0 +1,1 @@
+ALTER TABLE "tenant" ADD COLUMN "data_key_encrypted" bytea;
