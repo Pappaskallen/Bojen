@@ -6,3 +6,4 @@ supabase/
 .next/
 .turbo/
 coverage/
+packages/db/migrations/

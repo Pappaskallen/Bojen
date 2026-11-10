@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794213784229,
+      "tag": "0000_core_entities",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794256566344,
+      "tag": "0001_postgis_extensions",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794256570892,
+      "tag": "0002_locations",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794257200283,
+      "tag": "0003_jobs_and_visits",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794342363327,
+      "tag": "0004_communication",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794343438191,
+      "tag": "0005_tenant_data_key",
+      "breakpoints": true
+    }
+  ]
+}

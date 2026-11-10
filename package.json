@@ -14,7 +14,10 @@
     "format:check": "prettier --check .",
     "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,supavisor,mailpit,storage-api,postgres-meta",
     "db:stop": "supabase stop",
-    "db:status": "supabase status"
+    "db:status": "supabase status",
+    "db:migrate": "pnpm --filter @bojen/db migrate",
+    "db:generate": "pnpm --filter @bojen/db generate",
+    "db:seed": "pnpm --filter @bojen/db seed"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

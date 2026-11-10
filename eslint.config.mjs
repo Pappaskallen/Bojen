@@ -39,4 +39,11 @@ export default tseslint.config(
       "@next/next/no-html-link-for-pages": "off",
     },
   },
+  {
+    // Tests index into rows they just inserted; a failed lookup fails the test anyway.
+    files: ["**/*.test.ts", "**/test/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-non-null-assertion": "off",
+    },
+  },
 );

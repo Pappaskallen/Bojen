@@ -13,12 +13,12 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 [changelog.md](changelog.md).
 
 - [x] Steg 0 – Repo, verktyg och CI (1 dag)
-- [ ] Steg 1.1 – Kärnentiteter (1 dag)
-- [ ] Steg 1.2 – Platser, placering och åtkomst (1 dag)
-- [ ] Steg 1.3 – Tjänster, jobb, besök och delar (1 dag)
-- [ ] Steg 1.4 – Kommunikation och automation (1 dag)
-- [ ] Steg 1.5 – Isolering mellan firmor och testdata (1,5 dagar)
-- [ ] Steg 1.6 – Kryptering av fält (1 dag)
+- [x] Steg 1.1 – Kärnentiteter (1 dag)
+- [x] Steg 1.2 – Platser, placering och åtkomst (1 dag)
+- [x] Steg 1.3 – Tjänster, jobb, besök och delar (1 dag)
+- [x] Steg 1.4 – Kommunikation och automation (1 dag)
+- [x] Steg 1.5 – Isolering mellan firmor och testdata (1,5 dagar)
+- [x] Steg 1.6 – Kryptering av fält (1 dag)
 - [ ] Steg 2.1 – Kapacitet och lediga tider (1,5 dagar)
 - [ ] Steg 2.2 – Restider (1 dag)
 - [ ] Steg 2.3 – Poäng för tider (2 dagar)
