@@ -29,6 +29,13 @@
       "when": 1794257200283,
       "tag": "0003_jobs_and_visits",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794342363327,
+      "tag": "0004_communication",
+      "breakpoints": true
     }
   ]
 }

@@ -4,9 +4,14 @@ import {
   accessInfo,
   appUser,
   area,
+  auditLog,
   boat,
   boatOwnership,
   boatPlacement,
+  call,
+  campaign,
+  campaignRecipient,
+  consent,
   customer,
   drive,
   engine,
@@ -14,13 +19,18 @@ import {
   job,
   jobLine,
   jobPart,
+  kpiSnapshot,
   location,
   locationAccessRule,
+  message,
   part,
   serviceType,
   supplier,
+  survey,
+  task,
   tenant,
   visit,
+  waitlistEntry,
 } from "../src/schema";
 import { timeRange } from "../src/schema/_types";
 
@@ -157,20 +167,82 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     .values({ tenantId, customerId: c.id, boatId: b.id, serviceTypeId: st.id, channel: "phone" })
     .returning();
   if (!j) throw new Error("job not created");
-  await tx.insert(visit).values({
-    tenantId,
-    jobId: j.id,
-    mechanicId: mechanic.id,
-    timeWindow: timeRange(new Date("2027-04-20T06:00:00Z"), new Date("2027-04-20T08:00:00Z")),
-    plannedMinutes: 120,
-    status: "booked",
-  });
+  const [v] = await tx
+    .insert(visit)
+    .values({
+      tenantId,
+      jobId: j.id,
+      mechanicId: mechanic.id,
+      timeWindow: timeRange(new Date("2027-04-20T06:00:00Z"), new Date("2027-04-20T08:00:00Z")),
+      plannedMinutes: 120,
+      status: "booked",
+    })
+    .returning();
+  if (!v) throw new Error("visit not created");
   await tx
     .insert(jobLine)
     .values({ tenantId, jobId: j.id, type: "labour", description: "Arbete", unitPriceOre: 95_000 });
   await tx.insert(jobPart).values({ tenantId, jobId: j.id, partId: p.id, supplierId: sup.id });
 
+  const [cl] = await tx
+    .insert(call)
+    .values({ tenantId, callerNumber: phone, customerId: c.id, startedAt: new Date(), jobId: j.id })
+    .returning();
+  const [m] = await tx
+    .insert(message)
+    .values({
+      tenantId,
+      channel: "sms",
+      direction: "outbound",
+      template: "f2_booking_confirmation",
+      customerId: c.id,
+      boatId: b.id,
+      visitId: v.id,
+      toAddress: phone,
+      body: "Bokningen är klar.",
+      status: "sent",
+    })
+    .returning();
+  if (!cl || !m) throw new Error("call or message not created");
+  await tx.insert(task).values({
+    tenantId,
+    type: "call_back",
+    title: "Ring kunden",
+    assigneeId: mechanic.id,
+    customerId: c.id,
+    callId: cl.id,
+    messageId: m.id,
+  });
+  await tx.insert(waitlistEntry).values({ tenantId, customerId: c.id, boatId: b.id, areaId: a.id });
+  const [cp] = await tx.insert(campaign).values({ tenantId, name: "Vårkampanj" }).returning();
+  if (!cp) throw new Error("campaign not created");
+  await tx
+    .insert(campaignRecipient)
+    .values({ tenantId, campaignId: cp.id, customerId: c.id, boatId: b.id });
+  await tx.insert(survey).values({ tenantId, visitId: v.id, score: 5 });
+  await tx.insert(consent).values({
+    tenantId,
+    customerId: c.id,
+    type: "marketing_sms",
+    status: "granted",
+    source: "call",
+  });
+  await tx.insert(auditLog).values({
+    tenantId,
+    userId: mechanic.id,
+    action: "access_code_viewed",
+    subjectType: "visit",
+    subjectId: v.id,
+  });
+  await tx.insert(kpiSnapshot).values({
+    tenantId,
+    snapshotDate: "2027-03-01",
+    kpi: "kpi14_prebooking_spring",
+    value: "0.62",
+  });
+
   return {
+    visitId: v.id,
     tenantId,
     mechanicId: mechanic.id,
     customerId: c.id,

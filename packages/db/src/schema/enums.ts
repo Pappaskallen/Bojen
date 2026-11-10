@@ -85,3 +85,64 @@ export const jobPartStatus = pgEnum("job_part_status", [
 ]);
 
 export const jobPartSource = pgEnum("job_part_source", ["van", "order"]);
+
+export const messageChannel = pgEnum("message_channel", ["sms", "email", "push"]);
+
+export const messageDirection = pgEnum("message_direction", ["inbound", "outbound"]);
+
+export const messageStatus = pgEnum("message_status", [
+  "queued",
+  "sent",
+  "delivered",
+  "failed",
+  "received",
+]);
+
+export const messageIntent = pgEnum("message_intent", ["yes", "no", "change", "other"]);
+
+export const callOutcome = pgEnum("call_outcome", ["booked", "message", "transferred", "spam"]);
+
+export const taskType = pgEnum("task_type", [
+  "call_back",
+  "change_request",
+  "unclear_reply",
+  "low_csat",
+  "emergency",
+  "parts_arrived",
+]);
+
+export const taskStatus = pgEnum("task_status", ["open", "done", "cancelled"]);
+
+export const taskPriority = pgEnum("task_priority", ["normal", "high"]);
+
+export const waitlistStatus = pgEnum("waitlist_status", [
+  "waiting",
+  "offered",
+  "booked",
+  "cancelled",
+  "expired",
+]);
+
+export const campaignStatus = pgEnum("campaign_status", [
+  "draft",
+  "scheduled",
+  "sending",
+  "done",
+  "cancelled",
+]);
+
+export const campaignRecipientStatus = pgEnum("campaign_recipient_status", [
+  "pending",
+  "sent",
+  "booked",
+  "declined",
+  "no_reply",
+]);
+
+export const consentType = pgEnum("consent_type", [
+  "marketing_sms",
+  "marketing_email",
+  "call_recording",
+]);
+
+export const consentStatus = pgEnum("consent_status", ["granted", "withdrawn"]);
