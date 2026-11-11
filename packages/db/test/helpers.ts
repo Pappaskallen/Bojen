@@ -13,9 +13,11 @@ import {
   campaignRecipient,
   consent,
   customer,
+  domainEvent,
   drive,
   engine,
   engineHoursReading,
+  idempotencyKey,
   job,
   jobLine,
   jobPart,
@@ -266,6 +268,20 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     action: "access_code_viewed",
     subjectType: "visit",
     subjectId: v.id,
+  });
+  await tx.insert(domainEvent).values({
+    tenantId,
+    aggregateType: "visit",
+    aggregateId: v.id,
+    type: "visit.created",
+    actorType: "system",
+  });
+  await tx.insert(idempotencyKey).values({
+    tenantId,
+    key: `${name}-key`,
+    requestHash: "0".repeat(64),
+    responseStatus: 201,
+    responseBody: { id: v.id },
   });
   await tx.insert(kpiSnapshot).values({
     tenantId,

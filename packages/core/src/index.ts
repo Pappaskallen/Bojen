@@ -49,3 +49,23 @@ export {
   type SuggestTenant,
   type Suggestion,
 } from "./scheduling/suggest";
+export {
+  InvalidTransitionError,
+  VISIT_EVENTS,
+  VISIT_STATUSES,
+  actorMay,
+  canTransition,
+  customerMayChange,
+  initialStatus,
+  isFinal,
+  nextStatus,
+  type ActorType,
+  type VisitEvent,
+  type VisitStatus,
+} from "./booking/stateMachine";
+export {
+  DEFAULT_BOOKING_SETTINGS,
+  bookingSettings,
+  type BookingSettings,
+} from "./booking/settings";
+export { checkSlot, type SlotCheck, type SlotProblem } from "./scheduling/slot";

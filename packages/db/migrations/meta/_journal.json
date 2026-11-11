@@ -57,6 +57,13 @@
       "when": 1794374451551,
       "tag": "0007_travel_cache",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794376115878,
+      "tag": "0008_booking_events",
+      "breakpoints": true
     }
   ]
 }

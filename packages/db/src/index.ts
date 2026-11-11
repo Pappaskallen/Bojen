@@ -4,3 +4,4 @@ export * from "./schema";
 export * from "./queries/location";
 export * from "./access";
 export * from "./travel";
+export * from "./booking";

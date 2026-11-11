@@ -12,6 +12,9 @@ import {
 
 afterAll(closeDb);
 
+/** Tables where signed-in users may only read and add rows; updates find nothing. */
+const APPEND_ONLY = new Set(["audit_log", "domain_event"]);
+
 interface TableInfo {
   table: string;
   rls: boolean;
@@ -80,7 +83,7 @@ const count = (tx: Tx, table: string) =>
 describe("tenant isolation", () => {
   it("has Row Level Security and a tenant column on every table", async () => {
     const tables = await publicTables();
-    expect(tables.length).toBeGreaterThanOrEqual(33);
+    expect(tables.length).toBeGreaterThanOrEqual(35);
     for (const t of tables) {
       expect({ table: t.table, rls: t.rls }).toEqual({ table: t.table, rls: true });
       expect({ table: t.table, tenantColumn: t.tenantColumn }).not.toEqual({
@@ -155,7 +158,7 @@ describe("tenant isolation", () => {
 
         // Moving B's own row over to A is refused too. The audit log allows no updates at
         // all, so there the row is simply not found.
-        if (table === "audit_log") {
+        if (APPEND_ONLY.has(table)) {
           const moved = await tx.execute(
             sql`update ${tbl} set ${col} = ${a.tenantId} where ${col} = ${b.tenantId} returning 1`,
           );
