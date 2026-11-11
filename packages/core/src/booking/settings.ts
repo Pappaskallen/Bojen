@@ -12,6 +12,8 @@ export interface BookingSettings {
   marinaDayDiscount: MarinaDayDiscount | null;
   /** Free cancellation and rescheduling until this many hours before the start (W6). */
   customerChangeCutoffHours: number;
+  /** Price of the call-out in öre, shown as the saving on marina days. Empty when unknown. */
+  calloutPriceOre: number | null;
 }
 
 export const DEFAULT_BOOKING_SETTINGS: BookingSettings = {
@@ -24,6 +26,7 @@ export const DEFAULT_BOOKING_SETTINGS: BookingSettings = {
   maxExtraDriveMinutes: 45,
   marinaDayDiscount: null,
   customerChangeCutoffHours: 48,
+  calloutPriceOre: null,
 };
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -78,5 +81,11 @@ export function bookingSettings(tenantSettings: unknown): BookingSettings {
       d.customerChangeCutoffHours,
       720,
     ),
+    calloutPriceOre:
+      typeof raw.calloutPriceOre === "number" &&
+      Number.isInteger(raw.calloutPriceOre) &&
+      raw.calloutPriceOre > 0
+        ? raw.calloutPriceOre
+        : d.calloutPriceOre,
   };
 }

@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./i18n/sv": "./src/i18n/sv.ts",
-    "./crypto": "./src/crypto/index.ts"
+    "./crypto": "./src/crypto/index.ts",
+    "./catalog": "./src/catalog/brands.ts"
   },
   "scripts": {
     "lint": "eslint .",

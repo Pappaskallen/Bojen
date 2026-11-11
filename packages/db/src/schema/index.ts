@@ -27,3 +27,5 @@ export * from "./kpi_snapshot";
 export * from "./work_schedule";
 export * from "./travel_cache";
 export * from "./domain_event";
+export * from "./verification_code";
+export * from "./attachment";

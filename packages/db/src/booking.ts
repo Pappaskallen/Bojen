@@ -39,7 +39,7 @@ import {
 } from "./schema";
 import { timeRange } from "./schema/_types";
 
-type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
+export type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
 export interface BookingDeps {
   db: Pick<Database, "transaction">;
@@ -104,6 +104,8 @@ export interface CreateBookingInput {
   channel: "phone" | "web" | "campaign" | "marina";
   needsApproval: boolean;
   partsMissing: boolean;
+  /** What the customer wrote, kept on the job. */
+  description?: string | null;
 }
 
 export interface ChangeBookingInput {
@@ -129,7 +131,11 @@ function isConflict(error: unknown): boolean {
   return false;
 }
 
-async function idempotent(
+/**
+ * Runs `work` in one transaction that first claims the idempotency key. A repeat with the
+ * same key and input gets the stored answer; other input with the same key is refused.
+ */
+export async function idempotent(
   deps: BookingDeps,
   ctx: BookingContext,
   operation: string,
@@ -313,7 +319,7 @@ function view(row: {
 
 async function recordEvent(
   tx: Tx,
-  ctx: BookingContext,
+  ctx: Pick<BookingContext, "tenantId" | "actor">,
   visitId: string,
   type: string,
   payload: Record<string, unknown>,
@@ -344,71 +350,83 @@ export async function createBooking(
   if (input.start.getTime() <= deps.now().getTime()) {
     throw new BookingError("invalid_input", "start is in the past");
   }
-  return idempotent(deps, ctx, "create", input, 201, async (tx) => {
-    const [service] = await tx
-      .select({ minutes: serviceType.defaultDurationMinutes })
-      .from(serviceType)
-      .where(and(eq(serviceType.tenantId, ctx.tenantId), eq(serviceType.id, input.serviceTypeId)));
-    if (!service) throw new BookingError("not_found", "service_type");
-    const minutes = input.plannedMinutes ?? service.minutes;
-    if (!Number.isInteger(minutes) || minutes <= 0) {
-      throw new BookingError("invalid_input", "plannedMinutes");
-    }
+  return idempotent(deps, ctx, "create", input, 201, (tx) => bookInTransaction(tx, ctx, input));
+}
 
-    const settings = await settingsOf(tx, ctx.tenantId);
-    await lockMechanics(tx, ctx.tenantId, [input.mechanicId]);
-    await assertFree(tx, ctx.tenantId, {
-      mechanicId: input.mechanicId,
-      start: input.start,
-      minutes,
-      bufferMinutes: settings.bufferMinutes,
-    });
+/**
+ * The booking itself, inside a transaction the caller owns (and that has claimed the
+ * idempotency key). Used by `createBooking` and by the public booking page, which first
+ * creates the customer and boat in the same transaction.
+ */
+export async function bookInTransaction(
+  tx: Tx,
+  ctx: Pick<BookingContext, "tenantId" | "actor">,
+  input: CreateBookingInput,
+): Promise<VisitView> {
+  const [service] = await tx
+    .select({ minutes: serviceType.defaultDurationMinutes })
+    .from(serviceType)
+    .where(and(eq(serviceType.tenantId, ctx.tenantId), eq(serviceType.id, input.serviceTypeId)));
+  if (!service) throw new BookingError("not_found", "service_type");
+  const minutes = input.plannedMinutes ?? service.minutes;
+  if (!Number.isInteger(minutes) || minutes <= 0) {
+    throw new BookingError("invalid_input", "plannedMinutes");
+  }
 
-    const status = initialStatus(input);
-    const [newJob] = await tx
-      .insert(job)
-      .values({
-        tenantId: ctx.tenantId,
-        customerId: input.customerId,
-        boatId: input.boatId ?? null,
-        serviceTypeId: input.serviceTypeId,
-        channel: input.channel,
-        pipelineStatus: pipelineFor(status),
-      })
-      .returning({ id: job.id });
-    if (!newJob) throw new Error("job not created");
-    const end = new Date(input.start.getTime() + minutes * MINUTE);
-    const [created] = await tx
-      .insert(visit)
-      .values({
-        tenantId: ctx.tenantId,
-        jobId: newJob.id,
-        mechanicId: input.mechanicId,
-        timeWindow: timeRange(input.start, end),
-        plannedMinutes: minutes,
-        status,
-      })
-      .returning({ id: visit.id });
-    if (!created) throw new Error("visit not created");
+  const settings = await settingsOf(tx, ctx.tenantId);
+  await lockMechanics(tx, ctx.tenantId, [input.mechanicId]);
+  await assertFree(tx, ctx.tenantId, {
+    mechanicId: input.mechanicId,
+    start: input.start,
+    minutes,
+    bufferMinutes: settings.bufferMinutes,
+  });
 
-    const result = view({
-      id: created.id,
+  const status = initialStatus(input);
+  const [newJob] = await tx
+    .insert(job)
+    .values({
+      tenantId: ctx.tenantId,
+      customerId: input.customerId,
+      boatId: input.boatId ?? null,
+      serviceTypeId: input.serviceTypeId,
+      channel: input.channel,
+      description: input.description ?? null,
+      pipelineStatus: pipelineFor(status),
+    })
+    .returning({ id: job.id });
+  if (!newJob) throw new Error("job not created");
+  const end = new Date(input.start.getTime() + minutes * MINUTE);
+  const [created] = await tx
+    .insert(visit)
+    .values({
+      tenantId: ctx.tenantId,
       jobId: newJob.id,
       mechanicId: input.mechanicId,
-      status,
+      timeWindow: timeRange(input.start, end),
       plannedMinutes: minutes,
-      start: input.start,
-      end,
-    });
-    await recordEvent(tx, ctx, created.id, "visit.created", {
       status,
-      start: result.start,
-      end: result.end,
-      mechanicId: input.mechanicId,
-      channel: input.channel,
-    });
-    return result;
+    })
+    .returning({ id: visit.id });
+  if (!created) throw new Error("visit not created");
+
+  const result = view({
+    id: created.id,
+    jobId: newJob.id,
+    mechanicId: input.mechanicId,
+    status,
+    plannedMinutes: minutes,
+    start: input.start,
+    end,
   });
+  await recordEvent(tx, ctx, created.id, "visit.created", {
+    status,
+    start: result.start,
+    end: result.end,
+    mechanicId: input.mechanicId,
+    channel: input.channel,
+  });
+  return result;
 }
 
 /** Approves, confirms, reschedules, cancels or otherwise moves a visit along. */

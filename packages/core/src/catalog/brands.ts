@@ -1,0 +1,35 @@
+/** Suggestions for the boat form (W2 "märkeslistor"). Free text is always allowed. */
+export const BOAT_MAKES = [
+  "Anytec",
+  "Aquador",
+  "Askeladden",
+  "Bayliner",
+  "Bella",
+  "Buster",
+  "Finnmaster",
+  "Flipper",
+  "Grandezza",
+  "Linder",
+  "Marex",
+  "Nimbus",
+  "Quicksilver",
+  "Ryds",
+  "Saga",
+  "Sea Ray",
+  "Uttern",
+  "Windy",
+  "XO",
+  "Yamarin",
+] as const;
+
+export const ENGINE_MAKES = [
+  "Evinrude",
+  "Honda",
+  "Mercury",
+  "MerCruiser",
+  "Suzuki",
+  "Tohatsu",
+  "Volvo Penta",
+  "Yamaha",
+  "Yanmar",
+] as const;

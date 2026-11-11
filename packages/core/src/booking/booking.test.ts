@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkSlot } from "../scheduling/slot";
 import { stockholmInstant } from "../time";
+import { modeTimeline } from "./modes";
 import { DEFAULT_BOOKING_SETTINGS, bookingSettings } from "./settings";
 import {
   InvalidTransitionError,
@@ -148,5 +149,19 @@ describe("bookingSettings", () => {
     expect(
       bookingSettings({ booking: { windows: [{ start: "12:00", end: "08:00" }] } }).windows,
     ).toEqual(DEFAULT_BOOKING_SETTINGS.windows);
+  });
+});
+
+describe("modeTimeline", () => {
+  it("turns haul-out and launch dates into periods", () => {
+    expect(modeTimeline("land")).toEqual([{ mode: "land" }]);
+    expect(modeTimeline("water", "2027-10-14")).toEqual([
+      { mode: "water", to: "2027-10-13" },
+      { mode: "land", from: "2027-10-14" },
+    ]);
+    expect(modeTimeline("indoor", "2027-05-01")).toEqual([
+      { mode: "indoor", to: "2027-04-30" },
+      { mode: "water", from: "2027-05-01" },
+    ]);
   });
 });

@@ -46,11 +46,23 @@ export const OTHER_TENANT_ID = "00000000-0000-4000-8000-000000000002";
 
 /** The marinas with approximate positions (WGS 84). Not yet checked against a map service. */
 export const DEMO_MARINAS = {
-  bullando: { name: "Bullandö Marina", position: { lng: 18.6486, lat: 59.2969 } },
-  djuro: { name: "Djurö Båtvarv", position: { lng: 18.6964, lat: 59.3122 } },
-  saltsjobaden: { name: "Saltsjöbadens Båtklubb", position: { lng: 18.3036, lat: 59.2803 } },
-  sandhamn: { name: "Sandhamns gästhamn", position: { lng: 18.9105, lat: 59.2885 } },
-} satisfies Record<string, { name: string; position: LngLat }>;
+  bullando: {
+    name: "Bullandö Marina",
+    slug: "bullando-marina",
+    position: { lng: 18.6486, lat: 59.2969 },
+  },
+  djuro: { name: "Djurö Båtvarv", slug: "djuro-batvarv", position: { lng: 18.6964, lat: 59.3122 } },
+  saltsjobaden: {
+    name: "Saltsjöbadens Båtklubb",
+    slug: "saltsjobadens-batklubb",
+    position: { lng: 18.3036, lat: 59.2803 },
+  },
+  sandhamn: {
+    name: "Sandhamns gästhamn",
+    slug: "sandhamns-gasthamn",
+    position: { lng: 18.9105, lat: 59.2885 },
+  },
+} satisfies Record<string, { name: string; slug: string; position: LngLat }>;
 
 function at<T>(items: readonly T[], index: number): T {
   const item = items[index];
@@ -273,6 +285,10 @@ export async function seedDemoData(db: Writer, seed = 2026) {
   await db.insert(tenant).values({
     id: tenantId,
     name: "Jonas Båtservice",
+    slug: "jonas-batservice",
+    settings: {
+      booking: { marinaDayDiscount: { kind: "waive_callout" }, calloutPriceOre: 69_500 },
+    },
     orgNumber: "556000-0000",
     phone: "+46846500400", // PTS range for fiction, 08-46 50 04 00
   });
@@ -591,7 +607,9 @@ export async function seedDemoData(db: Writer, seed = 2026) {
 /** A second, small firm so that isolation can be checked against real-looking data. */
 export async function seedOtherTenant(db: Writer) {
   const tenantId = OTHER_TENANT_ID;
-  await db.insert(tenant).values({ id: tenantId, name: "Skärgårdsmekarna" });
+  await db
+    .insert(tenant)
+    .values({ id: tenantId, name: "Skärgårdsmekarna", slug: "skargardsmekarna" });
   await db.insert(appUser).values({ tenantId, name: "Kim Holm", role: "owner" });
   const c = await insertOne(
     db

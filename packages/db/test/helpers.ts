@@ -3,6 +3,7 @@ import { connect, type Database } from "../src/client";
 import {
   accessInfo,
   appUser,
+  attachment,
   area,
   auditLog,
   boat,
@@ -35,6 +36,7 @@ import {
   waitlistEntry,
   scheduleBlock,
   travelCache,
+  verificationCode,
   workSchedule,
 } from "../src/schema";
 import { timeRange } from "../src/schema/_types";
@@ -282,6 +284,20 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     requestHash: "0".repeat(64),
     responseStatus: 201,
     responseBody: { id: v.id },
+  });
+  await tx.insert(verificationCode).values({
+    tenantId,
+    phone,
+    codeHash: "0".repeat(64),
+    expiresAt: new Date("2027-01-01T00:10:00Z"),
+  });
+  await tx.insert(attachment).values({
+    tenantId,
+    ownerType: "job",
+    ownerId: j.id,
+    storageKey: `${tenantId}/jobs/${j.id}/drev.jpg`,
+    contentType: "image/jpeg",
+    sizeBytes: 1234,
   });
   await tx.insert(kpiSnapshot).values({
     tenantId,

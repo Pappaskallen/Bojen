@@ -3,3 +3,8 @@ export { createLocalKms, localKmsFromEnv } from "./kms/local";
 export { createAwsKms, type KmsSender } from "./kms/aws";
 export { createFakeMaps, type FakeMaps } from "./maps/fake";
 export { createOsrmMaps, type OsrmOptions } from "./maps/osrm";
+export { createFakeSms, type FakeSms } from "./sms/fake";
+export { createPhotonGeocoder, type PhotonOptions } from "./geocoding/photon";
+export { createFakeGeocoder } from "./geocoding/fake";
+export { createSupabaseStorage, type SupabaseStorageOptions } from "./storage/supabase";
+export { createFakeStorage, type FakeStorage } from "./storage/fake";

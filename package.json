@@ -12,12 +12,13 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,supavisor,mailpit,storage-api,postgres-meta",
+    "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,supavisor,mailpit,postgres-meta",
     "db:stop": "supabase stop",
     "db:status": "supabase status",
     "db:migrate": "pnpm --filter @bojen/db migrate",
     "db:generate": "pnpm --filter @bojen/db generate",
-    "db:seed": "pnpm --filter @bojen/db seed"
+    "db:seed": "pnpm --filter @bojen/db seed",
+    "e2e": "pnpm --filter @bojen/web e2e"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

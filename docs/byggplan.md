@@ -23,7 +23,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 2.2 – Restider (1 dag)
 - [x] Steg 2.3 – Poäng för tider (2 dagar)
 - [x] Steg 2.4 – API och tillståndsmaskin för bokning (1,5 dagar)
-- [ ] Steg 2.5 – Bokningssida och widget (3 dagar)
+- [x] Steg 2.5 – Bokningssida och widget (3 dagar)
 - [ ] Steg 2.6 – Manuellt godkännande (0,5 dag)
 - [ ] Steg 3.1 – Notifieringstjänst och mallmotor (2 dagar)
 - [ ] Steg 3.2 – Inkommande sms och tolkning av svar (2 dagar)
@@ -63,6 +63,7 @@ För MVP:n gäller den mindre stacken nedan. Den ska gå att flytta till AWS sen
 | `packages/db` | Drizzle ORM + migreringar mot Supabase Postgres (eu-north-1) med PostGIS |
 | `packages/core` | Ren domänlogik utan I/O |
 | Restider | OSRM (öppen källkod, OpenStreetMap) på egen server i stället för Google Routes |
+| Adressökning | Photon (öppen källkod, OpenStreetMap) i stället för Google Places |
 | `packages/adapters` | 46elks, Mailgun, OSRM, Azure, Claude, Fortnox, KMS – var och en med fejkimplementation |
 | Tester | Vitest (enhet + databas via `supabase start`) och Playwright |
 | Mekanikerns app | PWA (Serwist + IndexedDB), inte React Native |
@@ -188,7 +189,7 @@ ett alternativ i stället för att byta tyst.
 - **Gör:**
   - Bygg en guide i sex steg enligt del 1, kapitel 4.2.
   - Befintliga kunder identifieras med engångskod via sms (fejkadapter i tester).
-  - Plats väljs via lista över marinor eller adress (Places).
+  - Plats väljs via lista över marinor eller adress (Photon på OpenStreetMap; ändrat från Google Places 2026-11-11 för att slippa kostnaden per sökning).
   - Bilder laddas upp till Supabase Storage.
   - Marinadagar visas med rabatt.
   - Marinalänken `/m/[location]` förväljer platsen.

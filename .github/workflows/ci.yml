@@ -11,7 +11,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -38,3 +38,19 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      # Booking page end to end, widget and Lighthouse (step 2.5). Empties and seeds the
+      # CI database, which is thrown away afterwards.
+      - name: Install Chromium for Playwright
+        run: pnpm --filter @bojen/web exec playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: pnpm e2e
+
+      - name: Keep the Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/test-results
+          retention-days: 7
