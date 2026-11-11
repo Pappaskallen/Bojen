@@ -20,7 +20,7 @@ Arbetsnamn. Specifikationen ligger i `docs/`, byggplanen i `docs/byggplan.md`.
 |---|---|---|
 | Ansök om integrationspartnerskap hos Fortnox | Godkännandet tar tid; steg 8 | Nu |
 | Värva 3–5 pilotfirmor i Stockholms skärgård | Testdata, feedback, pilot 1 mars | 20 nov |
-| Konton: Supabase (eu-north-1), 46elks, Azure Speech (Sweden Central), Google Maps Platform, Mailgun EU, Anthropic | Behövs från fas 2–6; tester klarar sig med fejkadaptrar | Före respektive fas |
+| Konton: Supabase (eu-north-1), 46elks, Azure Speech (Sweden Central), Mailgun EU, Anthropic | Behövs från fas 2–6; tester klarar sig med fejkadaptrar | Före respektive fas |
 | Röstprototyp i Vapi för pilotfirmorna | Testa manus och röst tidigt | December |
 
 ## Kommandon

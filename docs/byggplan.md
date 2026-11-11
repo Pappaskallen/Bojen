@@ -20,7 +20,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 1.5 – Isolering mellan firmor och testdata (1,5 dagar)
 - [x] Steg 1.6 – Kryptering av fält (1 dag)
 - [x] Steg 2.1 – Kapacitet och lediga tider (1,5 dagar)
-- [ ] Steg 2.2 – Restider (1 dag)
+- [x] Steg 2.2 – Restider (1 dag)
 - [ ] Steg 2.3 – Poäng för tider (2 dagar)
 - [ ] Steg 2.4 – API och tillståndsmaskin för bokning (1,5 dagar)
 - [ ] Steg 2.5 – Bokningssida och widget (3 dagar)
@@ -62,7 +62,8 @@ För MVP:n gäller den mindre stacken nedan. Den ska gå att flytta till AWS sen
 | `apps/voice` | LiveKit Agents (TypeScript) |
 | `packages/db` | Drizzle ORM + migreringar mot Supabase Postgres (eu-north-1) med PostGIS |
 | `packages/core` | Ren domänlogik utan I/O |
-| `packages/adapters` | 46elks, Mailgun, Google Maps, Azure, Claude, Fortnox, KMS – var och en med fejkimplementation |
+| Restider | OSRM (öppen källkod, OpenStreetMap) på egen server i stället för Google Routes |
+| `packages/adapters` | 46elks, Mailgun, OSRM, Azure, Claude, Fortnox, KMS – var och en med fejkimplementation |
 | Tester | Vitest (enhet + databas via `supabase start`) och Playwright |
 | Mekanikerns app | PWA (Serwist + IndexedDB), inte React Native |
 
@@ -150,9 +151,9 @@ ett alternativ i stället för att byta tyst.
 
 #### Steg 2.2 – Restider (1 dag)
 - **Mål:** En avståndsmatris med cache.
-- **Berör:** `packages/adapters/maps/{google,fake}.ts`, `packages/core/scheduling/travel.ts`, tabellen `travel_cache`.
+- **Berör:** `packages/adapters/maps/{osrm,fake}.ts`, `packages/core/scheduling/travel.ts`, tabellen `travel_cache`.
 - **Gör:**
-  - Google Routes används i produktion.
+  - OSRM (OpenStreetMap) används i produktion. Ändrat från Google Routes 2026-11-11 för att slippa kostnaden per anrop.
   - Fejkadaptern räknar fågelvägen × 1,4 och 50 km/h.
   - Platser som nås med båt eller färja får extra tid för överfart.
   - Resultaten cachas per par av platser och timme.

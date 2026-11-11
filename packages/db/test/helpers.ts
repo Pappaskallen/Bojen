@@ -32,6 +32,7 @@ import {
   visit,
   waitlistEntry,
   scheduleBlock,
+  travelCache,
   workSchedule,
 } from "../src/schema";
 import { timeRange } from "../src/schema/_types";
@@ -140,6 +141,27 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     })
     .returning();
   if (!l) throw new Error("location not created");
+  const [l2] = await tx
+    .insert(location)
+    .values({
+      tenantId,
+      type: "yard",
+      name: `${name} varv`,
+      position: { lng: 18.72, lat: 59.3 },
+      accessMethod: "ferry",
+      crossingMinutes: 20,
+    })
+    .returning();
+  if (!l2) throw new Error("second location not created");
+  await tx.insert(travelCache).values({
+    tenantId,
+    fromLocationId: l.id,
+    toLocationId: l2.id,
+    departureHour: new Date("2027-04-20T06:00:00Z"),
+    driveSeconds: 600,
+    distanceMeters: 4000,
+    provider: "fake",
+  });
   await tx.insert(locationAccessRule).values({ tenantId, locationId: l.id, parking: "Grusplanen" });
   await tx.insert(boatPlacement).values({
     tenantId,

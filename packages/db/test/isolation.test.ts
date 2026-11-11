@@ -80,7 +80,7 @@ const count = (tx: Tx, table: string) =>
 describe("tenant isolation", () => {
   it("has Row Level Security and a tenant column on every table", async () => {
     const tables = await publicTables();
-    expect(tables.length).toBeGreaterThanOrEqual(32);
+    expect(tables.length).toBeGreaterThanOrEqual(33);
     for (const t of tables) {
       expect({ table: t.table, rls: t.rls }).toEqual({ table: t.table, rls: true });
       expect({ table: t.table, tenantColumn: t.tenantColumn }).not.toEqual({
@@ -96,12 +96,14 @@ describe("tenant isolation", () => {
       const a = await createTenantWithBoat(tx, "A", "+46700000001");
       const b = await createTenantWithBoat(tx, "B", "+46700000002");
 
-      // Sanity check as the owner: tenant A has rows in every table.
+      // Sanity check as the owner: tenant A has rows in every table. B has as many.
+      const rowsPerTable = new Map<string, number>();
       for (const { table, tenantColumn } of tables) {
         const [row] = await tx.execute<{ n: number }>(
           sql`select count(*)::int as n from ${sql.identifier(table)} where ${sql.identifier(tenantColumn!)} = ${a.tenantId}`,
         );
-        expect({ table, n: row!.n }).toEqual({ table, n: 1 });
+        expect({ table, hasRows: row!.n > 0 }).toEqual({ table, hasRows: true });
+        rowsPerTable.set(table, row!.n);
       }
       const copies = await oneRowPerTable(tx, tables, a.tenantId);
 
@@ -130,7 +132,13 @@ describe("tenant isolation", () => {
           visibleOwn: visibleOwn!.n,
           updated: updated.length,
           deleted: deleted.length,
-        }).toEqual({ table, visibleA: 0, visibleOwn: 1, updated: 0, deleted: 0 });
+        }).toEqual({
+          table,
+          visibleA: 0,
+          visibleOwn: rowsPerTable.get(table),
+          updated: 0,
+          deleted: 0,
+        });
 
         // Writing a copy of A's row, still marked as A's, is refused.
         const insertError = await expectDbError(tx, (sp) =>

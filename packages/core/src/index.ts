@@ -17,3 +17,20 @@ export {
   type OfferedWindow,
   type WorkPeriod,
 } from "./scheduling/availability";
+export {
+  ESTIMATED_SPEED_KMH,
+  ROAD_FACTOR,
+  crossingSeconds,
+  crowFliesMeters,
+  departureHour,
+  estimateDrive,
+  missingPairs,
+  pairKey,
+  travelSeconds,
+  type AccessMethod,
+  type DriveLeg,
+  type GeoPoint,
+  type MapsProvider,
+  type PlacePair,
+  type TravelPlace,
+} from "./scheduling/travel";
