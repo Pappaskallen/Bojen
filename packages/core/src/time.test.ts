@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stockholmDate } from "./time";
+import { daysBetween, isoWeekday, stockholmDate, stockholmInstant } from "./time";
 
 describe("stockholmDate", () => {
   it.each([
@@ -9,5 +9,33 @@ describe("stockholmDate", () => {
     ["2027-01-15T22:59:00Z", "2027-01-15"], // 23:59 winter time
   ])("%s is %s in Stockholm", (instant, day) => {
     expect(stockholmDate(new Date(instant))).toBe(day);
+  });
+});
+
+describe("stockholmInstant", () => {
+  it.each([
+    ["2027-01-15", "08:00", "2027-01-15T07:00:00.000Z"], // winter, UTC+1
+    ["2027-07-15", "08:00", "2027-07-15T06:00:00.000Z"], // summer, UTC+2
+    ["2027-03-28", "08:00", "2027-03-28T06:00:00.000Z"], // the morning summer time starts
+    ["2027-03-28", "01:30", "2027-03-28T00:30:00.000Z"], // before the change
+    ["2027-10-31", "08:00", "2027-10-31T07:00:00.000Z"], // the morning summer time ends
+    ["2027-03-28", "02:30", "2027-03-28T01:30:00.000Z"], // does not exist; 03:30 summer time
+  ])("%s %s in Stockholm is %s", (day, hhmm, iso) => {
+    expect(stockholmInstant(day, hhmm).toISOString()).toBe(iso);
+  });
+});
+
+describe("calendar helpers", () => {
+  it("numbers weekdays from Monday", () => {
+    expect(isoWeekday("2027-04-19")).toBe(1);
+    expect(isoWeekday("2027-04-25")).toBe(7);
+  });
+
+  it("lists the days of a range across a DST change", () => {
+    expect(daysBetween("2027-03-27", "2027-03-29")).toEqual([
+      "2027-03-27",
+      "2027-03-28",
+      "2027-03-29",
+    ]);
   });
 });

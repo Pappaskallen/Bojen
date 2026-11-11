@@ -31,6 +31,8 @@ import {
   tenant,
   visit,
   waitlistEntry,
+  scheduleBlock,
+  workSchedule,
 } from "../src/schema";
 import { timeRange } from "../src/schema/_types";
 
@@ -183,6 +185,15 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     .insert(jobLine)
     .values({ tenantId, jobId: j.id, type: "labour", description: "Arbete", unitPriceOre: 95_000 });
   await tx.insert(jobPart).values({ tenantId, jobId: j.id, partId: p.id, supplierId: sup.id });
+  await tx
+    .insert(workSchedule)
+    .values({ tenantId, userId: mechanic.id, weekday: 1, startTime: "07:00", endTime: "17:00" });
+  await tx.insert(scheduleBlock).values({
+    tenantId,
+    userId: mechanic.id,
+    during: timeRange(new Date("2027-07-05T00:00:00Z"), new Date("2027-07-26T00:00:00Z")),
+    reason: "Semester",
+  });
 
   const [cl] = await tx
     .insert(call)

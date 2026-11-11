@@ -43,6 +43,13 @@
       "when": 1794343438191,
       "tag": "0005_tenant_data_key",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794344898907,
+      "tag": "0006_work_schedule",
+      "breakpoints": true
     }
   ]
 }

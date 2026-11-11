@@ -24,3 +24,4 @@ export * from "./survey";
 export * from "./consent";
 export * from "./audit_log";
 export * from "./kpi_snapshot";
+export * from "./work_schedule";

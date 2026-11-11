@@ -34,6 +34,7 @@ import {
   serviceType,
   tenant,
   visit,
+  workSchedule,
 } from "./schema";
 import { timeRange, type LngLat } from "./schema/_types";
 
@@ -283,6 +284,30 @@ export async function seedDemoData(db: Writer, seed = 2026) {
     ])
     .returning();
   if (!jonas || !elin) throw new Error("mechanics not created");
+
+  // Jonas works weekdays 07–12 and 12:30–17; Elin 07–16 and Saturdays in May.
+  await db.insert(workSchedule).values([
+    ...[1, 2, 3, 4, 5].flatMap((weekday) => [
+      { tenantId, userId: jonas.id, weekday, startTime: "07:00", endTime: "12:00" },
+      { tenantId, userId: jonas.id, weekday, startTime: "12:30", endTime: "17:00" },
+    ]),
+    ...[1, 2, 3, 4, 5].map((weekday) => ({
+      tenantId,
+      userId: elin.id,
+      weekday,
+      startTime: "07:00",
+      endTime: "16:00",
+    })),
+    {
+      tenantId,
+      userId: elin.id,
+      weekday: 6,
+      startTime: "08:00",
+      endTime: "14:00",
+      validFrom: "2027-05-01",
+      validTo: "2027-05-31",
+    },
+  ]);
 
   // The yard and the club are customers too: they own their location and can book.
   const djuroYard = await insertOne(
