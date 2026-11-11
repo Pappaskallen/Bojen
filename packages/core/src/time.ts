@@ -58,3 +58,10 @@ export function daysBetween(first: string, last: string): string[] {
   }
   return days;
 }
+
+/** The day `days` days after `day` (`YYYY-MM-DD`); negative goes back. */
+export function addDays(day: string, days: number): string {
+  return new Date(new Date(`${day}T12:00:00Z`).getTime() + days * 24 * 3600 * 1000)
+    .toISOString()
+    .slice(0, 10);
+}

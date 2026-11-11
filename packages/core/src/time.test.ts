@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysBetween, isoWeekday, stockholmDate, stockholmInstant } from "./time";
+import { addDays, daysBetween, isoWeekday, stockholmDate, stockholmInstant } from "./time";
 
 describe("stockholmDate", () => {
   it.each([
@@ -37,5 +37,14 @@ describe("calendar helpers", () => {
       "2027-03-28",
       "2027-03-29",
     ]);
+  });
+});
+
+describe("addDays", () => {
+  it("moves across months, years and the change to summer time", () => {
+    expect(addDays("2027-01-31", 1)).toBe("2027-02-01");
+    expect(addDays("2027-12-31", 1)).toBe("2028-01-01");
+    expect(addDays("2027-03-27", 2)).toBe("2027-03-29");
+    expect(addDays("2027-03-01", -1)).toBe("2027-02-28");
   });
 });

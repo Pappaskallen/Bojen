@@ -1,6 +1,7 @@
 export { sv, type Texts } from "./i18n/sv";
 export {
   DISPLAY_TIME_ZONE,
+  addDays,
   daysBetween,
   isoWeekday,
   stockholmDate,
@@ -34,3 +35,17 @@ export {
   type PlacePair,
   type TravelPlace,
 } from "./scheduling/travel";
+export {
+  MissingTravelTimeError,
+  firstPossibleDay,
+  modeSatisfies,
+  suggestSlots,
+  travelPairsFor,
+  type MarinaDayDiscount,
+  type ModePeriod,
+  type PlacementMode,
+  type PlannedVisit,
+  type SuggestInput,
+  type SuggestTenant,
+  type Suggestion,
+} from "./scheduling/suggest";

@@ -21,7 +21,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 1.6 – Kryptering av fält (1 dag)
 - [x] Steg 2.1 – Kapacitet och lediga tider (1,5 dagar)
 - [x] Steg 2.2 – Restider (1 dag)
-- [ ] Steg 2.3 – Poäng för tider (2 dagar)
+- [x] Steg 2.3 – Poäng för tider (2 dagar)
 - [ ] Steg 2.4 – API och tillståndsmaskin för bokning (1,5 dagar)
 - [ ] Steg 2.5 – Bokningssida och widget (3 dagar)
 - [ ] Steg 2.6 – Manuellt godkännande (0,5 dag)
