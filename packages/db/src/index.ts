@@ -11,3 +11,4 @@ export * from "./staff";
 export * from "./messaging";
 export * from "./inbound";
 export * from "./flows";
+export * from "./short-links";

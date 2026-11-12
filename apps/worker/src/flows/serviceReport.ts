@@ -29,7 +29,7 @@ export async function sendServiceReport(
   if (!visit) return "skipped";
   if (await alreadySent(deps.db, tenantId, visitId, "f7_report")) return "skipped";
   const vars = visitVars(visit);
-  const link = deps.link(visit, "report");
+  const link = await deps.link(visit, "report");
   const target = {
     tenantId,
     customerId: visit.customer.id,

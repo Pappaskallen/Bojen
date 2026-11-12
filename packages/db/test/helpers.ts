@@ -38,6 +38,7 @@ import {
   waitlistEntry,
   scheduleBlock,
   travelCache,
+  shortLink,
   smsOptOut,
   verificationCode,
   workSchedule,
@@ -297,6 +298,13 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
   await tx
     .insert(smsOptOut)
     .values({ tenantId, phoneHash: "hash-" + tenantId, source: "sms_stop" });
+  await tx.insert(shortLink).values({
+    tenantId,
+    visitId: v.id,
+    purpose: "manage",
+    codeHash: "link-" + tenantId,
+    expiresAt: new Date("2027-04-20T06:00:00Z"),
+  });
   await tx.insert(verificationCode).values({
     tenantId,
     phone,

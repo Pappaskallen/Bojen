@@ -1,5 +1,5 @@
 import { bookingSettings, cancelBy, sv } from "@bojen/core";
-import { alreadySent, queueEmail, queueSms, visitContext } from "@bojen/db";
+import { alreadySent, confirmationOwed, queueEmail, queueSms, visitContext } from "@bojen/db";
 import { type FlowDeps, visitVars } from "./deps";
 import { scheduleEta } from "./morningEta";
 
@@ -18,13 +18,19 @@ export async function sendConfirmation(
   deps: FlowDeps,
   tenantId: string,
   visitId: string,
+  /** After the customer rescheduled through the link: a new confirmation with a new link. */
+  options: { afterCustomerChange?: boolean } = {},
 ): Promise<"sent" | "skipped"> {
   const visit = await visitContext(deps.db, tenantId, visitId);
   if (visit?.status !== "booked") return "skipped";
-  if (await alreadySent(deps.db, tenantId, visitId, "f1_confirmation")) return "skipped";
+  const channel = visit.customer.phone ? "sms" : "email";
+  const owed = options.afterCustomerChange
+    ? await confirmationOwed(deps.db, tenantId, visitId, channel)
+    : !(await alreadySent(deps.db, tenantId, visitId, "f1_confirmation"));
+  if (!owed) return "skipped";
 
   const vars = visitVars(visit);
-  const link = deps.link(visit, "manage");
+  const link = await deps.link(visit, "manage");
   const target = {
     tenantId,
     customerId: visit.customer.id,

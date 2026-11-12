@@ -187,6 +187,49 @@ export const sv = {
     failed: "Det gick inte. Försök igen.",
     photos: (n: number) => (n === 1 ? "1 bild" : `${String(n)} bilder`),
   },
+  /** The customer's page behind the short link, `/x/{code}` (step 3.4). */
+  customerPage: {
+    title: "Din bokning",
+    when: "När",
+    where: "Var",
+    what: "Vad",
+    boat: "Båt",
+    mechanic: "Mekaniker",
+    pending: "Väntar på att firman godkänner tiden.",
+    reschedule: "Boka om",
+    rescheduleIntro: "Välj en ny tid. Den gamla tiden släpps direkt.",
+    noTimes: "Det finns inga lediga tider att välja här just nu. Ring oss så hjälper vi dig.",
+    chooseTime: "Boka om till vald tid",
+    cancel: "Avboka",
+    cancelIntro: (cancelBy: string) => `Avbokning är kostnadsfri fram till ${cancelBy}.`,
+    cancelConfirm: "Ja, avboka besöket",
+    tooLate: (cancelBy: string, phone: string) =>
+      `Gränsen för att ändra själv var ${cancelBy}. Ring oss på ${phone} så hjälper vi dig.`,
+    access: "Koder och nyckel",
+    accessIntro:
+      "Lägg in koden till båten eller var nyckeln finns. Uppgifterna krypteras och visas bara för mekanikern som har besöket. De skickas aldrig i sms eller e-post.",
+    accessStored: "Du har redan lämnat uppgifter. Fyll bara i det du vill ändra.",
+    accessCode: "Kod (lås, larm eller grind)",
+    keyLocation: "Var finns nyckeln?",
+    accessSave: "Spara uppgifterna",
+    noBoat: "Det finns ingen båt kopplad till bokningen. Ring oss om du vill lämna koder.",
+    done: {
+      rescheduled:
+        "Klart, besöket är ombokat. Du får ett nytt sms med den nya tiden och en ny länk.",
+      cancelled: "Klart, besöket är avbokat.",
+      access: "Tack! Uppgifterna är sparade och krypterade.",
+    },
+    errors: {
+      missing: "Länken finns inte. Kontrollera att du har skrivit av den rätt.",
+      expired: "Länken har gått ut. Ring oss om du vill ändra något.",
+      used: "Länken är redan använd. Använd länken i det senaste sms:et från oss, eller ring oss.",
+      closed: "Besöket går inte längre att ändra här. Ring oss om du har frågor.",
+      taken: "Tiden hann bli bokad av någon annan. Välj en annan tid.",
+      invalid: "Något saknas eller är för långt. Kontrollera och försök igen.",
+      failed: "Något gick fel. Försök igen eller ring oss.",
+    },
+    callUs: (phone: string) => `Ring oss: ${phone}`,
+  },
 } as const;
 
 export type Texts = typeof sv;

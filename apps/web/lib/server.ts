@@ -11,7 +11,9 @@ import {
   createClaudeClassifier,
   createFakeClassifier,
   elksFromEnv,
+  kmsFromEnv,
 } from "@bojen/adapters";
+import type { Kms } from "@bojen/core/crypto";
 import type {
   Geocoder,
   MapsProvider,
@@ -24,6 +26,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { connect, type DbConnection } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
+import { createCustomerPage } from "./customer-page";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
 import { ELKS_IPS, createWebhookRoutes } from "./webhooks";
@@ -151,6 +154,25 @@ const sessionSecret = once(() => {
   if (production) throw new Error("BOOKING_SESSION_SECRET must be at least 32 characters");
   // Development only: a new secret per server start signs everyone out, which is fine.
   return randomBytes(32).toString("base64url");
+});
+
+/** `SHORT_LINK_KEY`, the same as the worker's: the short links' codes are hashed with it. */
+const linkKey = once(() => {
+  const key = process.env.SHORT_LINK_KEY;
+  if (key && key.length >= 32) return key;
+  if (production) throw new Error("SHORT_LINK_KEY must be at least 32 characters");
+  return "development-only-short-link-key-not-secret";
+});
+
+/** AWS KMS in production, the local KMS otherwise (step 1.6). */
+const kms = once<Kms>(() => kmsFromEnv(process.env, production));
+
+export const customerPage = createCustomerPage({
+  db,
+  maps,
+  kms,
+  now: () => new Date(),
+  linkKey,
 });
 
 export const publicRoutes = createPublicRoutes({

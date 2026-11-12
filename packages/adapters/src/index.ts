@@ -1,6 +1,7 @@
 export { createFakeClock, systemClock, type Clock, type FakeClock } from "./clock/clock";
 export { createLocalKms, localKmsFromEnv } from "./kms/local";
 export { createAwsKms, type KmsSender } from "./kms/aws";
+export { kmsFromEnv } from "./kms/env";
 export { createFakeMaps, type FakeMaps } from "./maps/fake";
 export { createOsrmMaps, type OsrmOptions } from "./maps/osrm";
 export { createFakeSms, type FakeSms } from "./sms/fake";

@@ -180,6 +180,44 @@ export async function alreadySent(
   return Boolean(row);
 }
 
+/**
+ * Whether the customer is owed one more confirmation (F1): one for the booking and one for
+ * each time they rescheduled it themselves (step 3.4). Counting, rather than a flag, keeps a
+ * retried job from sending twice.
+ */
+export async function confirmationOwed(
+  db: Db,
+  tenantId: string,
+  visitId: string,
+  channel: "sms" | "email",
+): Promise<boolean> {
+  const [sent] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(message)
+    .where(
+      and(
+        eq(message.tenantId, tenantId),
+        eq(message.visitId, visitId),
+        eq(message.template, "f1_confirmation"),
+        eq(message.direction, "outbound"),
+        eq(message.channel, channel),
+      ),
+    );
+  const [changes] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(domainEvent)
+    .where(
+      and(
+        eq(domainEvent.tenantId, tenantId),
+        eq(domainEvent.aggregateType, "visit"),
+        eq(domainEvent.aggregateId, visitId),
+        eq(domainEvent.type, "visit.reschedule"),
+        eq(domainEvent.actorType, "customer"),
+      ),
+    );
+  return (sent?.n ?? 0) < (changes?.n ?? 0) + 1;
+}
+
 export interface DomainEventRow {
   id: string;
   tenantId: string;
@@ -187,6 +225,8 @@ export interface DomainEventRow {
   aggregateId: string;
   type: string;
   payload: Record<string, unknown>;
+  /** `customer`, `staff` or `system`. */
+  actorType: string;
   occurredAt: Date;
 }
 
@@ -199,6 +239,7 @@ export async function loadDomainEvent(db: Db, eventId: string): Promise<DomainEv
       aggregateId: domainEvent.aggregateId,
       type: domainEvent.type,
       payload: domainEvent.payload,
+      actorType: domainEvent.actorType,
       occurredAt: domainEvent.occurredAt,
     })
     .from(domainEvent)

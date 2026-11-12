@@ -6,7 +6,8 @@ import {
   sv,
   weekdayShort,
 } from "@bojen/core";
-import type { Database, VisitContext } from "@bojen/db";
+import { manageLinkExpiry, shortLinkUrl } from "@bojen/core/links";
+import { type Database, type VisitContext, createShortLink } from "@bojen/db";
 
 /** What every flow needs. The clock is injected, so tests run the flows at any time. */
 export interface FlowDeps {
@@ -14,14 +15,30 @@ export interface FlowDeps {
   now: () => Date;
   /** `SMS_OPT_OUT_KEY`, for the STOPP list. */
   optOutKey: string;
-  /** The customer's link for a visit; step 3.4 replaces it with signed short links. */
-  link: (visit: VisitContext, purpose: "manage" | "report") => string;
+  /** The customer's link for a visit, as written in the sms. */
+  link: (visit: VisitContext, purpose: "manage" | "report") => string | Promise<string>;
 }
 
 /**
- * The temporary link until step 3.4: the firm's booking page, where the customer can book
- * again. Not the spec's `bojen.se/x/…`, which needs the short links of step 3.4.
+ * The links in the flows (step 3.4): `manage` is a new short link, `bojen.se/x/{code}`, valid
+ * until the visit starts. The report has no page of its own yet, so `report` is still the
+ * firm's booking page.
  */
+export function customerLinks(db: Database, linkKey: string, base: string) {
+  const page = bookingPageLink(base);
+  return async (visit: VisitContext, purpose: "manage" | "report") => {
+    if (purpose !== "manage") return page(visit);
+    const code = await createShortLink(db, linkKey, {
+      tenantId: visit.tenantId,
+      visitId: visit.visitId,
+      purpose,
+      expiresAt: manageLinkExpiry(visit.start),
+    });
+    return shortLinkUrl(base, code);
+  };
+}
+
+/** The firm's booking page, where the customer can book again. */
 export function bookingPageLink(base: string) {
   const host = base.replace(/^https?:\/\//, "").replace(/\/+$/, "");
   return (visit: VisitContext) => `${host}/boka/${visit.firm.slug ?? ""}`;

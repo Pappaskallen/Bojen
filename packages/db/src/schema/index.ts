@@ -31,3 +31,4 @@ export * from "./verification_code";
 export * from "./attachment";
 export * from "./tenant_settings";
 export * from "./sms_opt_out";
+export * from "./short_link";

@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import { FAKE_ELKS_PASSWORD, FAKE_ELKS_URL, FAKE_ELKS_USER } from "./e2e/fake-elks";
+import { E2E_LOCAL_KMS_MASTER_KEY, E2E_SHORT_LINK_KEY } from "./e2e/keys";
 
 const PORT = 3100;
 
@@ -46,6 +47,10 @@ export default defineConfig({
       ELKS_API_URL: FAKE_ELKS_URL,
       // The local hook secret from supabase/.env and CI: not a secret, only for local Supabase.
       SUPABASE_AUTH_SMS_HOOK_SECRET: "v1,whsec_Ym9qZW4tbG9jYWwtc21zLWhvb2stbm90LWEtc2VjcmV0",
+      // The customer's short links and the access form (step 3.4).
+      SHORT_LINK_KEY: E2E_SHORT_LINK_KEY,
+      KMS_KEY_ID: "",
+      LOCAL_KMS_MASTER_KEY: E2E_LOCAL_KMS_MASTER_KEY,
     },
   },
 });

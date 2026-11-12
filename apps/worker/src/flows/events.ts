@@ -41,6 +41,12 @@ export async function handleDomainEvent(deps: FlowDeps, eventId: string): Promis
       if (!visitId) return "ignored";
       const visit = await visitContext(deps.db, tenantId, visitId);
       if (!visit || !SCHEDULED.has(visit.status)) return "ignored";
+      // The customer moved it through the link, which used the link up: a new F1 with a new
+      // link (step 3.4). F1 also moves F5.
+      if (event.actorType === "customer" && visit.status === "booked") {
+        const sent = await sendConfirmation(deps, tenantId, visitId, { afterCustomerChange: true });
+        if (sent === "sent") return "confirmation";
+      }
       return (await scheduleEta(deps, visit)) ? "eta_moved" : "ignored";
     }
     case "visit.complete":

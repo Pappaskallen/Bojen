@@ -8,7 +8,7 @@ import {
 import type { EmailSender, SmsSender } from "@bojen/core";
 import { connect, databaseUrl } from "@bojen/db";
 import { run } from "graphile-worker";
-import { bookingPageLink } from "./flows/deps";
+import { customerLinks } from "./flows/deps";
 import { taskList } from "./tasks";
 
 /**
@@ -59,6 +59,14 @@ function optOutKey(): string {
   return "development-only-opt-out-key-not-secret";
 }
 
+/** `SHORT_LINK_KEY`: the short links' codes are stored hashed with it; web uses the same. */
+function linkKey(): string {
+  const key = process.env.SHORT_LINK_KEY;
+  if (key && key.length >= 32) return key;
+  if (production) throw new Error("SHORT_LINK_KEY must be at least 32 characters");
+  return "development-only-short-link-key-not-secret";
+}
+
 async function main() {
   const url = databaseUrl();
   const { db } = connect(url);
@@ -73,7 +81,7 @@ async function main() {
       email: emailSender(),
       now: () => systemClock.now(),
       optOutKey: optOutKey(),
-      link: bookingPageLink(process.env.APP_URL ?? "bojen.se"),
+      link: customerLinks(db, linkKey(), process.env.APP_URL ?? "bojen.se"),
     }),
   });
   console.info(`[worker] ${systemClock.now().toISOString()} started`);

@@ -65,7 +65,10 @@ export type BookingErrorCode =
   | "invalid_transition"
   | "too_late"
   | "idempotency_mismatch"
-  | "invalid_input";
+  | "invalid_input"
+  /** The customer's short link has expired or was used up (step 3.4). */
+  | "link_expired"
+  | "link_used";
 
 export class BookingError extends Error {
   constructor(

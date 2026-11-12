@@ -11,8 +11,10 @@ import {
   domainEvent,
   engine,
   location,
+  managePage,
   message,
   receiveSms,
+  rescheduleByLink,
   serviceType,
   survey,
   task,
@@ -22,8 +24,9 @@ import {
 } from "@bojen/db";
 import { runMigrations } from "@bojen/db/migrate";
 import { and, eq, sql } from "drizzle-orm";
-import type { JobHelpers } from "graphile-worker";
+import type { JobHelpers, TaskList } from "graphile-worker";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { customerLinks } from "./flows/deps";
 import { taskList } from "./tasks";
 
 /**
@@ -121,6 +124,147 @@ async function setup(db: Database) {
   };
 }
 
+/**
+ * Plays Graphile Worker's scheduler at the fake time: runs the jobs this test's transaction
+ * created whose `run_at` has come, in order, until none are left.
+ */
+async function jobRunner(db: Database, tasks: TaskList, clock: () => Date) {
+  const [{ since }] = [...(await db.execute<{ since: Date }>(sql`select now() as since`))] as [
+    { since: Date },
+  ];
+  const helpers = { logger: { info: () => undefined } } as unknown as JobHelpers;
+
+  async function runDue(): Promise<string[]> {
+    const ran: string[] = [];
+    for (let round = 0; round < 20; round++) {
+      const due = [
+        ...(await db.execute<Job>(sql`
+          select j.id, t.identifier, j.payload, j.run_at
+          from graphile_worker._private_jobs j
+          join graphile_worker._private_tasks t on t.id = j.task_id
+          where j.created_at = ${since} and j.run_at <= ${clock().toISOString()}::timestamptz
+          order by j.run_at, j.id`)),
+      ];
+      if (due.length === 0) return ran;
+      for (const job of due) {
+        await db.execute(sql`delete from graphile_worker._private_jobs where id = ${job.id}`);
+        const run = tasks[job.identifier];
+        if (!run) throw new Error(`No task ${job.identifier}`);
+        await run(job.payload, helpers);
+        ran.push(job.identifier);
+      }
+    }
+    throw new Error("The jobs never settled");
+  }
+  const pending = async (identifier: string) =>
+    [
+      ...(await db.execute<Job>(sql`
+        select j.id, t.identifier, j.payload, j.run_at
+        from graphile_worker._private_jobs j
+        join graphile_worker._private_tasks t on t.id = j.task_id
+        where j.created_at = ${since} and t.identifier = ${identifier}`)),
+    ].map((j) => new Date(j.run_at));
+  return { runDue, pending };
+}
+
+async function inRollback(fn: (db: Database) => Promise<void>) {
+  try {
+    await connection.db.transaction(async (raw) => {
+      await fn(raw as unknown as Database);
+      throw new Rollback();
+    });
+  } catch (error) {
+    if (!(error instanceof Rollback)) throw error;
+  }
+}
+
+describe("short links in F1 (step 3.4)", () => {
+  it("F1 carries a short link; a reschedule through it sends a new F1 with a new link", async () => {
+    await inRollback(async (db) => {
+      let clock = at("2026-11-16T14:00:00");
+      const sms = createFakeSms();
+      const linkKey = "flow-test-short-link-key-0123456789abcdef";
+      const deps = {
+        db,
+        sms,
+        email: createFakeEmail(),
+        now: () => clock,
+        optOutKey: "flow-test-opt-out-key",
+        link: customerLinks(db, linkKey, "https://bojen.se"),
+      };
+      const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
+      const f = await setup(db);
+      const booked = await createBooking(
+        { db, now: () => clock },
+        {
+          tenantId: f.tenantId,
+          actor: { type: "staff", id: f.mechanicId },
+          idempotencyKey: "link-book",
+        },
+        {
+          customerId: f.customerId,
+          boatId: f.boatId,
+          serviceTypeId: f.serviceTypeId,
+          mechanicId: f.mechanicId,
+          start: at("2026-11-19T08:00:00"),
+          channel: "phone",
+          needsApproval: false,
+          partsMissing: false,
+        },
+      );
+      await runDue();
+      const codeIn = (body: string | undefined) =>
+        /bojen\.se\/x\/([A-Za-z0-9]{8}) /.exec(body ?? "")?.[1];
+      const first = codeIn(sms.lastTo(PHONE));
+      expect(first).toBeDefined();
+      // The sms with an 8-character code still fits the template's segments.
+      expect(sms.lastTo(PHONE)).toContain(`Ändra/avboka: bojen.se/x/${first!} /Flödesfirman`);
+      const email = deps.email.sent[0]?.text ?? "";
+      // One link per confirmation, in both the sms and the e-mail.
+      expect(email).toContain(`Boka om eller avboka här: bojen.se/x/${first!}.`);
+
+      // An hour later the customer moves it to Friday 08:00 through the link.
+      clock = at("2026-11-16T15:00:00");
+      await rescheduleByLink({ db, now: () => clock, linkKey }, first!, {
+        start: at("2026-11-20T08:00:00"),
+        mechanicId: f.mechanicId,
+      });
+      expect(await runDue()).toEqual(["domain_event", "send_message", "send_message"]);
+      const second = codeIn(sms.lastTo(PHONE));
+      expect(second).toBeDefined();
+      expect(second).not.toBe(first);
+      expect(sms.lastTo(PHONE)).toContain("fre 20/11 kl 08-12");
+      expect(await pending("visit_eta")).toEqual([at("2026-11-20T07:00:00")]);
+      expect(await managePage({ db, now: () => clock, linkKey }, first!)).toMatchObject({
+        state: "used",
+      });
+      expect(await managePage({ db, now: () => clock, linkKey }, second!)).toMatchObject({
+        state: "valid",
+      });
+
+      // Running the same event again (a retried job) sends nothing more.
+      const [event] = await db
+        .select({ id: domainEvent.id })
+        .from(domainEvent)
+        .where(
+          and(
+            eq(domainEvent.aggregateId, booked.visit.id),
+            eq(domainEvent.type, "visit.reschedule"),
+          ),
+        );
+      await taskList(deps).domain_event!({ eventId: event!.id }, {
+        logger: { info: () => undefined },
+      } as unknown as JobHelpers);
+      expect(await runDue()).toEqual([]);
+      const confirmations = await db
+        .select()
+        .from(message)
+        .where(and(eq(message.visitId, booked.visit.id), eq(message.template, "f1_confirmation")));
+      expect(confirmations.map((m) => m.channel).sort()).toEqual(["email", "email", "sms", "sms"]);
+    });
+  }, 60_000);
+});
+
 describe("flows F1, F5, F7 and F9", () => {
   it("a booking is confirmed at once, F5 goes at 07:00, F9 18 h after done", async () => {
     try {
@@ -137,43 +281,7 @@ describe("flows F1, F5, F7 and F9", () => {
           optOutKey: "flow-test-opt-out-key",
           link: () => "bojen.se/x/Kp3d9",
         };
-        const tasks = taskList(deps);
-        const [{ since }] = [
-          ...(await db.execute<{ since: Date }>(sql`select now() as since`)),
-        ] as [{ since: Date }];
-        const helpers = { logger: { info: () => undefined } } as unknown as JobHelpers;
-
-        /** Runs the due jobs of this test at the fake time, as Graphile would. */
-        async function runDue(): Promise<string[]> {
-          const ran: string[] = [];
-          for (let round = 0; round < 20; round++) {
-            const due = [
-              ...(await db.execute<Job>(sql`
-                select j.id, t.identifier, j.payload, j.run_at
-                from graphile_worker._private_jobs j
-                join graphile_worker._private_tasks t on t.id = j.task_id
-                where j.created_at = ${since} and j.run_at <= ${clock.toISOString()}::timestamptz
-                order by j.run_at, j.id`)),
-            ];
-            if (due.length === 0) return ran;
-            for (const job of due) {
-              await db.execute(sql`delete from graphile_worker._private_jobs where id = ${job.id}`);
-              const run = tasks[job.identifier];
-              if (!run) throw new Error(`No task ${job.identifier}`);
-              await run(job.payload, helpers);
-              ran.push(job.identifier);
-            }
-          }
-          throw new Error("The jobs never settled");
-        }
-        const pending = async (identifier: string) =>
-          [
-            ...(await db.execute<Job>(sql`
-              select j.id, t.identifier, j.payload, j.run_at
-              from graphile_worker._private_jobs j
-              join graphile_worker._private_tasks t on t.id = j.task_id
-              where j.created_at = ${since} and t.identifier = ${identifier}`)),
-          ].map((j) => new Date(j.run_at));
+        const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
         const sentWith = async (template: string) =>
           db
             .select()
