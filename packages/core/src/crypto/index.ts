@@ -26,3 +26,10 @@ export {
   type StoredCode,
 } from "./otp";
 export { SESSION_TTL_SECONDS, signSession, verifySession, type BookingSession } from "./session";
+export {
+  RECOVERY_CODE_COUNT,
+  hashRecoveryCode,
+  newRecoveryCodes,
+  normalizeRecoveryCode,
+  recoveryCodeMatches,
+} from "./recovery";

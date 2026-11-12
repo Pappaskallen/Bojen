@@ -35,6 +35,19 @@ export interface StaffClaims {
   tenantId: string | null;
   appUserId: string | null;
   role: "owner" | "admin" | "mechanic" | null;
+  /** `aal2` after a second factor in this session (step 2.8). */
+  aal: "aal1" | "aal2";
+  /** Verified second factors (authenticator apps) of the user. */
+  factorIds: string[];
+}
+
+/** A new authenticator-app factor, before the first code confirms it. */
+export interface TotpEnrollment {
+  factorId: string;
+  /** The QR code as SVG markup. */
+  qrSvg: string;
+  /** The same secret as text, for apps that cannot scan. */
+  secret: string;
 }
 
 /** Staff sign-in with a one-time code by e-mail (step 2.7). Supabase Auth in production. */
@@ -48,4 +61,12 @@ export interface StaffAuth {
   /** The claims of a valid, unrevoked token, or null. */
   claims(accessToken: string): Promise<StaffClaims | null>;
   signOut(accessToken: string): Promise<void>;
+  /** Starts adding an authenticator app for the signed-in user (step 2.8). */
+  enrollTotp(accessToken: string): Promise<TotpEnrollment>;
+  /** Checks a code from the app; a new session at `aal2`, or null when the code is wrong. */
+  verifyTotp(accessToken: string, factorId: string, code: string): Promise<AuthSession | null>;
+  /** Removes every second factor of a user, with the service key. */
+  removeFactors(authUserId: string): Promise<void>;
+  /** Whether the user has a verified second factor, with the service key. */
+  hasFactor(authUserId: string): Promise<boolean>;
 }

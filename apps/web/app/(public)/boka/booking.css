@@ -184,3 +184,26 @@ button:disabled {
 .summary dd {
   margin: 0;
 }
+
+.staff-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.staff-table th,
+.staff-table td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.recovery-codes {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 8px 24px;
+  padding: 0;
+  list-style: none;
+  font-size: 1.1rem;
+}

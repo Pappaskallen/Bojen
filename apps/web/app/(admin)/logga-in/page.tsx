@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { sv } from "@bojen/core/i18n/sv";
+import { safeNext } from "../_next";
 import { SignInForm } from "./sign-in-form";
 
 export const metadata: Metadata = {
@@ -8,13 +9,6 @@ export const metadata: Metadata = {
 };
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
-
-/** Only paths on this site are followed after sign-in. */
-function safeNext(value: unknown): string {
-  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
-    ? value
-    : "/forfragningar";
-}
 
 export default async function SignInPage({ searchParams }: Props) {
   const next = safeNext((await searchParams).nasta);

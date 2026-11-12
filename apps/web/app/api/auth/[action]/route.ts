@@ -3,6 +3,10 @@ import { staffAuthRoutes } from "../../../../lib/server";
 const ACTIONS = {
   code: staffAuthRoutes.code,
   verify: staffAuthRoutes.verify,
+  "mfa-enroll": staffAuthRoutes.mfaEnroll,
+  "mfa-verify": staffAuthRoutes.mfaVerify,
+  "mfa-challenge": staffAuthRoutes.mfaChallenge,
+  recover: staffAuthRoutes.recover,
   logout: staffAuthRoutes.logout,
 } as const;
 

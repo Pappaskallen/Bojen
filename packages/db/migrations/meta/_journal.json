@@ -92,6 +92,13 @@
       "when": 1794461363915,
       "tag": "0012_access_token_hook",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794468208879,
+      "tag": "0013_mfa_recovery_codes",
+      "breakpoints": true
     }
   ]
 }

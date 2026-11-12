@@ -19,6 +19,17 @@ interface TokenResponse {
 
 const ROLES = ["owner", "admin", "mechanic"] as const;
 
+interface Factor {
+  id: string;
+  factor_type?: string;
+  status?: string;
+}
+
+const verified = (factors: Factor[] | undefined) =>
+  (factors ?? [])
+    .filter((f) => f.factor_type === "totp" && f.status === "verified")
+    .map((f) => f.id);
+
 function decodeClaims(token: string): Record<string, unknown> | null {
   const payload = token.split(".")[1];
   if (!payload) return null;
@@ -123,7 +134,7 @@ export function createSupabaseAuth(options: SupabaseAuthOptions): StaffAuth {
         headers: { ...anon, Authorization: `Bearer ${accessToken}` },
       });
       if (!response.ok) return null;
-      const user = (await response.json()) as { id?: string };
+      const user = (await response.json()) as { id?: string; factors?: Factor[] };
       const claims = decodeClaims(accessToken);
       if (!user.id || !claims || claims.sub !== user.id) return null;
       const role = ROLES.find((r) => r === claims.app_role) ?? null;
@@ -132,6 +143,8 @@ export function createSupabaseAuth(options: SupabaseAuthOptions): StaffAuth {
         tenantId: typeof claims.tenant_id === "string" ? claims.tenant_id : null,
         appUserId: typeof claims.app_user_id === "string" ? claims.app_user_id : null,
         role,
+        aal: claims.aal === "aal2" ? "aal2" : "aal1",
+        factorIds: verified(user.factors),
       };
     },
 
@@ -140,6 +153,73 @@ export function createSupabaseAuth(options: SupabaseAuthOptions): StaffAuth {
         method: "POST",
         headers: { ...anon, Authorization: `Bearer ${accessToken}` },
       });
+    },
+
+    async enrollTotp(accessToken) {
+      const user = { ...anon, ...json, Authorization: `Bearer ${accessToken}` };
+      // A factor that was started but never confirmed would block a new one; remove it first.
+      const me = await send(`${base}/user`, { headers: user });
+      if (me.ok) {
+        const { factors } = (await me.json()) as { factors?: Factor[] };
+        for (const f of factors ?? []) {
+          if (f.factor_type === "totp" && f.status !== "verified") {
+            await send(`${base}/factors/${f.id}`, { method: "DELETE", headers: user });
+          }
+        }
+      }
+      const response = await send(`${base}/factors`, {
+        method: "POST",
+        headers: user,
+        body: JSON.stringify({
+          factor_type: "totp",
+          friendly_name: `Bojen ${now().toISOString()}`,
+        }),
+      });
+      if (!response.ok)
+        throw new Error(`Supabase Auth could not add the factor: ${String(response.status)}`);
+      const body = (await response.json()) as {
+        id: string;
+        totp: { qr_code: string; secret: string };
+      };
+      return { factorId: body.id, qrSvg: body.totp.qr_code, secret: body.totp.secret };
+    },
+
+    async verifyTotp(accessToken, factorId, code) {
+      const user = { ...anon, ...json, Authorization: `Bearer ${accessToken}` };
+      const path = `${base}/factors/${encodeURIComponent(factorId)}`;
+      const challenge = await send(`${path}/challenge`, { method: "POST", headers: user });
+      if (!challenge.ok) return null;
+      const { id } = (await challenge.json()) as { id: string };
+      const response = await send(`${path}/verify`, {
+        method: "POST",
+        headers: user,
+        body: JSON.stringify({ challenge_id: id, code: code.trim() }),
+      });
+      if (!response.ok) return null;
+      return session((await response.json()) as TokenResponse);
+    },
+
+    async removeFactors(authUserId) {
+      const userPath = `${base}/admin/users/${encodeURIComponent(authUserId)}`;
+      const response = await send(userPath, { headers: admin });
+      if (!response.ok) throw new Error(`Supabase Auth answered ${String(response.status)}`);
+      const { factors } = (await response.json()) as { factors?: Factor[] };
+      for (const f of factors ?? []) {
+        const removed = await send(`${userPath}/factors/${f.id}`, {
+          method: "DELETE",
+          headers: admin,
+        });
+        if (!removed.ok)
+          throw new Error(`Supabase Auth could not remove a factor: ${String(removed.status)}`);
+      }
+    },
+
+    async hasFactor(authUserId) {
+      const response = await send(`${base}/admin/users/${encodeURIComponent(authUserId)}`, {
+        headers: admin,
+      });
+      if (!response.ok) return false;
+      return verified(((await response.json()) as { factors?: Factor[] }).factors).length > 0;
     },
   };
 }
