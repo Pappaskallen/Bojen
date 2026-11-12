@@ -28,10 +28,15 @@ export default defineConfig({
     timeout: 300_000,
     reuseExistingServer: !process.env.CI,
     env: {
-      // No real services: fake sms, maps, address search and storage.
+      // Fake sms, maps and address search. Auth and Storage are the local Supabase; these
+      // are the fixed demo keys that every `supabase start` prints, not secrets.
       OSRM_URL: "",
       PHOTON_URL: "",
-      SUPABASE_SERVICE_ROLE_KEY: "",
+      NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY:
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0",
+      SUPABASE_SERVICE_ROLE_KEY:
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU",
       BOJEN_FAKE_SERVICES: "1",
       BOOKING_SESSION_SECRET: "e2e-only-secret-that-is-long-enough-1234",
     },

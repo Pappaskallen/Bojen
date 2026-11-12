@@ -8,3 +8,5 @@ export { createPhotonGeocoder, type PhotonOptions } from "./geocoding/photon";
 export { createFakeGeocoder } from "./geocoding/fake";
 export { createSupabaseStorage, type SupabaseStorageOptions } from "./storage/supabase";
 export { createFakeStorage, type FakeStorage } from "./storage/fake";
+export { createSupabaseAuth, type SupabaseAuthOptions } from "./auth/supabase";
+export { createFakeAuth, type FakeAuth } from "./auth/fake";

@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX "app_user_email_key" ON "app_user" USING btree (lower("email")) WHERE "app_user"."email" is not null and "app_user"."deleted_at" is null;--> statement-breakpoint
+CREATE POLICY "auth_admin_reads_staff" ON "app_user" AS PERMISSIVE FOR SELECT TO "supabase_auth_admin" USING (true);

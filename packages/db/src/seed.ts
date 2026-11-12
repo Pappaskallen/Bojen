@@ -295,8 +295,20 @@ export async function seedDemoData(db: Writer, seed = 2026) {
   const [jonas, elin] = await db
     .insert(appUser)
     .values([
-      { tenantId, name: "Jonas Ek", role: "owner", mobile: fictionalMobile(90) },
-      { tenantId, name: "Elin Berg", role: "mechanic", mobile: fictionalMobile(91) },
+      {
+        tenantId,
+        name: "Jonas Ek",
+        role: "owner",
+        mobile: fictionalMobile(90),
+        email: "jonas@jonas-batservice.test",
+      },
+      {
+        tenantId,
+        name: "Elin Berg",
+        role: "mechanic",
+        mobile: fictionalMobile(91),
+        email: "elin@jonas-batservice.test",
+      },
     ])
     .returning();
   if (!jonas || !elin) throw new Error("mechanics not created");
@@ -610,7 +622,9 @@ export async function seedOtherTenant(db: Writer) {
   await db
     .insert(tenant)
     .values({ id: tenantId, name: "Skärgårdsmekarna", slug: "skargardsmekarna" });
-  await db.insert(appUser).values({ tenantId, name: "Kim Holm", role: "owner" });
+  await db
+    .insert(appUser)
+    .values({ tenantId, name: "Kim Holm", role: "owner", email: "kim@skargardsmekarna.test" });
   const c = await insertOne(
     db
       .insert(customer)

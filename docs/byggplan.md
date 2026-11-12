@@ -25,7 +25,8 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 2.4 – API och tillståndsmaskin för bokning (1,5 dagar)
 - [x] Steg 2.5 – Bokningssida och widget (3 dagar)
 - [x] Steg 2.6 – Manuellt godkännande (0,5 dag)
-- [ ] Steg 2.7 – Inloggning för personal (1 dag)
+- [x] Steg 2.7 – Inloggning för personal (1 dag)
+- [ ] Steg 2.8 – Tvåfaktorsautentisering och spärr av sessioner (1 dag)
 - [ ] Steg 3.1 – Notifieringstjänst och mallmotor (2 dagar)
 - [ ] Steg 3.2 – Inkommande sms och tolkning av svar (2 dagar)
 - [ ] Steg 3.3 – Flöden för bekräftelse, ankomsttid och rapport (1,5 dagar)
@@ -217,6 +218,18 @@ ett alternativ i stället för att byta tyst.
   - Ett test visar att en inloggad mekaniker ser sin firmas förfrågningar och kan godkänna dem, och att en mekaniker i en annan firma inte ser dem.
   - Utan inloggning svarar personalens rutter 401.
 
+#### Steg 2.8 – Tvåfaktorsautentisering och spärr av sessioner (1 dag)
+*Tillagt 2026-11-12: krav i spec del 2, 10.4 och 10.7, som inget steg byggde.*
+- **Mål:** Ägare och administratörer loggar in med två faktorer, och en session går att spärra.
+- **Berör:** `apps/web/app/(admin)/logga-in/*`, `apps/web/app/(admin)/sakerhet/*`, `apps/web/lib/staff-auth.ts`, `packages/adapters/auth/*`, migreringen för JWT-kroken.
+- **Gör:**
+  - Tvåfaktorsautentisering med TOTP (app för engångskoder) via Supabase Auth MFA. Ägare och administratörer måste lägga till en andra faktor första gången de loggar in, och deras sessioner godtas bara på nivån `aal2` (spec 10.7). Mekaniker kan välja att lägga till den.
+  - Reservkoder om telefonen med appen försvinner, och ett sätt för ägaren att återställa en administratörs andra faktor.
+  - Ägaren kan spärra en annan persons alla sessioner från administrationen, till exempel när en telefon har tappats bort (spec 10.4). Spärren loggas i `audit_log`.
+- **Klart när:**
+  - Ett test visar att en ägare utan andra faktor inte kommer åt `/forfragningar` eller personalens rutter, men gör det efter TOTP.
+  - Ett test visar att en spärrad mekaniker loggas ut direkt och att spärren finns i `audit_log`.
+
 ### Fas 3: Sms och e-post
 
 #### Steg 3.1 – Notifieringstjänst och mallmotor (2 dagar)
@@ -228,8 +241,10 @@ ett alternativ i stället för att byta tyst.
   - Tysta timmar 21:00–08:00 respekteras.
   - Listan över avregistrerade (STOPP) kontrolleras.
   - Allt loggas i `message`, och leveransstatus tas emot via webhook.
+  - Personalens inloggning får sms-kod som alternativ till e-post (spec 10.7): Supabase Auths krok för sms kopplas till 46elks-adaptern. Inloggningskoderna via e-post går genom Mailgun (SMTP i Supabase-projektet).
 - **Klart när:**
   - Enhetstester visar att varje mall renderas med testdata och håller sin segmentgräns.
+  - Ett test visar att en mekaniker kan logga in med kod via sms (fejk-46elks i testet).
   - Ett sms till ett avregistrerat nummer stoppas.
   - Ett sms kl. 22:30 köas till kl. 08:00.
 
@@ -306,8 +321,13 @@ ett alternativ i stället för att byta tyst.
   - Starta och Klart, gångtimmar, delar, bilder och röstanteckning (transkriberas av Azure när täckning finns).
   - Utkast till rapport från Claude Sonnet 5.5, som mekanikern godkänner.
   - Fakturaunderlag.
+  - Inloggning med passkey (WebAuthn), som alternativ till engångskod (spec 10.7).
+  - Appen låses och låses upp biometriskt med Face ID eller fingeravtryck via WebAuthn med användarverifiering (spec 10.7).
+  - Grindkod och nyckelplats visas bara efter biometrisk upplåsning och döljs igen efter 60 sekunder (spec 10.4). Offline sparas de krypterat på telefonen från kvällen innan och raderas när jobbet är klart eller efter 24 timmar. En PWA kommer inte åt iOS Keychain eller Android Keystore; skillnaden mot specifikationen beskrivs och stäms av innan steget börjar.
 - **Klart när:**
   - Ett Playwright-test i offline-läge går igenom: mekanikern markerar ett jobb klart med bild och anteckning, och när nätet kommer tillbaka synkas allt och rapportutkastet skapas.
+  - Ett test visar att koden inte visas utan upplåsning, att den döljs efter 60 sekunder och att den raderas från telefonen när jobbet är klart.
+  - Ett test med en virtuell autentiserare i Playwright visar att en mekaniker kan registrera en passkey och logga in med den.
   - Lighthouse godkänner PWA:n.
 
 #### Steg 5.6 – Vårkampanj, enkel version (2 dagar)
@@ -390,7 +410,8 @@ ett alternativ i stället för att byta tyst.
 - [ ] Säkerhet: isoleringstesterna går igenom, testsviten för samtal ger 0 regelbrott, beroendeskanningen hittar inget kritiskt och de kritiska delarna av ASVS-checklistan är avbockade.
 - [ ] Juridik: personuppgiftsbiträdesavtal, villkor, integritetspolicy, mall för konsekvensbedömning och publik lista över underbiträden.
 - [ ] Onboarding: importmall för Excel, guide för nummerportering hos 46elks och utbildningsvideo på 10 minuter för pilotfirmorna.
+- [ ] Drift inom EU (spec 10): egna servrar för OSRM och Photon (OpenStreetMap) i stället för de publika, så att adresser och platser inte lämnar vår drift. Supabase-projektet i produktion har JWT-kroken, den svenska mejlmallen, avstängda registreringar och SMTP via Mailgun inställda.
 
-**Summa:** cirka 70 utvecklardagar, alltså cirka 16 veckor med två utvecklare inklusive marginal. Det stämmer med tidsplanen i 12.1.
+**Summa:** cirka 70 utvecklardagar (före tilläggen 2026-11-11 och 2026-11-12: steg 2.7 och 2.8 och utökade steg 3.1 och 5.5, cirka 4 dagar till), alltså cirka 16 veckor med två utvecklare inklusive marginal. Det stämmer med tidsplanen i 12.1.
 
 ---

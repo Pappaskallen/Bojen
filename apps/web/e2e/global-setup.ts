@@ -17,6 +17,7 @@ import { DEMO_TENANT_ID, seedDemoData, seedOtherTenant, truncateAll } from "@boj
 import { and, eq } from "drizzle-orm";
 
 export const NEIGHBOUR_PHONE = "+46701740685";
+export const REQUEST_PHONE = "+46701740687";
 
 /**
  * Empties the local database, loads the demo data and books a neighbour boat at Bullandö
@@ -77,35 +78,57 @@ export default async function globalSetup(): Promise<void> {
       haulOutDate: addDays(today, -30),
     });
 
-    // The first free weekday morning from a week ahead.
-    for (let offset = 7; offset < 30; offset++) {
-      const day = addDays(today, offset);
-      if (isoWeekday(day) > 5) continue;
-      try {
-        await createBooking(
-          { db, now: () => new Date() },
-          {
-            tenantId,
-            actor: { type: "staff", id: jonas.id },
-            idempotencyKey: `e2e-neighbour-${day}`,
-          },
-          {
-            customerId: neighbour.id,
-            boatId: neighbourBoat.id,
-            serviceTypeId: layUp.id,
-            mechanicId: jonas.id,
-            start: stockholmInstant(day, "08:00"),
-            channel: "phone",
-            needsApproval: false,
-            partsMissing: false,
-          },
-        );
-        return;
-      } catch (error) {
-        if (!(error instanceof BookingError && error.code === "conflict")) throw error;
+    const jonasId = jonas.id;
+    const layUpId = layUp.id;
+
+    /** Books the first free weekday at `time`, from `fromOffset` days ahead. */
+    async function bookFirstFree(
+      customerId: string,
+      boatId: string | null,
+      time: string,
+      fromOffset: number,
+      needsApproval: boolean,
+    ) {
+      for (let offset = fromOffset; offset < fromOffset + 30; offset++) {
+        const day = addDays(today, offset);
+        if (isoWeekday(day) > 5) continue;
+        try {
+          await createBooking(
+            { db, now: () => new Date() },
+            {
+              tenantId,
+              actor: { type: "staff", id: jonasId },
+              idempotencyKey: `e2e-${customerId}-${day}`,
+            },
+            {
+              customerId,
+              boatId,
+              serviceTypeId: layUpId,
+              mechanicId: jonasId,
+              start: stockholmInstant(day, time),
+              channel: "phone",
+              needsApproval,
+              partsMissing: false,
+            },
+          );
+          return;
+        } catch (error) {
+          if (!(error instanceof BookingError && error.code === "conflict")) throw error;
+        }
       }
+      throw new Error("Found no free time for an end-to-end booking");
     }
-    throw new Error("Found no free morning for the neighbour booking");
+
+    // The neighbour's booked morning a week ahead gives the page a marina day.
+    await bookFirstFree(neighbour.id, neighbourBoat.id, "08:00", 7, false);
+
+    // A request waiting for approval, for the staff sign-in test (step 2.7).
+    const [asking] = await db
+      .insert(customer)
+      .values({ tenantId, name: "Förfrågan Kund", phone: REQUEST_PHONE })
+      .returning();
+    if (!asking) throw new Error("The asking customer was not created");
+    await bookFirstFree(asking.id, null, "13:00", 10, true);
   } finally {
     await close();
   }

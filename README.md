@@ -33,7 +33,8 @@ Kör `corepack enable` en gång, sedan:
 | `pnpm lint` / `pnpm typecheck` / `pnpm test` | Kontrollerna som CI kör (plus `pnpm format:check`) |
 | `pnpm format` | Formaterar koden med Prettier |
 | `pnpm db:start` / `pnpm db:stop` / `pnpm db:status` | Lokal Supabase utan tjänster som inte behövs (Storage ingår från steg 2.5) |
-| `pnpm e2e` | Playwright mot bokningssidan, widgeten och Lighthouse. Bygger webbappen och **tömmer den lokala databasen** och fyller den med testdata |
+| `pnpm e2e` | Playwright mot bokningssidan, widgeten, inloggningen för personal och Lighthouse. Kräver `pnpm db:start` (Auth, Storage och Mailpit). Bygger webbappen och **tömmer den lokala databasen** och fyller den med testdata |
+| Mailpit, http://127.0.0.1:54324 | Här hamnar inloggningskoderna för personalen lokalt. Testpersonalen är `jonas@jonas-batservice.test`, `elin@jonas-batservice.test` och `kim@skargardsmekarna.test` |
 | `pnpm db:generate` / `pnpm db:migrate` | Skapar en migrering från schemat / kör migreringarna |
 | `pnpm db:seed` | Tömmer den lokala databasen och lägger in testdata (Jonas Båtservice). Vägrar köra mot annat än localhost |
 | `pnpm --filter @bojen/web dev` | Next.js på http://localhost:3000 |

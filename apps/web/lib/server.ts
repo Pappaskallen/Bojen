@@ -6,12 +6,20 @@ import {
   createFakeStorage,
   createOsrmMaps,
   createPhotonGeocoder,
+  createSupabaseAuth,
   createSupabaseStorage,
 } from "@bojen/adapters";
-import type { Geocoder, MapsProvider, ObjectStorage, SmsSender } from "@bojen/core";
+import type { Geocoder, MapsProvider, ObjectStorage, SmsSender, StaffAuth } from "@bojen/core";
+import { cookies } from "next/headers";
 import { connect, type DbConnection } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createPublicRoutes } from "./public-booking";
+import {
+  ACCESS_COOKIE,
+  createStaffAuthRoutes,
+  staffFromRequest,
+  staffFromToken,
+} from "./staff-auth";
 
 /**
  * Fakes (sms, storage, session secret) are only allowed outside production, or when
@@ -27,25 +35,40 @@ export function db() {
   return connection.db;
 }
 
-/**
- * The signed-in staff member, or null. Staff sign-in with Supabase Auth is step 2.7; until
- * then nobody is signed in, so the staff routes answer 401 and the staff pages ask for
- * sign-in. This is the one place step 2.7 connects.
- */
-export function currentStaff(): Promise<RequestContext | null> {
-  return Promise.resolve(null);
+function once<T>(make: () => T): () => T {
+  let value: T | undefined;
+  return () => (value ??= make());
+}
+
+/** Supabase Auth for staff sign-in (step 2.7). There is no fake outside tests. */
+export const staffAuth = once<StaffAuth>(() => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !anonKey || !serviceRoleKey) {
+    throw new Error("Supabase Auth is not configured (NEXT_PUBLIC_SUPABASE_URL and keys)");
+  }
+  return createSupabaseAuth({ url, anonKey, serviceRoleKey });
+});
+
+/** The signed-in staff member on a page, from the session cookie, or null. */
+export async function currentStaff(): Promise<RequestContext | null> {
+  const token = (await cookies()).get(ACCESS_COOKIE)?.value ?? null;
+  return token ? staffFromToken(staffAuth(), token) : null;
 }
 
 export const bookingRoutes = createBookingRoutes({
   db,
   now: () => new Date(),
-  authorize: () => currentStaff(),
+  authorize: (request) => staffFromRequest(staffAuth(), request),
 });
 
-function once<T>(make: () => T): () => T {
-  let value: T | undefined;
-  return () => (value ??= make());
-}
+export const staffAuthRoutes = createStaffAuthRoutes({
+  db,
+  auth: staffAuth,
+  now: () => new Date(),
+  secure: process.env.NODE_ENV === "production" && !process.env.BOJEN_FAKE_SERVICES,
+});
 
 /**
  * Real sms comes with 46elks in step 3.1. Until then codes are only written to the server

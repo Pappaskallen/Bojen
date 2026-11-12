@@ -7,3 +7,4 @@ export * from "./travel";
 export * from "./booking";
 export * from "./public-booking";
 export * from "./approval";
+export * from "./staff";

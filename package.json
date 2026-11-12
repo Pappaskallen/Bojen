@@ -12,7 +12,7 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,supavisor,mailpit,postgres-meta",
+    "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,supavisor,postgres-meta",
     "db:stop": "supabase stop",
     "db:status": "supabase status",
     "db:migrate": "pnpm --filter @bojen/db migrate",
