@@ -1,10 +1,11 @@
-import type { SmsSender } from "@bojen/core";
+import type { EmailSender, SmsSender } from "@bojen/core";
 import { deliverQueuedMessage, type Database } from "@bojen/db";
 import type { Task } from "graphile-worker";
 
 export interface SendMessageDeps {
   db: Database;
   sms: SmsSender;
+  email: EmailSender;
   now: () => Date;
   optOutKey: string;
 }
@@ -16,7 +17,7 @@ function messageIdOf(payload: unknown): string {
 }
 
 /**
- * Graphile Worker task `send_message` (byggplan step 3.1): sends one queued sms. STOPP is
+ * Graphile Worker task `send_message` (byggplan steps 3.1 and 3.3): sends one queued sms or e-mail. STOPP is
  * checked again here, since the customer may have replied after the sms was queued.
  * A failed send throws, and Graphile retries it (at most 5 times, with growing pauses).
  */

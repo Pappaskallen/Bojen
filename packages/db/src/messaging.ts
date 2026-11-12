@@ -8,13 +8,17 @@
  * - `deliverQueuedMessage` is the worker's half: STOPP is checked again just before sending.
  * - `recordDelivery` takes 46elks' delivery reports.
  */
-import type { SmsSender } from "@bojen/core";
+import type { EmailSender, SmsSender } from "@bojen/core";
 import {
   SMS_TEMPLATES,
   ignoresOptOut,
   optOutHash,
   planSms,
+  quietUntilFor,
+  renderEmail,
   renderSms,
+  type EmailTemplateKey,
+  type EmailVars,
   type SmsTemplateKey,
   type SmsVars,
 } from "@bojen/core/messaging";
@@ -87,13 +91,28 @@ export type QueueResult =
  * (or from the running task) moves the one job instead of adding a second.
  */
 async function addSendJob(db: Pick<Database, "execute">, messageId: string, at: Date) {
+  await scheduleJob(db, SEND_MESSAGE_TASK, { messageId }, at, `message:${messageId}`, 5);
+}
+
+/**
+ * Queues a Graphile Worker task at `at`. With a key, queueing again moves the one job (for
+ * example a rescheduled visit's 07:00 sms) instead of adding a second.
+ */
+export async function scheduleJob(
+  db: Pick<Database, "execute">,
+  taskName: string,
+  payload: Record<string, string>,
+  at: Date,
+  key?: string,
+  maxAttempts = 10,
+): Promise<void> {
   await db.execute(sql`
     select graphile_worker.add_job(
-      ${SEND_MESSAGE_TASK},
-      json_build_object('messageId', ${messageId}::text),
+      ${taskName},
+      ${JSON.stringify(payload)}::json,
       run_at => ${at.toISOString()}::timestamptz,
-      max_attempts => 5,
-      job_key => ${`message:${messageId}`}
+      max_attempts => ${maxAttempts}::int,
+      job_key => ${key ?? null}::text
     )`);
 }
 
@@ -121,6 +140,7 @@ export async function queueSms<K extends QueuedKey>(
       to: target.to,
       optedOut,
       now,
+      quietUntil: quietUntilFor(key),
       ...(options.wanted ? { wanted: options.wanted } : {}),
     });
     const [row] = await tx
@@ -146,6 +166,44 @@ export async function queueSms<K extends QueuedKey>(
       return { status: "blocked", messageId: row.id, reason: plan.reason };
     await addSendJob(tx, row.id, plan.at);
     return { status: "queued", messageId: row.id, sendAfter: plan.at };
+  });
+}
+
+/**
+ * Logs an e-mail and queues it for the worker. E-mail has no quiet hours and no STOPP list;
+ * the flow decides whether to send one at all.
+ */
+export async function queueEmail<K extends EmailTemplateKey>(
+  deps: Pick<MessagingDeps, "db" | "now">,
+  target: Omit<SmsTarget, "to"> & { to: string },
+  key: K,
+  vars: EmailVars<K>,
+): Promise<{ messageId: string }> {
+  const rendered = renderEmail(key, vars);
+  const now = deps.now();
+  return deps.db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(message)
+      .values({
+        tenantId: target.tenantId,
+        channel: "email",
+        direction: "outbound",
+        template: key,
+        customerId: target.customerId,
+        boatId: target.boatId,
+        visitId: target.visitId,
+        toAddress: target.to,
+        subject: rendered.subject,
+        body: rendered.text,
+        bodyHtml: rendered.html,
+        status: "queued",
+        sendAfter: now,
+        createdAt: now,
+      })
+      .returning({ id: message.id });
+    if (!row) throw new Error("message insert returned nothing");
+    await addSendJob(tx, row.id, now);
+    return { messageId: row.id };
   });
 }
 
@@ -215,7 +273,7 @@ export type DeliverResult = "sent" | "blocked" | "not_queued" | "too_early";
  * early, it puts the job back for the message's time.
  */
 export async function deliverQueuedMessage(
-  deps: MessagingDeps & { sms: SmsSender },
+  deps: MessagingDeps & { sms: SmsSender; email?: EmailSender },
   messageId: string,
 ): Promise<DeliverResult> {
   return deps.db.transaction(async (tx) => {
@@ -224,12 +282,27 @@ export async function deliverQueuedMessage(
       .from(message)
       .where(and(eq(message.id, messageId), eq(message.status, "queued")))
       .for("update", { skipLocked: true });
-    if (!row || row.channel !== "sms" || !row.toAddress || row.body === null) return "not_queued";
+    if (!row || !row.toAddress || row.body === null) return "not_queued";
     const now = deps.now();
     if (row.sendAfter && row.sendAfter > now) {
       await addSendJob(tx, row.id, row.sendAfter);
       return "too_early";
     }
+    if (row.channel === "email") {
+      if (!deps.email) throw new Error("No e-mail sender configured");
+      const sent = await deps.email.send({
+        to: row.toAddress,
+        subject: row.subject ?? "",
+        text: row.body,
+        html: row.bodyHtml ?? "",
+      });
+      await tx
+        .update(message)
+        .set({ status: "sent", externalId: sent.id, sentAt: now, error: null })
+        .where(eq(message.id, row.id));
+      return "sent";
+    }
+    if (row.channel !== "sms") return "not_queued";
     const template = row.template as SmsTemplateKey | null;
     const always = template !== null && ignoresOptOut(SMS_TEMPLATES[template].category);
     if (!always && (await isOptedOut(tx, deps.optOutKey, row.tenantId, row.toAddress))) {

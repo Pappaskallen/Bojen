@@ -29,7 +29,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 2.8 – Tvåfaktorsautentisering och spärr av sessioner (1 dag)
 - [x] Steg 3.1 – Notifieringstjänst och mallmotor (2 dagar)
 - [x] Steg 3.2 – Inkommande sms och tolkning av svar (2 dagar)
-- [ ] Steg 3.3 – Flöden för bekräftelse, ankomsttid och rapport (1,5 dagar)
+- [x] Steg 3.3 – Flöden för bekräftelse, ankomsttid och rapport (1,5 dagar)
 - [ ] Steg 3.4 – Korta länkar och kundsida (1 dag)
 - [ ] Steg 4.1 – Schemaläggning av kontrollen (1 dag)
 - [ ] Steg 4.2 – Tillståndsmaskin för svaren (1,5 dagar)

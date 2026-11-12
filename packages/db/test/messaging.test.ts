@@ -49,7 +49,27 @@ async function jobFor(tx: Tx, messageId: string) {
   return [...rows];
 }
 
+const ON_WAY = {
+  mechanicFirstName: "Jonas",
+  placeShort: "Bullandö",
+  eta: "10:15",
+  firm: "Jonas Båtservice",
+};
+
 describe("queueSms", () => {
+  it("F5 at 06:30 waits only until 07:00, its own time in the spec", async () => {
+    await withRollback(async (tx) => {
+      const { tenantId, customerId } = await firm(tx);
+      const result = await queueSms(
+        { db: tx, now: () => at("2026-11-12T06:30:00"), optOutKey: KEY },
+        { tenantId, to: PHONE, customerId },
+        "f5_eta",
+        ETA,
+      );
+      expect(result).toMatchObject({ status: "queued", sendAfter: at("2026-11-12T07:00:00") });
+    });
+  });
+
   it("an sms at 22:30 is logged and queued until 08:00 the next morning", async () => {
     await withRollback(async (tx) => {
       const { tenantId, customerId } = await firm(tx);
@@ -57,20 +77,22 @@ describe("queueSms", () => {
       const result = await queueSms(
         { db: tx, now: () => now, optOutKey: KEY },
         { tenantId, to: PHONE, customerId },
-        "f5_eta",
-        ETA,
+        "f6_on_way",
+        ON_WAY,
       );
       expect(result).toMatchObject({ status: "queued", sendAfter: at("2026-11-13T08:00:00") });
       const [row] = await tx.select().from(message).where(eq(message.id, result.messageId));
       expect(row).toMatchObject({
         channel: "sms",
         direction: "outbound",
-        template: "f5_eta",
+        template: "f6_on_way",
         status: "queued",
         toAddress: PHONE,
         sendAfter: at("2026-11-13T08:00:00"),
       });
-      expect(row?.body).toContain("ca kl 09:00-11:00");
+      expect(row?.body).toBe(
+        "Jonas är på väg till Bullandö, framme ca kl 10:15. /Jonas Båtservice",
+      );
       const jobs = await jobFor(tx, result.messageId);
       expect(jobs).toHaveLength(1);
       expect(jobs[0]?.task_identifier).toBe("send_message");

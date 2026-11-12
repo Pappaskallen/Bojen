@@ -1,7 +1,14 @@
-import { createFakeSms, elksFromEnv, systemClock } from "@bojen/adapters";
-import type { SmsSender } from "@bojen/core";
+import {
+  createFakeEmail,
+  createFakeSms,
+  createMailgunEmail,
+  elksFromEnv,
+  systemClock,
+} from "@bojen/adapters";
+import type { EmailSender, SmsSender } from "@bojen/core";
 import { connect, databaseUrl } from "@bojen/db";
 import { run } from "graphile-worker";
+import { bookingPageLink } from "./flows/deps";
 import { taskList } from "./tasks";
 
 /**
@@ -19,6 +26,27 @@ function smsSender(): SmsSender {
     async send(message) {
       const sent = await fake.send(message);
       console.info(`[dev-sms] to ${message.to}: ${message.body}`);
+      return sent;
+    },
+  };
+}
+
+function emailSender(): EmailSender {
+  const apiKey = process.env.MAILGUN_API_KEY;
+  const domain = process.env.MAILGUN_DOMAIN;
+  if (apiKey && domain) {
+    return createMailgunEmail({
+      apiKey,
+      domain,
+      from: process.env.MAILGUN_FROM ?? `Bojen <noreply@${domain}>`,
+    });
+  }
+  if (production) throw new Error("Mailgun is not configured (MAILGUN_API_KEY and MAILGUN_DOMAIN)");
+  const fake = createFakeEmail();
+  return {
+    async send(message) {
+      const sent = await fake.send(message);
+      console.info(`[dev-email] to ${message.to}: ${message.subject}`);
       return sent;
     },
   };
@@ -42,8 +70,10 @@ async function main() {
     taskList: taskList({
       db,
       sms: smsSender(),
+      email: emailSender(),
       now: () => systemClock.now(),
       optOutKey: optOutKey(),
+      link: bookingPageLink(process.env.APP_URL ?? "bojen.se"),
     }),
   });
   console.info(`[worker] ${systemClock.now().toISOString()} started`);

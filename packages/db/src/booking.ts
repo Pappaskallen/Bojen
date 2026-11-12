@@ -323,6 +323,8 @@ async function recordEvent(
   visitId: string,
   type: string,
   payload: Record<string, unknown>,
+  /** The injected clock where the caller has one, so the flows time from it (step 3.3). */
+  occurredAt?: Date,
 ) {
   await tx.insert(domainEvent).values({
     tenantId: ctx.tenantId,
@@ -332,6 +334,7 @@ async function recordEvent(
     payload,
     actorType: ctx.actor.type,
     actorId: ctx.actor.id,
+    ...(occurredAt ? { occurredAt } : {}),
   });
 }
 
@@ -510,19 +513,26 @@ export async function changeBooking(
       .where(and(eq(visit.tenantId, ctx.tenantId), eq(visit.id, visitId)));
 
     const after = view({ ...before, mechanicId, status, start, end });
-    await recordEvent(tx, ctx, visitId, `visit.${input.event}`, {
-      from: before.status,
-      to: status,
-      ...(input.event === "reschedule"
-        ? {
-            previousStart: before.start.toISOString(),
-            start: after.start,
-            end: after.end,
-            mechanicId,
-          }
-        : {}),
-      day: stockholmDate(start),
-    });
+    await recordEvent(
+      tx,
+      ctx,
+      visitId,
+      `visit.${input.event}`,
+      {
+        from: before.status,
+        to: status,
+        ...(input.event === "reschedule"
+          ? {
+              previousStart: before.start.toISOString(),
+              start: after.start,
+              end: after.end,
+              mechanicId,
+            }
+          : {}),
+        day: stockholmDate(start),
+      },
+      deps.now(),
+    );
     return after;
   });
 }

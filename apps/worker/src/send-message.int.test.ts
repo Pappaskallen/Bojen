@@ -1,4 +1,4 @@
-import { createFakeSms } from "@bojen/adapters";
+import { createFakeEmail, createFakeSms } from "@bojen/adapters";
 import { connect, customer, databaseUrl, message, queueSms, tenant } from "@bojen/db";
 import { runMigrations } from "@bojen/db/migrate";
 import { eq } from "drizzle-orm";
@@ -48,7 +48,14 @@ describe("send_message", () => {
     const sms = createFakeSms();
     await runOnce({
       connectionString: url,
-      taskList: taskList({ db, sms, now: () => new Date(), optOutKey: KEY }),
+      taskList: taskList({
+        db,
+        sms,
+        email: createFakeEmail(),
+        now: () => new Date(),
+        optOutKey: KEY,
+        link: () => "bojen.se/boka/test",
+      }),
     });
     expect(sms.lastTo(PHONE)).toBe(
       "Jonas är på väg till Bullandö, framme ca kl 10:15. /Arbetarfirman",

@@ -20,7 +20,7 @@ import {
 import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import type { Database } from "./client";
 import { optOutNumber, queueSms, type MessagingDeps } from "./messaging";
-import { customer, message, task, tenant, visit } from "./schema";
+import { customer, domainEvent, message, task, tenant, visit } from "./schema";
 
 export interface InboundDeps extends MessagingDeps {
   classifier: ReplyClassifier;
@@ -181,6 +181,24 @@ export async function receiveSms(deps: InboundDeps, sms: InboundSms): Promise<Re
       })
       .returning({ id: message.id });
     if (!row) throw new Error("message insert returned nothing");
+
+    // The flows react to the reply (F9 now, the 24-hour check in phase 4).
+    await tx.insert(domainEvent).values({
+      tenantId: firm.id,
+      aggregateType: "message",
+      aggregateId: row.id,
+      type: "message.received",
+      payload: {
+        intent: interpretation.intent,
+        confident: !needsPerson(interpretation),
+        ...(interpretation.rating ? { rating: interpretation.rating } : {}),
+        ...(question?.template ? { questionTemplate: question.template } : {}),
+        ...(question?.visitId ? { visitId: question.visitId } : {}),
+      },
+      actorType: "customer",
+      actorId: question?.customerId ?? known?.id ?? null,
+      occurredAt: now,
+    });
 
     let taskId: string | null = null;
     if (interpretation.intent !== "stop" && needsPerson(interpretation)) {

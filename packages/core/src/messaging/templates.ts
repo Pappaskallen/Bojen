@@ -56,6 +56,8 @@ export interface SmsTemplateInfo {
   category: MessageCategory;
   /** The spec's segment count for the text, which it must stay within with real data. */
   maxSegments: number;
+  /** When the quiet hours end for this sms, if not 08:00. F5 goes out at 07:00 (spec F5). */
+  quietUntil?: "07:00";
 }
 
 export const SMS_TEMPLATES = {
@@ -75,7 +77,7 @@ export const SMS_TEMPLATES = {
   f3_reminder: { flow: "F3", category: "notice", maxSegments: 2 },
   f4_offer: { flow: "F4", category: "notice", maxSegments: 3 },
   f4_taken: { flow: "F4", category: "reply", maxSegments: 2 },
-  f5_eta: { flow: "F5", category: "notice", maxSegments: 2 },
+  f5_eta: { flow: "F5", category: "notice", maxSegments: 2, quietUntil: "07:00" },
   f6_on_way: { flow: "F6", category: "notice", maxSegments: 2 },
   f7_report: { flow: "F7", category: "notice", maxSegments: 2 },
   f8_payment_reminder: { flow: "F8", category: "notice", maxSegments: 2 },
@@ -96,6 +98,12 @@ export const SMS_TEMPLATES = {
   f14_moved: { flow: "F14", category: "notice", maxSegments: 3 },
   f15_type_plate: { flow: "F15", category: "reply", maxSegments: 3 },
 } as const satisfies Record<SmsTemplateKey, SmsTemplateInfo>;
+
+/** When the quiet hours end for a template: 08:00, or earlier where the spec says so. */
+export function quietUntilFor(key: SmsTemplateKey): string {
+  const info: SmsTemplateInfo = SMS_TEMPLATES[key];
+  return info.quietUntil ?? "08:00";
+}
 
 export const EMAIL_TEMPLATES = {
   f1_confirmation: { flow: "F1", category: "notice" },

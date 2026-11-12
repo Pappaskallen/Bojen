@@ -141,6 +141,18 @@ export const sv = {
     recoveryAccepted: "Koden godtogs. Lägg nu till appen igen på din nya telefon.",
     failed: "Något gick fel. Försök igen.",
   },
+  flows: {
+    weekdaysShort: ["mån", "tis", "ons", "tor", "fre", "lör", "sön"],
+    mode: { water: "i sjön", land: "på land", indoor: "inomhus" },
+    /** For a value the firm has not entered, so a template never has a gap. */
+    unknown: "–",
+    /** The access line in the e-mail: never the code, and not the key place either (F1). */
+    keyText: "Enligt dina uppgifter hos oss",
+    preparation: "Se till att båten är tillgänglig och att nyckeln finns där du har angett.",
+    priceUnknown: "Enligt prislista",
+    /** The task when the customer answers 1–3 to the satisfaction question (F9). */
+    lowCsat: (who: string, score: number) => `Ring ${who}: betyg ${String(score)} av 5`,
+  },
   inbox: {
     /** The task a person gets when a reply by sms cannot be read with certainty (step 3.2). */
     unclearReply: (who: string) => `Oklart sms-svar från ${who}`,
@@ -301,8 +313,6 @@ nu är {service} på din {boatMake} {boatModel} klar. Här är en sammanfattning
 {recommendations}
 
 **Bilder:** {galleryLink}
-
-**Faktura:** {amount} kr inkl. moms, förfaller {dueDate}. Betala med Swish eller kort: {paymentLink}
 
 **Nästa service:** {nextService}. Vi påminner dig i god tid.
 

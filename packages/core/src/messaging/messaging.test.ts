@@ -210,6 +210,13 @@ describe("quiet hours and STOPP", () => {
     expect(inQuietHours(at("2026-11-12T21:00:00"))).toBe(true);
   });
 
+  it("F5 may go out at 07:00; other notices wait for 08:00", () => {
+    const seven = at("2026-11-12T07:00:00");
+    expect(earliestSend(seven, "notice", "07:00")).toEqual(seven);
+    expect(earliestSend(seven, "notice")).toEqual(at("2026-11-12T08:00:00"));
+    expect(earliestSend(at("2026-11-12T06:30:00"), "notice", "07:00")).toEqual(seven);
+  });
+
   it("follows summer time", () => {
     const summer = new Date("2026-06-15T23:30:00+02:00");
     expect(earliestSend(summer, "notice")).toEqual(new Date("2026-06-16T08:00:00+02:00"));

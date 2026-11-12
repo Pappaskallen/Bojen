@@ -14,9 +14,9 @@ const hhmm = (instant: Date) =>
     hourCycle: "h23",
   }).format(instant);
 
-export function inQuietHours(instant: Date): boolean {
+export function inQuietHours(instant: Date, until: string = QUIET_UNTIL): boolean {
   const time = hhmm(instant);
-  return time >= QUIET_FROM || time < QUIET_UNTIL;
+  return time >= QUIET_FROM || time < until;
 }
 
 /** The first moment from `instant` on when a message of `category` may go out. */
@@ -25,12 +25,16 @@ export function ignoresOptOut(category: MessageCategory): boolean {
   return category === "code" || category === "receipt";
 }
 
-export function earliestSend(instant: Date, category: MessageCategory): Date {
+export function earliestSend(
+  instant: Date,
+  category: MessageCategory,
+  until: string = QUIET_UNTIL,
+): Date {
   if (category !== "notice" && category !== "marketing") return instant;
-  if (!inQuietHours(instant)) return instant;
+  if (!inQuietHours(instant, until)) return instant;
   const day = stockholmDate(instant);
-  const morning = hhmm(instant) < QUIET_UNTIL ? day : addDays(day, 1);
-  return stockholmInstant(morning, QUIET_UNTIL);
+  const morning = hhmm(instant) < until ? day : addDays(day, 1);
+  return stockholmInstant(morning, until);
 }
 
 export type DeliveryPlan =
@@ -46,13 +50,15 @@ export function planSms(input: {
   optedOut: boolean;
   /** When the flow wants it sent; defaults to now. */
   wanted?: Date;
+  /** End of the quiet hours for this sms (`quietUntilFor`); 08:00 by default. */
+  quietUntil?: string;
   now: Date;
 }): DeliveryPlan {
   if (!input.to) return { action: "block", reason: "no_address" };
   if (input.optedOut && !ignoresOptOut(input.category))
     return { action: "block", reason: "opted_out" };
   const wanted = input.wanted && input.wanted > input.now ? input.wanted : input.now;
-  return { action: "send", at: earliestSend(wanted, input.category) };
+  return { action: "send", at: earliestSend(wanted, input.category, input.quietUntil) };
 }
 
 /**

@@ -38,6 +38,9 @@ export const message = pgTable(
     fromAddress: text("from_address"),
     toAddress: text("to_address"),
     body: text("body"),
+    /** E-mail only: the subject and the HTML part; `body` holds the plain text. */
+    subject: text("subject"),
+    bodyHtml: text("body_html"),
     status: messageStatus("status").notNull(),
     /** Interpreted intent of an inbound reply. */
     intent: messageIntent("intent"),
