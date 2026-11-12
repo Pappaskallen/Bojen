@@ -72,6 +72,9 @@ export { checkSlot, type SlotCheck, type SlotProblem } from "./scheduling/slot";
 export { isSwedishMobile, toE164 } from "./contact/phone";
 export type {
   AuthSession,
+  EmailSender,
+  OutgoingEmail,
+  OutgoingSms,
   GeocodeResult,
   Geocoder,
   ObjectStorage,

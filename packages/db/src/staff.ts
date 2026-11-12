@@ -26,6 +26,36 @@ export async function findStaffByEmail(db: Db, email: string): Promise<StaffMemb
   return row ?? null;
 }
 
+export interface StaffByMobile extends StaffMember {
+  email: string | null;
+}
+
+/** The staff member with this mobile number (E.164), or null (step 3.1). */
+export async function findStaffByMobile(db: Db, mobile: string): Promise<StaffByMobile | null> {
+  const [row] = await db
+    .select({
+      id: appUser.id,
+      tenantId: appUser.tenantId,
+      authUserId: appUser.authUserId,
+      email: appUser.email,
+    })
+    .from(appUser)
+    .where(and(eq(appUser.mobile, mobile), isNull(appUser.deletedAt)));
+  return row ?? null;
+}
+
+/** The firm of a signed-in auth user, for the sms hook; null if not staff. */
+export async function staffByAuthUser(
+  db: Db,
+  authUserId: string,
+): Promise<{ id: string; tenantId: string } | null> {
+  const [row] = await db
+    .select({ id: appUser.id, tenantId: appUser.tenantId })
+    .from(appUser)
+    .where(and(eq(appUser.authUserId, authUserId), isNull(appUser.deletedAt)));
+  return row ?? null;
+}
+
 /** Links the staff member to their auth user, once. */
 export async function linkAuthUser(db: Db, appUserId: string, authUserId: string): Promise<void> {
   await db

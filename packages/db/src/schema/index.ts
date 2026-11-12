@@ -30,3 +30,4 @@ export * from "./domain_event";
 export * from "./verification_code";
 export * from "./attachment";
 export * from "./tenant_settings";
+export * from "./sms_opt_out";

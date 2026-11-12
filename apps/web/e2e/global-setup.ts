@@ -14,24 +14,30 @@ import {
 } from "@bojen/db";
 import { runMigrations } from "@bojen/db/migrate";
 import { DEMO_TENANT_ID, seedDemoData, seedOtherTenant, truncateAll } from "@bojen/db/seed";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+import { startFakeElks } from "./fake-elks";
 
 export const NEIGHBOUR_PHONE = "+46701740685";
 export const REQUEST_PHONE = "+46701740687";
 
 /**
- * Empties the local database, loads the demo data and books a neighbour boat at Bullandö
+ * Starts the fake 46elks, empties the local database, loads the demo data and books a neighbour boat at Bullandö
  * about a week ahead, so the page has a marina day to offer.
  */
-export default async function globalSetup(): Promise<void> {
+export default async function globalSetup(): Promise<() => Promise<void>> {
   const url = databaseUrl();
   if (!["127.0.0.1", "localhost"].includes(new URL(url).hostname)) {
     throw new Error("The end-to-end tests empty the database and only run against localhost");
   }
   await runMigrations(url);
+  // The fake 46elks the web app sends its sms to (step 3.1); closed when the run ends.
+  const elks = await startFakeElks();
   const { db, close } = connect(url);
   try {
     await db.transaction(async (tx) => {
+      // The test staff's sign-in accounts from earlier runs, with their authenticator apps
+      // and sessions (cascade), so every run starts as a first sign-in. Only .test addresses.
+      await tx.execute(sql`delete from auth.users where email like '%.test'`);
       await truncateAll(tx);
       await seedDemoData(tx);
       await seedOtherTenant(tx);
@@ -132,4 +138,5 @@ export default async function globalSetup(): Promise<void> {
   } finally {
     await close();
   }
+  return () => new Promise((resolve) => elks.close(() => resolve()));
 }

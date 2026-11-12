@@ -27,7 +27,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 2.6 – Manuellt godkännande (0,5 dag)
 - [x] Steg 2.7 – Inloggning för personal (1 dag)
 - [x] Steg 2.8 – Tvåfaktorsautentisering och spärr av sessioner (1 dag)
-- [ ] Steg 3.1 – Notifieringstjänst och mallmotor (2 dagar)
+- [x] Steg 3.1 – Notifieringstjänst och mallmotor (2 dagar)
 - [ ] Steg 3.2 – Inkommande sms och tolkning av svar (2 dagar)
 - [ ] Steg 3.3 – Flöden för bekräftelse, ankomsttid och rapport (1,5 dagar)
 - [ ] Steg 3.4 – Korta länkar och kundsida (1 dag)
@@ -410,7 +410,7 @@ ett alternativ i stället för att byta tyst.
 - [ ] Säkerhet: isoleringstesterna går igenom, testsviten för samtal ger 0 regelbrott, beroendeskanningen hittar inget kritiskt och de kritiska delarna av ASVS-checklistan är avbockade.
 - [ ] Juridik: personuppgiftsbiträdesavtal, villkor, integritetspolicy, mall för konsekvensbedömning och publik lista över underbiträden.
 - [ ] Onboarding: importmall för Excel, guide för nummerportering hos 46elks och utbildningsvideo på 10 minuter för pilotfirmorna.
-- [ ] Drift inom EU (spec 10): egna servrar för OSRM och Photon (OpenStreetMap) i stället för de publika, så att adresser och platser inte lämnar vår drift. Supabase-projektet i produktion har JWT-kroken, den svenska mejlmallen, avstängda registreringar och SMTP via Mailgun inställda.
+- [ ] Drift inom EU (spec 10): egna servrar för OSRM och Photon (OpenStreetMap) i stället för de publika, så att adresser och platser inte lämnar vår drift. Supabase-projektet i produktion har JWT-kroken, den svenska mejlmallen, avstängda registreringar, SMTP via Mailgun, sms-kroken (`send_sms` till `/api/webhooks/supabase/send-sms` med egen hemlighet) och sms-kodens giltighet på 10 minuter inställda. 46elks har leveransrapporter till `/api/webhooks/elks/delivery` med egen token, och `SMS_OPT_OUT_KEY` är satt och säkerhetskopierad (byts den går STOPP-listan förlorad).
 
 **Summa:** cirka 70 utvecklardagar (före tilläggen 2026-11-11 och 2026-11-12: steg 2.7 och 2.8 och utökade steg 3.1 och 5.5, cirka 4 dagar till), alltså cirka 16 veckor med två utvecklare inklusive marginal. Det stämmer med tidsplanen i 12.1.
 

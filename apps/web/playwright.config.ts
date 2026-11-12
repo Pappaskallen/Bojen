@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { FAKE_ELKS_PASSWORD, FAKE_ELKS_URL, FAKE_ELKS_USER } from "./e2e/fake-elks";
 
 const PORT = 3100;
 
@@ -28,7 +29,7 @@ export default defineConfig({
     timeout: 300_000,
     reuseExistingServer: !process.env.CI,
     env: {
-      // Fake sms, maps and address search. Auth and Storage are the local Supabase; these
+      // Fake maps and address search. Auth and Storage are the local Supabase; these
       // are the fixed demo keys that every `supabase start` prints, not secrets.
       OSRM_URL: "",
       PHOTON_URL: "",
@@ -39,6 +40,12 @@ export default defineConfig({
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU",
       BOJEN_FAKE_SERVICES: "1",
       BOOKING_SESSION_SECRET: "e2e-only-secret-that-is-long-enough-1234",
+      // Sms through the real 46elks adapter to the fake 46elks in e2e/fake-elks.ts.
+      ELKS_API_USERNAME: FAKE_ELKS_USER,
+      ELKS_API_PASSWORD: FAKE_ELKS_PASSWORD,
+      ELKS_API_URL: FAKE_ELKS_URL,
+      // The local hook secret from supabase/.env and CI: not a secret, only for local Supabase.
+      SUPABASE_AUTH_SMS_HOOK_SECRET: "v1,whsec_Ym9qZW4tbG9jYWwtc21zLWhvb2stbm90LWEtc2VjcmV0",
     },
   },
 });

@@ -96,6 +96,8 @@ export const messageStatus = pgEnum("message_status", [
   "delivered",
   "failed",
   "received",
+  /** Never sent: the number replied STOPP, or there was no address (step 3.1). */
+  "blocked",
 ]);
 
 export const messageIntent = pgEnum("message_intent", ["yes", "no", "change", "other"]);

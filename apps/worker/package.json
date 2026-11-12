@@ -12,9 +12,12 @@
   },
   "dependencies": {
     "@bojen/adapters": "workspace:*",
-    "@bojen/core": "workspace:*"
+    "@bojen/core": "workspace:*",
+    "@bojen/db": "workspace:*",
+    "graphile-worker": "0.18.0"
   },
   "devDependencies": {
+    "drizzle-orm": "0.45.4",
     "tsx": "4.23.15"
   }
 }

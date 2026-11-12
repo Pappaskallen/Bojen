@@ -10,3 +10,13 @@ export { createSupabaseStorage, type SupabaseStorageOptions } from "./storage/su
 export { createFakeStorage, type FakeStorage } from "./storage/fake";
 export { createSupabaseAuth, type SupabaseAuthOptions } from "./auth/supabase";
 export { createFakeAuth, type FakeAuth } from "./auth/fake";
+export {
+  ElksError,
+  createElksSms,
+  parseElksDeliveryReport,
+  type ElksDeliveryReport,
+  type ElksOptions,
+} from "./elks/elks";
+export { MailgunError, createMailgunEmail, type MailgunOptions } from "./mailgun/mailgun";
+export { createFakeEmail, type FakeEmail } from "./mailgun/fake";
+export { elksFromEnv } from "./elks/env";

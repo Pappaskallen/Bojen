@@ -32,6 +32,8 @@ export const message = pgTable(
     /** The provider's id, used to match delivery reports. */
     externalId: text("external_id"),
     error: text("error"),
+    /** Not before this time: the quiet hours 21–08 move notices to 08:00 (step 3.1). */
+    sendAfter: timestamp("send_after", { withTimezone: true }),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     deliveredAt: timestamp("delivered_at", { withTimezone: true }),
   },

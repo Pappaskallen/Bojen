@@ -47,7 +47,7 @@ async function emailCode(page: Page, email: string, path = "/forfragningar") {
   await page.goto(path);
   await expect(page).toHaveURL(/\/logga-in\?nasta=/);
   const since = new Date(Date.now() - 2000);
-  await page.getByLabel("E-post").fill(email);
+  await page.getByLabel("E-postadress").fill(email);
   await page.getByRole("button", { name: "Skicka kod" }).click();
   await expect(page.getByText(/Om adressen finns hos oss/)).toBeVisible();
   await page.getByLabel("Kod från e-post").fill(await codeFromMail(page, email, since));
@@ -168,7 +168,7 @@ test("staff of another firm see none of its requests", async ({ page }) => {
 
 test("an unknown address gets the same answer and no mail", async ({ page }) => {
   await page.goto("/logga-in");
-  await page.getByLabel("E-post").fill("okand@exempel.test");
+  await page.getByLabel("E-postadress").fill("okand@exempel.test");
   await page.getByRole("button", { name: "Skicka kod" }).click();
   await expect(page.getByText(/Om adressen finns hos oss/)).toBeVisible();
   const list = (await (

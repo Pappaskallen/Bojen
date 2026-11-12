@@ -24,7 +24,6 @@ import {
   toE164,
   travelPairsFor,
   travelSeconds,
-  sv,
 } from "@bojen/core";
 import {
   CODES_PER_HOUR,
@@ -36,6 +35,7 @@ import {
 } from "@bojen/core/crypto";
 import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import { approvalNeeded } from "./approval";
+import { sendCodeSms } from "./messaging";
 import { BookingError, bookInTransaction, idempotent, type VisitView } from "./booking";
 import type { Database } from "./client";
 import {
@@ -200,7 +200,12 @@ export async function requestCode(deps: CodeDeps, firm: Firm, phoneInput: string
     createdAt: now,
     expiresAt: new Date(now.getTime() + CODE_TTL_MINUTES * 60_000),
   });
-  await deps.sms.send({ to: phone, body: sv.booking.boat.smsCode(code, firm.name) });
+  await sendCodeSms(
+    { db: deps.db, now: deps.now, sms: deps.sms },
+    { tenantId: firm.tenantId, to: phone, customerId: known.id },
+    "booking_code",
+    { code, firm: firm.name },
+  );
 }
 
 export type VerifyResult =

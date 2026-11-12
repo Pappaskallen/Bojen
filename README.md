@@ -33,7 +33,9 @@ Kör `corepack enable` en gång, sedan:
 | `pnpm lint` / `pnpm typecheck` / `pnpm test` | Kontrollerna som CI kör (plus `pnpm format:check`) |
 | `pnpm format` | Formaterar koden med Prettier |
 | `pnpm db:start` / `pnpm db:stop` / `pnpm db:status` | Lokal Supabase utan tjänster som inte behövs (Storage ingår från steg 2.5) |
-| `pnpm e2e` | Playwright mot bokningssidan, widgeten, inloggningen för personal och Lighthouse. Kräver `pnpm db:start` (Auth, Storage och Mailpit). Bygger webbappen och **tömmer den lokala databasen** och fyller den med testdata |
+| `supabase/.env` | Behövs före `pnpm db:start` (från steg 3.1): `SUPABASE_AUTH_SMS_HOOK_URI` och `SUPABASE_AUTH_SMS_HOOK_SECRET` för Supabase Auths sms-krok, se `.env.example`. Filen är git-ignorerad. Kroken når appen på port 3100 |
+| `pnpm --filter @bojen/worker dev` | Arbetaren (Graphile Worker) som skickar köade sms. Utan 46elks-nycklar skrivs sms i konsolen |
+| `pnpm e2e` | Playwright mot bokningssidan, widgeten, inloggningen för personal (e-post, sms och tvåfaktor) och Lighthouse. Sms går till en fejkserver för 46elks. Kräver `pnpm db:start` (Auth, Storage och Mailpit). Bygger webbappen och **tömmer den lokala databasen** och fyller den med testdata |
 | Mailpit, http://127.0.0.1:54324 | Här hamnar inloggningskoderna för personalen lokalt. Testpersonalen är `jonas@jonas-batservice.test`, `elin@jonas-batservice.test` och `kim@skargardsmekarna.test` |
 | `pnpm db:generate` / `pnpm db:migrate` | Skapar en migrering från schemat / kör migreringarna |
 | `pnpm db:seed` | Tömmer den lokala databasen och lägger in testdata (Jonas Båtservice). Vägrar köra mot annat än localhost |

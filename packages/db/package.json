@@ -19,6 +19,7 @@
   "dependencies": {
     "@bojen/core": "workspace:*",
     "drizzle-orm": "0.45.4",
+    "graphile-worker": "0.18.0",
     "postgres": "4.1.0"
   },
   "devDependencies": {

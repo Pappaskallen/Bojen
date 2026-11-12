@@ -8,6 +8,7 @@ import {
   createPhotonGeocoder,
   createSupabaseAuth,
   createSupabaseStorage,
+  elksFromEnv,
 } from "@bojen/adapters";
 import type { Geocoder, MapsProvider, ObjectStorage, SmsSender, StaffAuth } from "@bojen/core";
 import { cookies } from "next/headers";
@@ -16,6 +17,7 @@ import { connect, type DbConnection } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
+import { createWebhookRoutes } from "./webhooks";
 import {
   ACCESS_COOKIE,
   createStaffAuthRoutes,
@@ -95,13 +97,15 @@ export const staffAuthRoutes = createStaffAuthRoutes({
 });
 
 /**
- * Real sms comes with 46elks in step 3.1. Until then codes are only written to the server
- * console during development, and production refuses to send.
+ * Sms through 46elks (step 3.1) when it is configured. Otherwise, outside production, a fake
+ * that writes the sms to the server console; production then refuses to send.
  */
 const sms = once<SmsSender>(() => {
+  const elks = elksFromEnv();
+  if (elks) return elks;
   if (production) {
     return {
-      send: () => Promise.reject(new Error("No sms provider is configured (step 3.1)")),
+      send: () => Promise.reject(new Error("46elks is not configured (ELKS_API_USERNAME)")),
     };
   }
   const fake = createFakeSms();
@@ -148,4 +152,12 @@ export const publicRoutes = createPublicRoutes({
   storage,
   now: () => new Date(),
   sessionSecret,
+});
+
+export const webhookRoutes = createWebhookRoutes({
+  db,
+  sms,
+  now: () => new Date(),
+  smsHookSecret: () => process.env.SUPABASE_AUTH_SMS_HOOK_SECRET,
+  elksToken: () => process.env.ELKS_WEBHOOK_SECRET,
 });

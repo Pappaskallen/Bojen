@@ -1,8 +1,30 @@
 import type { GeoPoint } from "../scheduling/travel";
 
-/** Sends one sms. 46elks in production (phase 3), a fake in tests. */
+/** One outgoing sms. `from` is the firm's number or name; the adapter has a default. */
+export interface OutgoingSms {
+  to: string;
+  body: string;
+  from?: string;
+}
+
+/** Sends one sms. 46elks in production (step 3.1), a fake in tests. */
 export interface SmsSender {
-  send(message: { to: string; body: string }): Promise<{ id: string }>;
+  send(message: OutgoingSms): Promise<{ id: string }>;
+}
+
+export interface OutgoingEmail {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+  /** For example `Jonas Båtservice <jonas@bojen.se>`; the adapter has a default. */
+  from?: string;
+  replyTo?: string;
+}
+
+/** Sends one e-mail. Mailgun (EU) in production, a fake in tests. */
+export interface EmailSender {
+  send(message: OutgoingEmail): Promise<{ id: string }>;
 }
 
 export interface GeocodeResult {
@@ -57,6 +79,11 @@ export interface StaffAuth {
   sendCode(email: string): Promise<void>;
   /** A session, or null when the code is wrong or expired. */
   verifyCode(email: string, code: string): Promise<AuthSession | null>;
+  /** Gives the auth user this mobile number (E.164), with the service key (step 3.1). */
+  setPhone(authUserId: string, phone: string): Promise<void>;
+  /** A code by sms; Supabase Auth hands it to our sms hook, which sends it with 46elks. */
+  sendSmsCode(phone: string): Promise<void>;
+  verifySmsCode(phone: string, code: string): Promise<AuthSession | null>;
   refresh(refreshToken: string): Promise<AuthSession | null>;
   /** The claims of a valid, unrevoked token, or null. */
   claims(accessToken: string): Promise<StaffClaims | null>;
