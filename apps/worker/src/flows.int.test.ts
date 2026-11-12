@@ -164,7 +164,8 @@ async function jobRunner(db: Database, tasks: TaskList, clock: () => Date) {
         select j.id, t.identifier, j.payload, j.run_at
         from graphile_worker._private_jobs j
         join graphile_worker._private_tasks t on t.id = j.task_id
-        where j.created_at = ${since} and t.identifier = ${identifier}`)),
+        where j.created_at = ${since} and t.identifier = ${identifier}
+        order by j.run_at`)),
     ].map((j) => new Date(j.run_at));
   return { runDue, pending };
 }
@@ -339,7 +340,7 @@ describe("the availability check F3 (step 4.1)", () => {
 
       // The Monday visit is asked about on Friday at 12, as "På måndag".
       clock = at("2026-11-20T12:00:00");
-      expect((await runDue()).filter((t) => t !== "visit_eta")).toEqual([
+      expect((await runDue()).filter((t) => t === "visit_check" || t === "send_message")).toEqual([
         "visit_check",
         "send_message",
       ]);
@@ -403,6 +404,245 @@ describe("the availability check F3 (step 4.1)", () => {
       clock = at("2026-11-18T13:00:00");
       expect(await runDue()).toEqual(["visit_check", "send_message"]);
       expect(sms.lastTo(PHONE)).toContain("I morgon kl 12-16 kommer vi till Bustern.");
+    });
+  }, 60_000);
+});
+
+describe("answers to the availability check (step 4.2)", () => {
+  /** A visit Wednesday 10:00, booked Monday, whose check has just gone out Tuesday 10:00. */
+  async function checked(
+    fn: (c: {
+      db: Database;
+      f: Awaited<ReturnType<typeof setup>>;
+      visitId: string;
+      sms: ReturnType<typeof createFakeSms>;
+      runDue: () => Promise<string[]>;
+      pending: (identifier: string) => Promise<Date[]>;
+      setClock: (to: Date) => void;
+      reply: (body: string, classifier?: ReturnType<typeof createFakeClassifier>) => Promise<void>;
+      state: () => Promise<{ status: string; availability: string }>;
+      tasks: (
+        type: "call_back" | "change_request" | "unclear_reply",
+      ) => Promise<{ title: string; priority: string; status: string; note: string | null }[]>;
+    }) => Promise<void>,
+  ) {
+    await inRollback(async (db) => {
+      let clock = at("2026-11-16T14:00:00");
+      const sms = createFakeSms();
+      const deps = {
+        db,
+        sms,
+        email: createFakeEmail(),
+        now: () => clock,
+        optOutKey: "flow-test-opt-out-key",
+        link: customerLinks(db, "flow-test-short-link-key-0123456789abcdef", "https://bojen.se"),
+      };
+      const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
+      const f = await setup(db);
+      const booked = await createBooking(
+        { db, now: () => clock },
+        {
+          tenantId: f.tenantId,
+          actor: { type: "staff", id: f.mechanicId },
+          idempotencyKey: "answer-book",
+        },
+        {
+          customerId: f.customerId,
+          boatId: f.boatId,
+          serviceTypeId: f.serviceTypeId,
+          mechanicId: f.mechanicId,
+          start: at("2026-11-18T10:00:00"),
+          channel: "phone",
+          needsApproval: false,
+          partsMissing: false,
+        },
+      );
+      const visitId = booked.visit.id;
+      await runDue();
+      clock = at("2026-11-17T10:00:00");
+      expect(await runDue()).toEqual(["visit_check", "send_message"]);
+      expect(await pending("visit_check_reminder")).toEqual([at("2026-11-17T14:00:00")]);
+      expect(await pending("visit_check_escalation")).toEqual([at("2026-11-17T18:00:00")]);
+
+      let n = 0;
+      await fn({
+        db,
+        f,
+        visitId,
+        sms,
+        runDue,
+        pending,
+        setClock: (to) => {
+          clock = to;
+        },
+        reply: async (body, classifier = createFakeClassifier()) => {
+          await receiveSms(
+            { db, now: () => clock, optOutKey: deps.optOutKey, classifier },
+            { externalId: `elks-answer-${String(++n)}`, from: PHONE, to: FIRM_NUMBER, body },
+          );
+        },
+        state: async () => {
+          const [row] = await db
+            .select({ status: visit.status, availability: visit.availabilityStatus })
+            .from(visit)
+            .where(eq(visit.id, visitId));
+          return row!;
+        },
+        tasks: (type) =>
+          db
+            .select({
+              title: task.title,
+              priority: task.priority,
+              status: task.status,
+              note: task.note,
+            })
+            .from(task)
+            .where(and(eq(task.visitId, visitId), eq(task.type, type))),
+      });
+    });
+  }
+
+  it("JA confirms the visit, and the reminder and the task never come", async () => {
+    await checked(async (c) => {
+      c.setClock(at("2026-11-17T10:30:00"));
+      await c.reply("JA");
+      expect((await c.runDue()).sort()).toEqual(["domain_event", "domain_event", "send_message"]);
+      expect(await c.state()).toEqual({ status: "confirmed", availability: "confirmed" });
+      expect(c.sms.lastTo(PHONE)).toBe(
+        "Tack! Bokningen är bekräftad. Du får ungefärlig tid i morgon bitti.",
+      );
+
+      const sent = c.sms.sent.length;
+      c.setClock(at("2026-11-17T18:00:00"));
+      expect(await c.runDue()).toEqual(["visit_check_reminder", "visit_check_escalation"]);
+      expect(c.sms.sent.length).toBe(sent);
+      expect(await c.tasks("call_back")).toEqual([]);
+      expect(await c.state()).toEqual({ status: "confirmed", availability: "confirmed" });
+    });
+  }, 60_000);
+
+  it("NEJ cancels free of charge, sends the rebooking link and frees the time for F4", async () => {
+    await checked(async (c) => {
+      c.setClock(at("2026-11-17T10:30:00"));
+      await c.reply("Nej");
+      expect((await c.runDue()).sort()).toEqual(["domain_event", "domain_event", "send_message"]);
+      expect(await c.state()).toEqual({ status: "cancelled", availability: "declined" });
+      expect(c.sms.lastTo(PHONE)).toBe(
+        "Okej, vi avbokar. Välj en ny tid här: bojen.se/boka/flodesfirman - eller svara NY så ringer vi dig. /Flödesfirman",
+      );
+      // The cancellation's own event is what the waitlist flow F4 starts from (step 4.3).
+      const [cancelled] = await c.db
+        .select()
+        .from(domainEvent)
+        .where(and(eq(domainEvent.aggregateId, c.visitId), eq(domainEvent.type, "visit.cancel")));
+      expect(cancelled).toMatchObject({ actorType: "system" });
+      expect(cancelled?.payload).toMatchObject({ to: "cancelled", reason: "availability_check" });
+
+      const sent = c.sms.sent.length;
+      c.setClock(at("2026-11-17T18:00:00"));
+      await c.runDue();
+      expect(c.sms.sent.length).toBe(sent);
+      expect(await c.tasks("call_back")).toEqual([]);
+    });
+  }, 60_000);
+
+  it("ÄNDRA makes a task with high priority and leaves the visit booked", async () => {
+    await checked(async (c) => {
+      c.setClock(at("2026-11-17T10:30:00"));
+      await c.reply("ändra");
+      expect(await c.runDue()).toEqual(["domain_event", "send_message"]);
+      expect(await c.state()).toEqual({ status: "booked", availability: "change_requested" });
+      expect(await c.tasks("change_request")).toEqual([
+        {
+          title: "Per Persson vill ändra något inför besöket",
+          priority: "high",
+          status: "open",
+          note: null,
+        },
+      ]);
+      expect(c.sms.lastTo(PHONE)).toBe(
+        "Tack! Jonas hör av sig i dag. Skriv gärna här vad som ändrats.",
+      );
+    });
+  }, 60_000);
+
+  it("free text counts when it is read with certainty, and becomes a task when not", async () => {
+    await checked(async (c) => {
+      c.setClock(at("2026-11-17T10:30:00"));
+      // Not understood: a task for a person with the text, and the check keeps waiting.
+      await c.reply("Hur länge blir ni kvar?");
+      expect(await c.runDue()).toEqual(["domain_event"]);
+      expect(await c.state()).toEqual({ status: "booked", availability: "pending" });
+      expect(await c.tasks("unclear_reply")).toMatchObject([{ note: "Hur länge blir ni kvar?" }]);
+    });
+    await checked(async (c) => {
+      c.setClock(at("2026-11-17T10:30:00"));
+      const classifier = createFakeClassifier();
+      classifier.answer("Båten ligger där som vanligt", { intent: "yes", confidence: 0.97 });
+      await c.reply("Båten ligger där som vanligt", classifier);
+      await c.runDue();
+      expect(await c.state()).toEqual({ status: "confirmed", availability: "confirmed" });
+    });
+  }, 60_000);
+
+  it("a visit the firm cancels while the check waits gets no reminder and no task", async () => {
+    await checked(async (c) => {
+      c.setClock(at("2026-11-17T11:00:00"));
+      await changeBooking(
+        { db: c.db, now: () => at("2026-11-17T11:00:00") },
+        {
+          tenantId: c.f.tenantId,
+          actor: { type: "staff", id: c.f.mechanicId },
+          idempotencyKey: "answer-staff-cancel",
+        },
+        c.visitId,
+        { event: "cancel" },
+      );
+      await c.runDue();
+      const sent = c.sms.sent.length;
+      c.setClock(at("2026-11-17T18:00:00"));
+      expect(await c.runDue()).toEqual(["visit_check_reminder", "visit_check_escalation"]);
+      expect(c.sms.sent.length).toBe(sent);
+      expect(await c.tasks("call_back")).toEqual([]);
+      expect(await c.state()).toEqual({ status: "cancelled", availability: "pending" });
+    });
+  }, 60_000);
+
+  it("no answer gives a reminder after 4 h, then a task at 18, and never a cancellation", async () => {
+    await checked(async (c) => {
+      c.setClock(at("2026-11-17T13:59:00"));
+      expect(await c.runDue()).toEqual([]);
+      c.setClock(at("2026-11-17T14:00:00"));
+      expect(await c.runDue()).toEqual(["visit_check_reminder", "send_message"]);
+      expect(c.sms.lastTo(PHONE)).toBe(
+        "Påminnelse: vi kommer i morgon kl 08-12 till Bullandö. Är båten tillgänglig? Svara JA, NEJ eller ÄNDRA.",
+      );
+      expect(await c.state()).toEqual({ status: "booked", availability: "pending" });
+
+      c.setClock(at("2026-11-17T17:59:00"));
+      expect(await c.runDue()).toEqual([]);
+      const sent = c.sms.sent.length;
+      c.setClock(at("2026-11-17T18:00:00"));
+      expect(await c.runDue()).toEqual(["visit_check_escalation", "domain_event"]);
+      expect(await c.state()).toEqual({ status: "unconfirmed", availability: "no_reply" });
+      expect(await c.tasks("call_back")).toEqual([
+        {
+          title: "Ring Per Persson: inget svar på kontrollen",
+          priority: "high",
+          status: "open",
+          note: null,
+        },
+      ]);
+      expect(c.sms.sent.length).toBe(sent);
+
+      // An answer to the reminder later that evening still counts and closes the task.
+      c.setClock(at("2026-11-17T19:30:00"));
+      await c.reply("ja");
+      await c.runDue();
+      expect(await c.state()).toEqual({ status: "confirmed", availability: "confirmed" });
+      expect(await c.tasks("call_back")).toMatchObject([{ status: "done" }]);
+      // F5 still goes in the morning.
+      expect(await c.pending("visit_eta")).toEqual([at("2026-11-18T07:00:00")]);
     });
   }, 60_000);
 });
@@ -482,11 +722,23 @@ describe("flows F1, F5, F7 and F9", () => {
         clock = at("2026-11-17T08:00:00");
         expect(await runDue()).toEqual(["visit_check", "send_message"]);
         expect(sms.lastTo(PHONE)).toContain("I morgon kl 08-12 kommer vi till Bustern.");
+        clock = at("2026-11-17T08:30:00");
+        await receiveSms(
+          { db, now: () => clock, optOutKey: deps.optOutKey, classifier: createFakeClassifier() },
+          { externalId: "elks-flow-0", from: PHONE, to: FIRM_NUMBER, body: "Ja" },
+        );
+        // The answer, then the receipt and the confirmation's own event.
+        expect((await runDue()).sort()).toEqual(["domain_event", "domain_event", "send_message"]);
+        expect(sms.lastTo(PHONE)).toBe(
+          "Tack! Bokningen är bekräftad. Du får ungefärlig tid i morgon bitti.",
+        );
 
         // --- F5: put in for Wednesday 07:00, and nothing goes out before. ---
         expect(await pending("visit_eta")).toEqual([at("2026-11-18T07:00:00")]);
+        // The reminder and the task to call come due, and find the check answered.
         clock = at("2026-11-18T06:59:00");
-        expect(await runDue()).toEqual([]);
+        expect(await runDue()).toEqual(["visit_check_reminder", "visit_check_escalation"]);
+        expect(sms.lastTo(PHONE)).toContain("Bokningen är bekräftad");
         clock = at("2026-11-18T07:00:00");
         expect(await runDue()).toEqual(["visit_eta", "send_message"]);
         expect(sms.lastTo(PHONE)).toBe(
@@ -579,11 +831,13 @@ describe("flows F1, F5, F7 and F9", () => {
             "f1_confirmation",
             "f1_confirmation",
             "f3_check_land",
+            "f3_reply_yes",
             "f5_eta",
             "f7_report",
             "f7_report",
             "f9_reply_poor",
             "f9_survey",
+            null, // the customer's answer "Ja"
             null, // the customer's answer "2"
           ].sort(),
         );

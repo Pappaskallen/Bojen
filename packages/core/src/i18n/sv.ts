@@ -152,6 +152,12 @@ export const sv = {
     priceUnknown: "Enligt prislista",
     /** How the availability check (F3) names the day; `monday` goes out on the Friday. */
     checkDay: { tomorrow: "I morgon", monday: "På måndag" },
+    /** The same inside a sentence, for the reminder. */
+    checkDayInline: { tomorrow: "i morgon", monday: "på måndag" },
+    /** The task when the customer answers ÄNDRA to the availability check (F3). */
+    changeRequest: (who: string) => `${who} vill ändra något inför besöket`,
+    /** The task when nobody has answered the check and its reminder (F3). */
+    callUnconfirmed: (who: string) => `Ring ${who}: inget svar på kontrollen`,
     /** The task when the customer answers 1–3 to the satisfaction question (F9). */
     lowCsat: (who: string, score: number) => `Ring ${who}: betyg ${String(score)} av 5`,
   },
@@ -223,7 +229,7 @@ export const messages = {
       "Okej, vi avbokar. Välj en ny tid här: {link} – eller svara NY så ringer vi dig. /{firm}",
     f3_reply_change: "Tack! {mechanicFirstName} hör av sig i dag. Skriv gärna här vad som ändrats.",
     f3_reminder:
-      "Påminnelse: vi kommer i morgon kl {window} till {placeShort}. Är båten tillgänglig? Svara JA, NEJ eller ÄNDRA.",
+      "Påminnelse: vi kommer {day} kl {window} till {placeShort}. Är båten tillgänglig? Svara JA, NEJ eller ÄNDRA.",
     f4_offer:
       "Ledig tid! {weekday} {date} kl {window} på/nära {placeShort} – passar {serviceShort} för {boat}? Svara JA inom 1 tim så är den din. /{firm}",
     f4_taken: "Tiden blev tyvärr tagen. Du står kvar på väntelistan – vi hör av oss!",

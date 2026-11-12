@@ -14,9 +14,17 @@ describe("worker tasks", () => {
     link: () => "bojen.se/boka/test",
   });
 
-  it("has the tasks of steps 3.1, 3.3 and 4.1", () => {
+  it("has the tasks of steps 3.1, 3.3, 4.1 and 4.2", () => {
     expect(Object.keys(tasks).sort()).toEqual(
-      ["domain_event", "send_message", "visit_check", "visit_eta", "visit_survey"].sort(),
+      [
+        "domain_event",
+        "send_message",
+        "visit_check",
+        "visit_check_escalation",
+        "visit_check_reminder",
+        "visit_eta",
+        "visit_survey",
+      ].sort(),
     );
   });
 

@@ -32,7 +32,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 3.3 – Flöden för bekräftelse, ankomsttid och rapport (1,5 dagar)
 - [x] Steg 3.4 – Korta länkar och kundsida (1 dag)
 - [x] Steg 4.1 – Schemaläggning av kontrollen (1 dag)
-- [ ] Steg 4.2 – Tillståndsmaskin för svaren (1,5 dagar)
+- [x] Steg 4.2 – Tillståndsmaskin för svaren (1,5 dagar)
 - [ ] Steg 4.3 – Väntelista och återfyllnad (1,5 dagar)
 - [ ] Steg 5.1 – Kundlista, sökning och kundkort (2 dagar)
 - [ ] Steg 5.2 – Båtkort med tidslinje (2 dagar)
@@ -285,7 +285,7 @@ ett alternativ i stället för att byta tyst.
 #### Steg 4.2 – Tillståndsmaskin för svaren (1,5 dagar)
 - **Mål:** Hantera JA, NEJ, ÄNDRA, fritext och uteblivet svar.
 - **Berör:** `packages/core/availability/stateMachine.ts`, `apps/worker/flows/availabilityFollowup.ts`.
-- **Gör:** Följ tabellen i del 1, F3: påminnelse efter 4 timmar, ärendet *Ring kund* kl. 18 dagen innan, gul status och ingen automatisk avbokning.
+- **Gör:** Följ tabellen i del 1, F3: påminnelse efter 4 timmar, ärendet *Ring kund* kl. 18 dagen innan, gul status och ingen automatisk avbokning. (Tiderna räknas från när kontrollen gick: påminnelse efter 4 timmar om klockan då är före 21, och ärendet kl. 18 samma dag men tidigast 2 timmar efter påminnelsen, eller efter kontrollen om ingen påminnelse går. NEJ avbokar utan avgift. Ändrat med Robert 2026-11-12.)
 - **Klart när:** Ett test med fejkklocka går igenom alla grenar: JA ger `confirmed`, NEJ ger avbokning och startar väntelisteflödet, ÄNDRA ger ärende, uteblivet svar ger påminnelse och därefter ärende.
 
 #### Steg 4.3 – Väntelista och återfyllnad (1,5 dagar)

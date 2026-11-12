@@ -122,3 +122,12 @@ export {
   type CheckPlan,
   type JobUrgency,
 } from "./availability/schedule";
+export {
+  followUpTimes,
+  nextCheckStep,
+  type AvailabilityStatus,
+  type CheckAction,
+  type CheckEvent,
+  type CheckStep,
+  type FollowUpTimes,
+} from "./availability/stateMachine";

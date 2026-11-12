@@ -2,6 +2,7 @@ import type { EmailSender, SmsSender } from "@bojen/core";
 import { SEND_MESSAGE_TASK } from "@bojen/db";
 import type { Task, TaskList } from "graphile-worker";
 import { CHECK_TASK, sendAvailabilityCheck } from "./flows/availabilityCheck";
+import { ESCALATION_TASK, REMINDER_TASK, handleCheckEvent } from "./flows/availabilityFollowup";
 import type { FlowDeps } from "./flows/deps";
 import { DOMAIN_EVENT_TASK, handleDomainEvent } from "./flows/events";
 import { ETA_TASK, sendMorningEta } from "./flows/morningEta";
@@ -36,6 +37,12 @@ export function taskList(deps: WorkerDeps): TaskList {
       helpers.logger.info(`event ${eventId}: ${await handleDomainEvent(deps, eventId)}`);
     },
     [CHECK_TASK]: visitTask((tenantId, visitId) => sendAvailabilityCheck(deps, tenantId, visitId)),
+    [REMINDER_TASK]: visitTask((tenantId, visitId) =>
+      handleCheckEvent(deps, tenantId, visitId, "reminder_due", `reminder:${visitId}`),
+    ),
+    [ESCALATION_TASK]: visitTask((tenantId, visitId) =>
+      handleCheckEvent(deps, tenantId, visitId, "escalation_due", `escalation:${visitId}`),
+    ),
     [ETA_TASK]: visitTask((tenantId, visitId) => sendMorningEta(deps, tenantId, visitId)),
     [SURVEY_TASK]: visitTask((tenantId, visitId) => sendSurvey(deps, tenantId, visitId)),
   };

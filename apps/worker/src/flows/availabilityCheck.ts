@@ -8,6 +8,7 @@ import {
   visitContext,
   type VisitContext,
 } from "@bojen/db";
+import { scheduleFollowUps } from "./availabilityFollowup";
 import { type FlowDeps, visitVars } from "./deps";
 
 export const CHECK_TASK = "visit_check";
@@ -55,8 +56,8 @@ export async function scheduleCheck(
 /**
  * F3, the check itself: "is the boat where we think, with the key where you said?". Only
  * for a visit that is still `booked` and unchecked, whose customer has a mobile. The time is
- * worked out again, so a job left from before a reschedule sends nothing. The answer is
- * handled by step 4.2.
+ * worked out again, so a job left from before a reschedule sends nothing. The reminder and
+ * the task to call are put in at the same time (step 4.2).
  */
 export async function sendAvailabilityCheck(
   deps: FlowDeps,
@@ -103,5 +104,6 @@ export async function sendAvailabilityCheck(
   } else {
     await queueSms(deps, target, code ? "f3_check_land_code" : "f3_check_land", common);
   }
+  await scheduleFollowUps(deps, visit, now);
   return "sent";
 }

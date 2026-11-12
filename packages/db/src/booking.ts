@@ -117,6 +117,8 @@ export interface ChangeBookingInput {
   start?: Date;
   mechanicId?: string;
   partsMissing?: boolean;
+  /** Why, for the event log: for example `availability_check` when the customer answered NEJ. */
+  reason?: string;
 }
 
 const MINUTE = 60_000;
@@ -544,6 +546,7 @@ export async function changeBooking(
             }
           : {}),
         day: stockholmDate(start),
+        ...(input.reason ? { reason: input.reason } : {}),
       },
       deps.now(),
     );

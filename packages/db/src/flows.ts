@@ -4,7 +4,7 @@
  * survey rows.
  */
 import { stockholmDate } from "@bojen/core";
-import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import type { Database } from "./client";
 import {
   appUser,
@@ -390,6 +390,46 @@ export async function skipAvailabilityCheck(db: Db, tenantId: string, visitId: s
         eq(visit.tenantId, tenantId),
         eq(visit.id, visitId),
         eq(visit.availabilityStatus, "not_sent"),
+      ),
+    );
+}
+
+/**
+ * Moves the availability check from one of `from` to `to`. False when it was in none of
+ * them, so an answer, a reminder and the escalation never act on the same state twice.
+ */
+export async function moveAvailability(
+  db: Db,
+  tenantId: string,
+  visitId: string,
+  from: readonly (typeof visit.$inferSelect.availabilityStatus)[],
+  to: typeof visit.$inferSelect.availabilityStatus,
+): Promise<boolean> {
+  const rows = await db
+    .update(visit)
+    .set({ availabilityStatus: to })
+    .where(
+      and(
+        eq(visit.tenantId, tenantId),
+        eq(visit.id, visitId),
+        inArray(visit.availabilityStatus, [...from]),
+      ),
+    )
+    .returning({ id: visit.id });
+  return rows.length > 0;
+}
+
+/** Closes the open task to call about a visit, when the customer answered after all. */
+export async function closeCallTask(db: Db, tenantId: string, visitId: string, at: Date) {
+  await db
+    .update(task)
+    .set({ status: "done", completedAt: at })
+    .where(
+      and(
+        eq(task.tenantId, tenantId),
+        eq(task.visitId, visitId),
+        eq(task.type, "call_back"),
+        eq(task.status, "open"),
       ),
     );
 }

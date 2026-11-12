@@ -1,5 +1,6 @@
 import { loadDomainEvent, visitContext } from "@bojen/db";
 import { scheduleCheck } from "./availabilityCheck";
+import { handleCheckEvent } from "./availabilityFollowup";
 import { sendConfirmation } from "./confirmation";
 import type { FlowDeps } from "./deps";
 import { scheduleEta } from "./morningEta";
@@ -10,7 +11,15 @@ export const DOMAIN_EVENT_TASK = "domain_event";
 
 /** What a domain event led to, for the log and the tests. */
 export type EventOutcome =
-  "confirmation" | "eta_moved" | "survey_scheduled" | "report" | "survey_answer" | "ignored";
+  | "confirmation"
+  | "eta_moved"
+  | "survey_scheduled"
+  | "report"
+  | "survey_answer"
+  | "check_answer"
+  | "ignored";
+
+const CHECK_QUESTION = /^f3_(check_|reminder$)/;
 
 const SCHEDULED = new Set(["booked", "confirmed", "unconfirmed"]);
 
@@ -71,6 +80,23 @@ export async function handleDomainEvent(deps: FlowDeps, eventId: string): Promis
       return "report";
     }
     case "message.received":
+      // An answer to the availability check or its reminder (F3, step 4.2).
+      if (
+        typeof payload.questionTemplate === "string" &&
+        CHECK_QUESTION.test(payload.questionTemplate) &&
+        payload.confident === true &&
+        typeof payload.visitId === "string" &&
+        (payload.intent === "yes" || payload.intent === "no" || payload.intent === "change")
+      ) {
+        const outcome = await handleCheckEvent(
+          deps,
+          tenantId,
+          payload.visitId,
+          payload.intent,
+          event.id,
+        );
+        return outcome === "ignored" ? "ignored" : "check_answer";
+      }
       if (
         payload.questionTemplate === "f9_survey" &&
         payload.intent === "rating" &&
