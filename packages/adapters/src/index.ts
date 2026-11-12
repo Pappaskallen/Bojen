@@ -20,3 +20,5 @@ export {
 export { MailgunError, createMailgunEmail, type MailgunOptions } from "./mailgun/mailgun";
 export { createFakeEmail, type FakeEmail } from "./mailgun/fake";
 export { elksFromEnv } from "./elks/env";
+export { REPLY_MODEL, createClaudeClassifier, type ClaudeClassifierOptions } from "./llm/claude";
+export { createFakeClassifier, type FakeClassifier } from "./llm/fake";

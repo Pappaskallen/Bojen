@@ -27,11 +27,14 @@ export type EmailVars<K extends EmailTemplateKey> = Record<
  * - `reply`: an answer to something the customer just did. Sent at once, stopped by STOPP.
  * - `notice`: about a booking. Waits for 08:00 during quiet hours, stopped by STOPP.
  * - `marketing`: campaigns and offers. Like `notice`, and needs consent (checked by the flow).
+ *   Every marketing sms ends with "Svara STOPP för att avsluta." (spec 10).
+ * - `receipt`: the one answer to STOPP itself. Always sent at once, the last sms to the number.
  */
-export type MessageCategory = "code" | "reply" | "notice" | "marketing";
+export type MessageCategory = "code" | "reply" | "notice" | "marketing" | "receipt";
 
 export type Flow =
   | "auth"
+  | "stop"
   | "F1"
   | "F2"
   | "F3"
@@ -58,6 +61,7 @@ export interface SmsTemplateInfo {
 export const SMS_TEMPLATES = {
   staff_sign_in_code: { flow: "auth", category: "code", maxSegments: 1 },
   booking_code: { flow: "auth", category: "code", maxSegments: 1 },
+  stop_receipt: { flow: "stop", category: "receipt", maxSegments: 1 },
   f1_confirmation: { flow: "F1", category: "notice", maxSegments: 3 },
   f2_tentative: { flow: "F2", category: "notice", maxSegments: 2 },
   f2_parts_arrived: { flow: "F2", category: "notice", maxSegments: 2 },

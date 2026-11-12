@@ -20,8 +20,14 @@ export function inQuietHours(instant: Date): boolean {
 }
 
 /** The first moment from `instant` on when a message of `category` may go out. */
+/** Codes and the STOPP receipt go out whatever the list says: the person just asked. */
+export function ignoresOptOut(category: MessageCategory): boolean {
+  return category === "code" || category === "receipt";
+}
+
 export function earliestSend(instant: Date, category: MessageCategory): Date {
-  if (category === "code" || category === "reply" || !inQuietHours(instant)) return instant;
+  if (category !== "notice" && category !== "marketing") return instant;
+  if (!inQuietHours(instant)) return instant;
   const day = stockholmDate(instant);
   const morning = hhmm(instant) < QUIET_UNTIL ? day : addDays(day, 1);
   return stockholmInstant(morning, QUIET_UNTIL);
@@ -43,7 +49,8 @@ export function planSms(input: {
   now: Date;
 }): DeliveryPlan {
   if (!input.to) return { action: "block", reason: "no_address" };
-  if (input.optedOut && input.category !== "code") return { action: "block", reason: "opted_out" };
+  if (input.optedOut && !ignoresOptOut(input.category))
+    return { action: "block", reason: "opted_out" };
   const wanted = input.wanted && input.wanted > input.now ? input.wanted : input.now;
   return { action: "send", at: earliestSend(wanted, input.category) };
 }

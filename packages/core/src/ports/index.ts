@@ -1,4 +1,19 @@
+import type { ReplyIntent } from "../messaging/intent";
+import type { QuestionKind } from "../messaging/routeInbound";
 import type { GeoPoint } from "../scheduling/travel";
+
+/**
+ * Reads a free-text reply by sms that the rules could not (step 3.2). Claude Sonnet 5.5 in
+ * production, a fake in tests. Gets only the reply and the kind of question, never who it is.
+ * The answer is checked with `checkModelAnswer` before it is used.
+ */
+export interface ReplyClassifier {
+  classify(input: {
+    reply: string;
+    question: QuestionKind;
+    allowed: readonly ReplyIntent[];
+  }): Promise<{ intent: string; confidence: number; rating?: number | null }>;
+}
 
 /** One outgoing sms. `from` is the firm's number or name; the adapter has a default. */
 export interface OutgoingSms {

@@ -75,6 +75,7 @@ export type {
   EmailSender,
   OutgoingEmail,
   OutgoingSms,
+  ReplyClassifier,
   GeocodeResult,
   Geocoder,
   ObjectStorage,

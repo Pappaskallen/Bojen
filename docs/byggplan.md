@@ -28,7 +28,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 2.7 – Inloggning för personal (1 dag)
 - [x] Steg 2.8 – Tvåfaktorsautentisering och spärr av sessioner (1 dag)
 - [x] Steg 3.1 – Notifieringstjänst och mallmotor (2 dagar)
-- [ ] Steg 3.2 – Inkommande sms och tolkning av svar (2 dagar)
+- [x] Steg 3.2 – Inkommande sms och tolkning av svar (2 dagar)
 - [ ] Steg 3.3 – Flöden för bekräftelse, ankomsttid och rapport (1,5 dagar)
 - [ ] Steg 3.4 – Korta länkar och kundsida (1 dag)
 - [ ] Steg 4.1 – Schemaläggning av kontrollen (1 dag)
@@ -258,7 +258,7 @@ ett alternativ i stället för att byta tyst.
 - **Klart när:**
   - Minst 40 testfall för tolkningen går igenom.
   - Ett svar på en äldre fråga kopplas inte till fel besök.
-  - Ett test visar att signaturen på webhooken från 46elks verifieras.
+  - Ett test visar att webhooken från 46elks bara tas emot med rätt hemlig token och, i produktion, från 46elks egna IP-adresser. (46elks signerar inte sina webhooks och rekommenderar IP-filtrering; ändrat med Robert 2026-11-12.)
 
 #### Steg 3.3 – Flöden för bekräftelse, ankomsttid och rapport (1,5 dagar)
 - **Mål:** Flödena F1, F5, F7 och F9 från del 1.

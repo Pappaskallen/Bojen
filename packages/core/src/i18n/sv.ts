@@ -141,6 +141,10 @@ export const sv = {
     recoveryAccepted: "Koden godtogs. Lägg nu till appen igen på din nya telefon.",
     failed: "Något gick fel. Försök igen.",
   },
+  inbox: {
+    /** The task a person gets when a reply by sms cannot be read with certainty (step 3.2). */
+    unclearReply: (who: string) => `Oklart sms-svar från ${who}`,
+  },
   security: {
     title: "Säkerhet",
     intro: "Här ser du vilka i firman som loggar in med två faktorer.",
@@ -185,6 +189,7 @@ export const messages = {
   sms: {
     staff_sign_in_code: "{code} är din kod för att logga in i Bojen. Den gäller i 10 minuter.",
     booking_code: "{code} är din kod för att boka hos {firm}.",
+    stop_receipt: "Du är avregistrerad och får inga fler sms från {firm}.",
     f1_confirmation:
       "Hej {firstName}! Bokat: {serviceShort} {weekday} {date} kl {window}, {placeShort}. Du behöver inte vara på plats. Ändra/avboka: {link} /{firm}",
     f2_tentative:
@@ -222,20 +227,20 @@ export const messages = {
     f9_reply_poor:
       "Tack för ärligt svar. Jag vill göra det bra igen – jag ringer dig senast i morgon. /{mechanicFirstName}",
     f10_next_season:
-      "Hej {firstName}! Ska vi boka vårservicen redan nu? Jag har en tid {weekday} {date} (v.{week}) på {placeShort}. Svara JA eller välj annan: {link} /{firm}",
+      "Hej {firstName}! Ska vi boka vårservicen redan nu? Jag har en tid {weekday} {date} (v.{week}) på {placeShort}. Svara JA eller välj annan: {link} Svara STOPP för att avsluta. /{firm}",
     f11_spring_a:
-      "Hej {firstName}! Dags att planera våren. Förra året servade vi {boat} v.{lastWeek}. Jag har reserverat {weekday} {date} kl {window} på {placeShort}. Svara JA, ANNAN eller NEJ. /{firm}",
+      "Hej {firstName}! Dags att planera våren. Förra året servade vi {boat} v.{lastWeek}. Jag har reserverat {weekday} {date} kl {window} på {placeShort}. Svara JA, ANNAN eller NEJ. Svara STOPP för att avsluta. /{firm}",
     f11_spring_discount:
-      "Hej {firstName}! Vill du vara först i sjön? Boka vårservice v.{week} och få {discount} % på arbetet. Jag har {weekday} {date} ledigt på {placeShort}. Svara JA eller ANNAN. /{firm}",
+      "Hej {firstName}! Vill du vara först i sjön? Boka vårservice v.{week} och få {discount} % på arbetet. Jag har {weekday} {date} ledigt på {placeShort}. Svara JA eller ANNAN. Svara STOPP för att avsluta. /{firm}",
     f11_spring_b:
-      "Hej {firstName}! Vi konserverade {boat} i höstas. Ska vi göra vårservicen också? Förslag: {date} på {placeShort}. Svara JA eller ANNAN. /{firm}",
+      "Hej {firstName}! Vi konserverade {boat} i höstas. Ska vi göra vårservicen också? Förslag: {date} på {placeShort}. Svara JA eller ANNAN. Svara STOPP för att avsluta. /{firm}",
     f11_sold_question: "Har du sålt båten? Svara SÅLD. /{firm}",
     f12_autumn:
-      "Hej {firstName}! Snart dags för upptagning. Förra året vinterkonserverade vi {boat} v.{lastWeek}. Förslag i år: {date} på {placeShort}. Svara JA, ANNAN eller NEJ. /{firm}",
+      "Hej {firstName}! Snart dags för upptagning. Förra året vinterkonserverade vi {boat} v.{lastWeek}. Förslag i år: {date} på {placeShort}. Svara JA, ANNAN eller NEJ. Svara STOPP för att avsluta. /{firm}",
     f12_haulout_question:
       'Tack! Vilket datum tas båten upp, och står den kvar på {placeShort}? Svara t.ex. "12/10 Bullandö".',
     f13_service_reminder:
-      "Hej {firstName}! {boat} närmar sig sin service ({reason}). Vill du boka? Lediga tider på {placeShort}: {link} /{firm}",
+      "Hej {firstName}! {boat} närmar sig sin service ({reason}). Vill du boka? Lediga tider på {placeShort}: {link} Svara STOPP för att avsluta. /{firm}",
     f14_received:
       "Vi har fått ditt ärende och meddelat {mechanicFirstName}. Du får svar inom 30 min. Vid fara: ring 112. /{firm}",
     f14_taken:

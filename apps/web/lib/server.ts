@@ -8,16 +8,25 @@ import {
   createPhotonGeocoder,
   createSupabaseAuth,
   createSupabaseStorage,
+  createClaudeClassifier,
+  createFakeClassifier,
   elksFromEnv,
 } from "@bojen/adapters";
-import type { Geocoder, MapsProvider, ObjectStorage, SmsSender, StaffAuth } from "@bojen/core";
+import type {
+  Geocoder,
+  MapsProvider,
+  ObjectStorage,
+  ReplyClassifier,
+  SmsSender,
+  StaffAuth,
+} from "@bojen/core";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { connect, type DbConnection } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
-import { createWebhookRoutes } from "./webhooks";
+import { ELKS_IPS, createWebhookRoutes } from "./webhooks";
 import {
   ACCESS_COOKIE,
   createStaffAuthRoutes,
@@ -154,10 +163,41 @@ export const publicRoutes = createPublicRoutes({
   sessionSecret,
 });
 
+/**
+ * Which addresses may call the 46elks webhooks: `ELKS_ALLOWED_IPS` (comma separated), or
+ * 46elks' published ones in production. No check outside production unless the variable is set.
+ */
+function elksIps(): readonly string[] | null {
+  const listed = process.env.ELKS_ALLOWED_IPS?.split(",")
+    .map((ip) => ip.trim())
+    .filter(Boolean);
+  if (listed && listed.length > 0) return listed;
+  return production ? ELKS_IPS : null;
+}
+
+/** Claude Sonnet 5.5 for free-text replies when `ANTHROPIC_API_KEY` is set (step 3.2). */
+const classifier = once<ReplyClassifier>(() => {
+  if (process.env.ANTHROPIC_API_KEY) return createClaudeClassifier();
+  // Without a key every free-text reply is unclear and becomes a task for a person.
+  if (production) console.warn("[sms] ANTHROPIC_API_KEY is not set; free-text replies go to staff");
+  return createFakeClassifier();
+});
+
+/** The key the STOPP list is hashed with; required in production. */
+const optOutKey = once(() => {
+  const key = process.env.SMS_OPT_OUT_KEY;
+  if (key && key.length >= 32) return key;
+  if (production) throw new Error("SMS_OPT_OUT_KEY must be at least 32 characters");
+  return "development-only-opt-out-key-not-secret";
+});
+
 export const webhookRoutes = createWebhookRoutes({
   db,
   sms,
   now: () => new Date(),
   smsHookSecret: () => process.env.SUPABASE_AUTH_SMS_HOOK_SECRET,
   elksToken: () => process.env.ELKS_WEBHOOK_SECRET,
+  elksIps,
+  classifier,
+  optOutKey,
 });

@@ -11,6 +11,7 @@
 import type { SmsSender } from "@bojen/core";
 import {
   SMS_TEMPLATES,
+  ignoresOptOut,
   optOutHash,
   planSms,
   renderSms,
@@ -230,8 +231,8 @@ export async function deliverQueuedMessage(
       return "too_early";
     }
     const template = row.template as SmsTemplateKey | null;
-    const isCode = template !== null && SMS_TEMPLATES[template].category === "code";
-    if (!isCode && (await isOptedOut(tx, deps.optOutKey, row.tenantId, row.toAddress))) {
+    const always = template !== null && ignoresOptOut(SMS_TEMPLATES[template].category);
+    if (!always && (await isOptedOut(tx, deps.optOutKey, row.tenantId, row.toAddress))) {
       await tx
         .update(message)
         .set({ status: "blocked", error: "opted_out" })

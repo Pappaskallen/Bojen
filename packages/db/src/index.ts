@@ -9,3 +9,4 @@ export * from "./public-booking";
 export * from "./approval";
 export * from "./staff";
 export * from "./messaging";
+export * from "./inbound";

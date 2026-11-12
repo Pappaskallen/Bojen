@@ -12,7 +12,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.3.0",
     "@aws-sdk/client-kms": "3.1158.0",
-    "@bojen/core": "workspace:*"
+    "@bojen/core": "workspace:*",
+    "zod": "4.6.7"
   }
 }

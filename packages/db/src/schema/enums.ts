@@ -100,7 +100,20 @@ export const messageStatus = pgEnum("message_status", [
   "blocked",
 ]);
 
-export const messageIntent = pgEnum("message_intent", ["yes", "no", "change", "other"]);
+/** What an inbound reply means (step 3.2, `ReplyIntent` in core). "other" is no longer used. */
+export const messageIntent = pgEnum("message_intent", [
+  "yes",
+  "no",
+  "change",
+  "other",
+  "stop",
+  "another_time",
+  "rating",
+  "sold",
+  "call_me",
+  "info",
+  "unclear",
+]);
 
 export const callOutcome = pgEnum("call_outcome", ["booked", "message", "transferred", "spam"]);
 

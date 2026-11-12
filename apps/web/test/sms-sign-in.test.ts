@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { createFakeAuth, createFakeSms } from "@bojen/adapters";
+import { createFakeAuth, createFakeClassifier, createFakeSms } from "@bojen/adapters";
 import { appUser, connect, message, tenant, type Database } from "@bojen/db";
 import { eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
@@ -126,6 +126,9 @@ describe("the sms hook from Supabase Auth", () => {
       now: () => now,
       smsHookSecret: () => secret ?? undefined,
       elksToken: () => "elks-token",
+      elksIps: () => null,
+      classifier: () => createFakeClassifier(),
+      optOutKey: () => "test-opt-out-key",
     });
     return { sms, routes };
   };
@@ -199,6 +202,9 @@ describe("delivery reports from 46elks", () => {
         now: () => new Date(),
         smsHookSecret: () => SECRET,
         elksToken: () => "elks-token",
+        elksIps: () => null,
+        classifier: () => createFakeClassifier(),
+        optOutKey: () => "test-opt-out-key",
       });
       const report = (token: string) =>
         new Request(`http://localhost/api/webhooks/elks/delivery?token=${token}`, {
