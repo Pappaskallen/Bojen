@@ -7,7 +7,9 @@
     ".": "./src/index.ts",
     "./i18n/sv": "./src/i18n/sv.ts",
     "./crypto": "./src/crypto/index.ts",
-    "./catalog": "./src/catalog/brands.ts"
+    "./catalog": "./src/catalog/brands.ts",
+    "./messaging": "./src/messaging/index.ts",
+    "./links": "./src/links/shortLink.ts"
   },
   "scripts": {
     "lint": "eslint .",

@@ -53,7 +53,6 @@ export const sv = {
       engineMake: "Motormärke",
       engineModel: "Motormodell",
       engineHours: "Gångtimmar (ungefär)",
-      smsCode: (code: string, firm: string) => `${code} är din kod för att boka hos ${firm}.`,
     },
     place: {
       heading: "Var står båten?",
@@ -105,11 +104,17 @@ export const sv = {
   },
   signIn: {
     title: "Logga in",
-    intro: "Personalen loggar in med en kod som vi skickar till din e-post.",
-    email: "E-post",
+    intro: "Personalen loggar in med en kod som vi skickar till din e-post eller mobil.",
+    method: "Få koden med",
+    byEmail: "E-post",
+    bySms: "Sms",
+    email: "E-postadress",
+    mobile: "Mobilnummer",
     sendCode: "Skicka kod",
     codeSent: "Om adressen finns hos oss har vi skickat en kod. Den gäller i 10 minuter.",
+    codeSentSms: "Om numret finns hos oss har vi skickat en kod med sms. Den gäller i 10 minuter.",
     code: "Kod från e-post",
+    codeSms: "Kod från sms",
     verify: "Logga in",
     wrongCode: "Koden stämmer inte eller har gått ut. Be om en ny.",
     failed: "Något gick fel. Försök igen.",
@@ -135,6 +140,22 @@ export const sv = {
     useCode: "Använd koden",
     recoveryAccepted: "Koden godtogs. Lägg nu till appen igen på din nya telefon.",
     failed: "Något gick fel. Försök igen.",
+  },
+  flows: {
+    weekdaysShort: ["mån", "tis", "ons", "tor", "fre", "lör", "sön"],
+    mode: { water: "i sjön", land: "på land", indoor: "inomhus" },
+    /** For a value the firm has not entered, so a template never has a gap. */
+    unknown: "–",
+    /** The access line in the e-mail: never the code, and not the key place either (F1). */
+    keyText: "Enligt dina uppgifter hos oss",
+    preparation: "Se till att båten är tillgänglig och att nyckeln finns där du har angett.",
+    priceUnknown: "Enligt prislista",
+    /** The task when the customer answers 1–3 to the satisfaction question (F9). */
+    lowCsat: (who: string, score: number) => `Ring ${who}: betyg ${String(score)} av 5`,
+  },
+  inbox: {
+    /** The task a person gets when a reply by sms cannot be read with certainty (step 3.2). */
+    unclearReply: (who: string) => `Oklart sms-svar från ${who}`,
   },
   security: {
     title: "Säkerhet",
@@ -166,6 +187,204 @@ export const sv = {
     failed: "Det gick inte. Försök igen.",
     photos: (n: number) => (n === 1 ? "1 bild" : `${String(n)} bilder`),
   },
+  /** The customer's page behind the short link, `/x/{code}` (step 3.4). */
+  customerPage: {
+    title: "Din bokning",
+    when: "När",
+    where: "Var",
+    what: "Vad",
+    boat: "Båt",
+    mechanic: "Mekaniker",
+    pending: "Väntar på att firman godkänner tiden.",
+    reschedule: "Boka om",
+    rescheduleIntro: "Välj en ny tid. Den gamla tiden släpps direkt.",
+    noTimes: "Det finns inga lediga tider att välja här just nu. Ring oss så hjälper vi dig.",
+    chooseTime: "Boka om till vald tid",
+    cancel: "Avboka",
+    cancelIntro: (cancelBy: string) => `Avbokning är kostnadsfri fram till ${cancelBy}.`,
+    cancelConfirm: "Ja, avboka besöket",
+    tooLate: (cancelBy: string, phone: string) =>
+      `Gränsen för att ändra själv var ${cancelBy}. Ring oss på ${phone} så hjälper vi dig.`,
+    access: "Koder och nyckel",
+    accessIntro:
+      "Lägg in koden till båten eller var nyckeln finns. Uppgifterna krypteras och visas bara för mekanikern som har besöket. De skickas aldrig i sms eller e-post.",
+    accessStored: "Du har redan lämnat uppgifter. Fyll bara i det du vill ändra.",
+    accessCode: "Kod (lås, larm eller grind)",
+    keyLocation: "Var finns nyckeln?",
+    accessSave: "Spara uppgifterna",
+    noBoat: "Det finns ingen båt kopplad till bokningen. Ring oss om du vill lämna koder.",
+    done: {
+      rescheduled:
+        "Klart, besöket är ombokat. Du får ett nytt sms med den nya tiden och en ny länk.",
+      cancelled: "Klart, besöket är avbokat.",
+      access: "Tack! Uppgifterna är sparade och krypterade.",
+    },
+    errors: {
+      missing: "Länken finns inte. Kontrollera att du har skrivit av den rätt.",
+      expired: "Länken har gått ut. Ring oss om du vill ändra något.",
+      used: "Länken är redan använd. Använd länken i det senaste sms:et från oss, eller ring oss.",
+      closed: "Besöket går inte längre att ändra här. Ring oss om du har frågor.",
+      taken: "Tiden hann bli bokad av någon annan. Välj en annan tid.",
+      invalid: "Något saknas eller är för långt. Kontrollera och försök igen.",
+      failed: "Något gick fel. Försök igen eller ring oss.",
+    },
+    callUs: (phone: string) => `Ring oss: ${phone}`,
+  },
 } as const;
 
 export type Texts = typeof sv;
+
+/**
+ * Message templates from spec part 1, chapter 7, kept apart from `sv` so that the pages
+ * that import `sv` do not ship them to the browser. `{name}` is filled in by
+ * `messaging/render.ts`; `packages/core/src/messaging/templates.ts` says which channel,
+ * category and segment limit each one has.
+ */
+export const messages = {
+  sms: {
+    staff_sign_in_code: "{code} är din kod för att logga in i Bojen. Den gäller i 10 minuter.",
+    booking_code: "{code} är din kod för att boka hos {firm}.",
+    stop_receipt: "Du är avregistrerad och får inga fler sms från {firm}.",
+    f1_confirmation:
+      "Hej {firstName}! Bokat: {serviceShort} {weekday} {date} kl {window}, {placeShort}. Du behöver inte vara på plats. Ändra/avboka: {link} /{firm}",
+    f2_tentative:
+      "Hej {firstName}! Preliminärt bokat {date} kl {window}. Vi väntar på delar och bekräftar när de kommit. /{firm}",
+    f2_parts_arrived:
+      "Delarna har kommit! Din tid {date} kl {window} på {placeShort} är nu bekräftad. Ändra: {link} /{firm}",
+    f3_check_water:
+      "Hej {firstName}! I morgon kl {window} servar vi {boat}. Ligger den i sjön på {placeShort} {placeId}, med nyckel i {keyPlace}? Svara JA, NEJ eller ÄNDRA. /{firm}",
+    f3_check_water_code:
+      "Hej {firstName}! I morgon kl {window} servar vi {boat}. Ligger den i sjön på {placeShort} {placeId}, med nyckel i {keyPlace}? Gäller samma grindkod som sist? Svara JA, NEJ eller ÄNDRA. /{firm}",
+    f3_check_land:
+      "Hej {firstName}! I morgon kl {window} kommer vi till {boat}. Står den på land på {placeShort}, nyckel i {keyPlace}? Svara JA, NEJ eller ÄNDRA. /{firm}",
+    f3_check_land_code:
+      "Hej {firstName}! I morgon kl {window} kommer vi till {boat}. Står den på land på {placeShort}, nyckel i {keyPlace}? Gäller samma grindkod som sist? Svara JA, NEJ eller ÄNDRA. /{firm}",
+    f3_reply_yes: "Tack! Bokningen är bekräftad. Du får ungefärlig tid i morgon bitti.",
+    f3_reply_no:
+      "Okej, vi avbokar. Välj en ny tid här: {link} – eller svara NY så ringer vi dig. /{firm}",
+    f3_reply_change: "Tack! {mechanicFirstName} hör av sig i dag. Skriv gärna här vad som ändrats.",
+    f3_reminder:
+      "Påminnelse: vi kommer i morgon kl {window} till {placeShort}. Är båten tillgänglig? Svara JA, NEJ eller ÄNDRA.",
+    f4_offer:
+      "Ledig tid! {weekday} {date} kl {window} på/nära {placeShort} – passar {serviceShort} för {boat}? Svara JA inom 1 tim så är den din. /{firm}",
+    f4_taken: "Tiden blev tyvärr tagen. Du står kvar på väntelistan – vi hör av oss!",
+    f5_eta:
+      "God morgon! {mechanicFirstName} beräknas vara vid {boat} på {placeShort} ca kl {etaFrom}–{etaTo} i dag. /{firm}",
+    f6_on_way: "{mechanicFirstName} är på väg till {placeShort}, framme ca kl {eta}. /{firm}",
+    f7_report:
+      "Klart! {serviceShort} på {boat} är utförd. Rapport, bilder och betalning: {link} Tack för förtroendet! /{firm}",
+    f8_payment_reminder:
+      "Hej {firstName}! En vänlig påminnelse: fakturan på {amount} kr förföll {date}. Betala enkelt här: {link} /{firm}",
+    f9_survey:
+      "Hur nöjd är du med servicen i går? Svara med en siffra 1–5 (5 = mycket nöjd). /{firm}",
+    f9_reply_good:
+      "Tack, vad glad jag blir! Vill du hjälpa andra båtägare hitta hit? En recension tar 30 sek: {googleLink} /{mechanicFirstName}",
+    f9_reply_poor:
+      "Tack för ärligt svar. Jag vill göra det bra igen – jag ringer dig senast i morgon. /{mechanicFirstName}",
+    f10_next_season:
+      "Hej {firstName}! Ska vi boka vårservicen redan nu? Jag har en tid {weekday} {date} (v.{week}) på {placeShort}. Svara JA eller välj annan: {link} Svara STOPP för att avsluta. /{firm}",
+    f11_spring_a:
+      "Hej {firstName}! Dags att planera våren. Förra året servade vi {boat} v.{lastWeek}. Jag har reserverat {weekday} {date} kl {window} på {placeShort}. Svara JA, ANNAN eller NEJ. Svara STOPP för att avsluta. /{firm}",
+    f11_spring_discount:
+      "Hej {firstName}! Vill du vara först i sjön? Boka vårservice v.{week} och få {discount} % på arbetet. Jag har {weekday} {date} ledigt på {placeShort}. Svara JA eller ANNAN. Svara STOPP för att avsluta. /{firm}",
+    f11_spring_b:
+      "Hej {firstName}! Vi konserverade {boat} i höstas. Ska vi göra vårservicen också? Förslag: {date} på {placeShort}. Svara JA eller ANNAN. Svara STOPP för att avsluta. /{firm}",
+    f11_sold_question: "Har du sålt båten? Svara SÅLD. /{firm}",
+    f12_autumn:
+      "Hej {firstName}! Snart dags för upptagning. Förra året vinterkonserverade vi {boat} v.{lastWeek}. Förslag i år: {date} på {placeShort}. Svara JA, ANNAN eller NEJ. Svara STOPP för att avsluta. /{firm}",
+    f12_haulout_question:
+      'Tack! Vilket datum tas båten upp, och står den kvar på {placeShort}? Svara t.ex. "12/10 Bullandö".',
+    f13_service_reminder:
+      "Hej {firstName}! {boat} närmar sig sin service ({reason}). Vill du boka? Lediga tider på {placeShort}: {link} Svara STOPP för att avsluta. /{firm}",
+    f14_received:
+      "Vi har fått ditt ärende och meddelat {mechanicFirstName}. Du får svar inom 30 min. Vid fara: ring 112. /{firm}",
+    f14_taken:
+      "{mechanicFirstName} kommer i dag kl {window} till {placeShort}. Akuttillägg {emergencyPrice} kr + timpris enligt prislista. Frågor? Ring {phone} /{firm}",
+    f14_none_available:
+      "Tyvärr kan vi inte komma i dag. Första lediga tid är {date} kl {window}. Svara JA för att boka den. /{firm}",
+    f14_moved:
+      "Hej {firstName}! Ett akut haveri gör att vi behöver flytta din tid {date}. Förlåt! Ny tid: {newDate} kl {window} med 10 % rabatt. Svara JA eller ANNAN.",
+    f15_type_plate:
+      "Hej! Skicka gärna en bild på motorns typskylt (och felet om det går) här: {link} – så tar vi med rätt delar direkt. /{firm}",
+  },
+  push: {
+    f3_unconfirmed:
+      "⚠️ Obekräftad: {customer}, {boat}, {place} i morgon {window}. Inget svar på 2 sms.",
+    f14_emergency:
+      "🚨 AKUT {placeShort}: {boat} – {symptomShort}. Kund: {customer}. Bilder: {photoCount}.",
+  },
+  email: {
+    f1_confirmation: {
+      subject: "Bokningsbekräftelse: {service} {date}",
+      body: `Hej {firstName},
+
+tack för din bokning! Här är detaljerna:
+
+**Vad:** {service}
+**Båt:** {boatMake} {boatModel} – {engineMake} {engineModel}
+**När:** {weekday} {date}, mellan kl. {window}
+**Var:** {placeName}, {placeDetail} ({mode})
+**Åtkomst:** {keyText} (koden visas inte i e-post av säkerhetsskäl)
+**Uppskattat pris:** {priceIndication} kr inkl. moms, plus delar enligt åtgång
+
+**Så förbereder du:**
+{preparation}
+
+Du behöver inte vara på plats. Dagen innan får du ett sms där du bekräftar att båten är tillgänglig.
+
+**Behöver du ändra?** Boka om eller avboka här: {link}. Avbokning är kostnadsfri fram till {cancelBy}.
+
+Hälsningar
+{mechanicName}, {firm}
+{phone} · {web}`,
+    },
+    f7_report: {
+      subject: "Servicerapport: {boat}, {date}",
+      body: `Hej {firstName},
+
+nu är {service} på din {boatMake} {boatModel} klar. Här är en sammanfattning.
+
+**Utfört arbete**
+{workDone}
+
+**Gångtimmar:** {hours} h (förra besöket: {previousHours} h)
+
+**Bytta delar**
+{parts}
+
+**Rekommendationer**
+{recommendations}
+
+**Bilder:** {galleryLink}
+
+**Nästa service:** {nextService}. Vi påminner dig i god tid.
+
+Har du frågor? Svara på detta mejl eller ring {phone}.
+
+Hälsningar
+{mechanicName}, {firm}`,
+    },
+    f11_spring: {
+      subject: "{boat}: ska vi boka vårservicen?",
+      body: `Hej {firstName},
+
+det känns långt bort, men vårens tider fylls snabbt. Förra året servade vi din {boatMake} {boatModel} vecka {lastWeek}, och jag har reserverat en liknande tid i år:
+
+**{weekday} {date}, kl. {window} – {placeName}**
+
+Ja, boka tiden: {bookLink}
+Välj en annan tid: {otherLink}
+
+**Vad ingår i vårservicen?**
+{serviceContents}
+
+**Rekommendationer från förra besöket**
+{openRecommendations}. Vill du att vi tar dem samtidigt? Kryssa i när du bokar.
+
+Tiden hålls till {reservedUntil}.
+
+Hälsningar
+{mechanicName}, {firm}`,
+    },
+  },
+} as const;

@@ -2,7 +2,7 @@ import type { SmsSender } from "@bojen/core";
 
 export interface FakeSms extends SmsSender {
   /** Every message, in order. Tests read codes from here instead of a phone. */
-  readonly sent: { id: string; to: string; body: string }[];
+  readonly sent: { id: string; to: string; body: string; from?: string }[];
   /** The newest message to a number. */
   lastTo(to: string): string | undefined;
 }

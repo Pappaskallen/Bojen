@@ -96,9 +96,24 @@ export const messageStatus = pgEnum("message_status", [
   "delivered",
   "failed",
   "received",
+  /** Never sent: the number replied STOPP, or there was no address (step 3.1). */
+  "blocked",
 ]);
 
-export const messageIntent = pgEnum("message_intent", ["yes", "no", "change", "other"]);
+/** What an inbound reply means (step 3.2, `ReplyIntent` in core). "other" is no longer used. */
+export const messageIntent = pgEnum("message_intent", [
+  "yes",
+  "no",
+  "change",
+  "other",
+  "stop",
+  "another_time",
+  "rating",
+  "sold",
+  "call_me",
+  "info",
+  "unclear",
+]);
 
 export const callOutcome = pgEnum("call_outcome", ["booked", "message", "transferred", "spam"]);
 

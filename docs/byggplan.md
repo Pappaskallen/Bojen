@@ -27,10 +27,10 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 2.6 – Manuellt godkännande (0,5 dag)
 - [x] Steg 2.7 – Inloggning för personal (1 dag)
 - [x] Steg 2.8 – Tvåfaktorsautentisering och spärr av sessioner (1 dag)
-- [ ] Steg 3.1 – Notifieringstjänst och mallmotor (2 dagar)
-- [ ] Steg 3.2 – Inkommande sms och tolkning av svar (2 dagar)
-- [ ] Steg 3.3 – Flöden för bekräftelse, ankomsttid och rapport (1,5 dagar)
-- [ ] Steg 3.4 – Korta länkar och kundsida (1 dag)
+- [x] Steg 3.1 – Notifieringstjänst och mallmotor (2 dagar)
+- [x] Steg 3.2 – Inkommande sms och tolkning av svar (2 dagar)
+- [x] Steg 3.3 – Flöden för bekräftelse, ankomsttid och rapport (1,5 dagar)
+- [x] Steg 3.4 – Korta länkar och kundsida (1 dag)
 - [ ] Steg 4.1 – Schemaläggning av kontrollen (1 dag)
 - [ ] Steg 4.2 – Tillståndsmaskin för svaren (1,5 dagar)
 - [ ] Steg 4.3 – Väntelista och återfyllnad (1,5 dagar)
@@ -258,7 +258,7 @@ ett alternativ i stället för att byta tyst.
 - **Klart när:**
   - Minst 40 testfall för tolkningen går igenom.
   - Ett svar på en äldre fråga kopplas inte till fel besök.
-  - Ett test visar att signaturen på webhooken från 46elks verifieras.
+  - Ett test visar att webhooken från 46elks bara tas emot med rätt hemlig token och, i produktion, från 46elks egna IP-adresser. (46elks signerar inte sina webhooks och rekommenderar IP-filtrering; ändrat med Robert 2026-11-12.)
 
 #### Steg 3.3 – Flöden för bekräftelse, ankomsttid och rapport (1,5 dagar)
 - **Mål:** Flödena F1, F5, F7 och F9 från del 1.
@@ -269,7 +269,7 @@ ett alternativ i stället för att byta tyst.
 - **Mål:** Kunden kan boka om, avboka och lägga in koder via en länk.
 - **Berör:** `apps/web/app/(public)/x/[code]/*`, tabellen `short_link`.
 - **Gör:**
-  - Signerade engångslänkar med utgångstid.
+  - Signerade engångslänkar med utgångstid. (Koden är 8 slumpade tecken och lagras bara som HMAC, eftersom en signatur inte ryms i en kort länk. Länken går att öppna flera gånger, men ombokning och avbokning förbrukar den. Ändrat med Robert 2026-11-12.)
   - Vyer för ombokning och avbokning (med avbokningsgräns).
   - Ett formulär för åtkomst, där koden krypteras med modulen från steg 1.6.
 - **Klart när:** Ett Playwright-test visar att en kund kan boka om via länken, att den gamla tiden frigörs och att en utgången länk ger ett felmeddelande.
@@ -410,7 +410,7 @@ ett alternativ i stället för att byta tyst.
 - [ ] Säkerhet: isoleringstesterna går igenom, testsviten för samtal ger 0 regelbrott, beroendeskanningen hittar inget kritiskt och de kritiska delarna av ASVS-checklistan är avbockade.
 - [ ] Juridik: personuppgiftsbiträdesavtal, villkor, integritetspolicy, mall för konsekvensbedömning och publik lista över underbiträden.
 - [ ] Onboarding: importmall för Excel, guide för nummerportering hos 46elks och utbildningsvideo på 10 minuter för pilotfirmorna.
-- [ ] Drift inom EU (spec 10): egna servrar för OSRM och Photon (OpenStreetMap) i stället för de publika, så att adresser och platser inte lämnar vår drift. Supabase-projektet i produktion har JWT-kroken, den svenska mejlmallen, avstängda registreringar och SMTP via Mailgun inställda.
+- [ ] Drift inom EU (spec 10): egna servrar för OSRM och Photon (OpenStreetMap) i stället för de publika, så att adresser och platser inte lämnar vår drift. Supabase-projektet i produktion har JWT-kroken, den svenska mejlmallen, avstängda registreringar, SMTP via Mailgun, sms-kroken (`send_sms` till `/api/webhooks/supabase/send-sms` med egen hemlighet) och sms-kodens giltighet på 10 minuter inställda. 46elks har leveransrapporter till `/api/webhooks/elks/delivery` med egen token, och `SMS_OPT_OUT_KEY` är satt och säkerhetskopierad (byts den går STOPP-listan förlorad). `SHORT_LINK_KEY` är satt, densamma i webben och arbetaren (byts den slutar alla skickade länkar att fungera), och `KMS_KEY_ID` pekar på AWS KMS i eu-north-1 för webben också.
 
 **Summa:** cirka 70 utvecklardagar (före tilläggen 2026-11-11 och 2026-11-12: steg 2.7 och 2.8 och utökade steg 3.1 och 5.5, cirka 4 dagar till), alltså cirka 16 veckor med två utvecklare inklusive marginal. Det stämmer med tidsplanen i 12.1.
 

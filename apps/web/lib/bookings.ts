@@ -39,6 +39,8 @@ const STATUS: Record<BookingErrorCode, number> = {
   invalid_transition: 409,
   too_late: 409,
   idempotency_mismatch: 422,
+  link_expired: 410,
+  link_used: 410,
 };
 
 /** URL action → state machine event. System events (parts arrived, no reply) are not exposed. */

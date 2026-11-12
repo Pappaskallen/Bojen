@@ -119,6 +119,36 @@ export function createSupabaseAuth(options: SupabaseAuthOptions): StaffAuth {
       return session((await response.json()) as TokenResponse);
     },
 
+    async setPhone(authUserId, phone) {
+      const response = await send(`${base}/admin/users/${encodeURIComponent(authUserId)}`, {
+        method: "PUT",
+        headers: { ...admin, ...json },
+        body: JSON.stringify({ phone, phone_confirm: true }),
+      });
+      if (!response.ok)
+        throw new Error(`Supabase Auth could not set the phone: ${String(response.status)}`);
+    },
+
+    async sendSmsCode(phone) {
+      const response = await send(`${base}/otp`, {
+        method: "POST",
+        headers: { ...anon, ...json },
+        body: JSON.stringify({ phone, create_user: false, channel: "sms" }),
+      });
+      if (!response.ok)
+        throw new Error(`Supabase Auth could not send the code: ${String(response.status)}`);
+    },
+
+    async verifySmsCode(phone, code) {
+      const response = await send(`${base}/verify`, {
+        method: "POST",
+        headers: { ...anon, ...json },
+        body: JSON.stringify({ type: "sms", phone, token: code.trim() }),
+      });
+      if (!response.ok) return null;
+      return session((await response.json()) as TokenResponse);
+    },
+
     async refresh(refreshToken) {
       const response = await send(`${base}/token?grant_type=refresh_token`, {
         method: "POST",

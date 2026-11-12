@@ -33,8 +33,13 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # The sms hook (step 3.1) calls the app that the end-to-end tests start on port 3100.
+      # A local-only secret, the same as in playwright.config.ts; not used in production.
       - name: Start local Supabase
         run: pnpm db:start
+        env:
+          SUPABASE_AUTH_SMS_HOOK_URI: http://host.docker.internal:3100/api/webhooks/supabase/send-sms
+          SUPABASE_AUTH_SMS_HOOK_SECRET: v1,whsec_Ym9qZW4tbG9jYWwtc21zLWhvb2stbm90LWEtc2VjcmV0
 
       - name: Test
         run: pnpm test

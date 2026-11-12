@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { DecryptCommand, GenerateDataKeyCommand } from "@aws-sdk/client-kms";
 import { describe, expect, it } from "vitest";
 import { createAwsKms, type KmsSender } from "./aws";
+import { kmsFromEnv } from "./env";
 import { createLocalKms, localKmsFromEnv } from "./local";
 
 describe("local KMS", () => {
@@ -67,5 +68,23 @@ describe("AWS KMS adapter", () => {
     });
     expect(decrypt).toBeInstanceOf(DecryptCommand);
     expect(decrypt.input).toMatchObject({ EncryptionContext: { tenant_id: "tenant-a" } });
+  });
+});
+
+describe("kmsFromEnv", () => {
+  const local = { LOCAL_KMS_MASTER_KEY: randomBytes(32).toString("base64") };
+
+  it("uses the local KMS outside production", async () => {
+    const kms = kmsFromEnv(local);
+    const { plaintext, encrypted } = await kms.generateDataKey("tenant-a");
+    expect((await kms.decryptDataKey("tenant-a", encrypted)).equals(plaintext)).toBe(true);
+  });
+
+  it("refuses the local KMS in production", () => {
+    expect(() => kmsFromEnv(local, true)).toThrow("KMS_KEY_ID");
+  });
+
+  it("uses AWS KMS when a key id is set, without calling it", () => {
+    expect(kmsFromEnv({ KMS_KEY_ID: "alias/bojen-test" }, true)).toHaveProperty("generateDataKey");
   });
 });

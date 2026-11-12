@@ -39,6 +39,10 @@ export const appUser = pgTable(
     uniqueIndex("app_user_email_key")
       .on(sql`lower(${t.email})`)
       .where(sql`${t.email} is not null and ${t.deletedAt} is null`),
+    // Staff can also sign in with a code by sms (step 3.1), so a mobile number is one person.
+    uniqueIndex("app_user_mobile_key")
+      .on(t.mobile)
+      .where(sql`${t.mobile} is not null and ${t.deletedAt} is null`),
     // The access-token hook (migration 0012) reads tenant and role for the signed-in user.
     pgPolicy("auth_admin_reads_staff", {
       as: "permissive",

@@ -8,14 +8,28 @@ import {
   createPhotonGeocoder,
   createSupabaseAuth,
   createSupabaseStorage,
+  createClaudeClassifier,
+  createFakeClassifier,
+  elksFromEnv,
+  kmsFromEnv,
 } from "@bojen/adapters";
-import type { Geocoder, MapsProvider, ObjectStorage, SmsSender, StaffAuth } from "@bojen/core";
+import type { Kms } from "@bojen/core/crypto";
+import type {
+  Geocoder,
+  MapsProvider,
+  ObjectStorage,
+  ReplyClassifier,
+  SmsSender,
+  StaffAuth,
+} from "@bojen/core";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { connect, type DbConnection } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
+import { createCustomerPage } from "./customer-page";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
+import { ELKS_IPS, createWebhookRoutes } from "./webhooks";
 import {
   ACCESS_COOKIE,
   createStaffAuthRoutes,
@@ -95,13 +109,15 @@ export const staffAuthRoutes = createStaffAuthRoutes({
 });
 
 /**
- * Real sms comes with 46elks in step 3.1. Until then codes are only written to the server
- * console during development, and production refuses to send.
+ * Sms through 46elks (step 3.1) when it is configured. Otherwise, outside production, a fake
+ * that writes the sms to the server console; production then refuses to send.
  */
 const sms = once<SmsSender>(() => {
+  const elks = elksFromEnv();
+  if (elks) return elks;
   if (production) {
     return {
-      send: () => Promise.reject(new Error("No sms provider is configured (step 3.1)")),
+      send: () => Promise.reject(new Error("46elks is not configured (ELKS_API_USERNAME)")),
     };
   }
   const fake = createFakeSms();
@@ -140,6 +156,25 @@ const sessionSecret = once(() => {
   return randomBytes(32).toString("base64url");
 });
 
+/** `SHORT_LINK_KEY`, the same as the worker's: the short links' codes are hashed with it. */
+const linkKey = once(() => {
+  const key = process.env.SHORT_LINK_KEY;
+  if (key && key.length >= 32) return key;
+  if (production) throw new Error("SHORT_LINK_KEY must be at least 32 characters");
+  return "development-only-short-link-key-not-secret";
+});
+
+/** AWS KMS in production, the local KMS otherwise (step 1.6). */
+const kms = once<Kms>(() => kmsFromEnv(process.env, production));
+
+export const customerPage = createCustomerPage({
+  db,
+  maps,
+  kms,
+  now: () => new Date(),
+  linkKey,
+});
+
 export const publicRoutes = createPublicRoutes({
   db,
   sms,
@@ -148,4 +183,43 @@ export const publicRoutes = createPublicRoutes({
   storage,
   now: () => new Date(),
   sessionSecret,
+});
+
+/**
+ * Which addresses may call the 46elks webhooks: `ELKS_ALLOWED_IPS` (comma separated), or
+ * 46elks' published ones in production. No check outside production unless the variable is set.
+ */
+function elksIps(): readonly string[] | null {
+  const listed = process.env.ELKS_ALLOWED_IPS?.split(",")
+    .map((ip) => ip.trim())
+    .filter(Boolean);
+  if (listed && listed.length > 0) return listed;
+  return production ? ELKS_IPS : null;
+}
+
+/** Claude Sonnet 5.5 for free-text replies when `ANTHROPIC_API_KEY` is set (step 3.2). */
+const classifier = once<ReplyClassifier>(() => {
+  if (process.env.ANTHROPIC_API_KEY) return createClaudeClassifier();
+  // Without a key every free-text reply is unclear and becomes a task for a person.
+  if (production) console.warn("[sms] ANTHROPIC_API_KEY is not set; free-text replies go to staff");
+  return createFakeClassifier();
+});
+
+/** The key the STOPP list is hashed with; required in production. */
+const optOutKey = once(() => {
+  const key = process.env.SMS_OPT_OUT_KEY;
+  if (key && key.length >= 32) return key;
+  if (production) throw new Error("SMS_OPT_OUT_KEY must be at least 32 characters");
+  return "development-only-opt-out-key-not-secret";
+});
+
+export const webhookRoutes = createWebhookRoutes({
+  db,
+  sms,
+  now: () => new Date(),
+  smsHookSecret: () => process.env.SUPABASE_AUTH_SMS_HOOK_SECRET,
+  elksToken: () => process.env.ELKS_WEBHOOK_SECRET,
+  elksIps,
+  classifier,
+  optOutKey,
 });

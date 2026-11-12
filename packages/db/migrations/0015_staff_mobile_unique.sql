@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "app_user_mobile_key" ON "app_user" USING btree ("mobile") WHERE "app_user"."mobile" is not null and "app_user"."deleted_at" is null;

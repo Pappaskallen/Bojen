@@ -263,13 +263,13 @@ content_path = "./supabase/templates/magic_link.html"
 # content_path = "./supabase/templates/password_changed_notification.html"
 
 [auth.sms]
-# Allow/disallow the phone provider. When false, users can't sign up or sign in with SMS.
-# To block new signups only, set enable_signup = false under [auth] instead.
-enabled = false
+# Staff may sign in with a code by sms (byggplan step 3.1). No new users: signups are off
+# under [auth]. The sms itself is sent by our hook below, through 46elks.
+enabled = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 # Template for sending OTP to users
-template = "Your code is {{ .Code }}"
+template = "{{ .Code }} är din kod för att logga in i Bojen."
 # Controls the minimum amount of time that must pass before sending another sms otp.
 max_frequency = "5s"
 
@@ -295,13 +295,23 @@ max_frequency = "5s"
 enabled = true
 uri = "pg-functions://postgres/public/custom_access_token_hook"
 
+# Supabase Auth hands each sms code to the web app, which sends it with 46elks (step 3.1).
+# The request is signed (Standard Webhooks). Locally the app runs on the host, seen from
+# Docker as host.docker.internal; the URL and secret come from supabase/.env (see
+# .env.example) or the CI workflow. In production they are set in the Supabase project.
+[auth.hook.send_sms]
+enabled = true
+uri = "env(SUPABASE_AUTH_SMS_HOOK_URI)"
+secrets = "env(SUPABASE_AUTH_SMS_HOOK_SECRET)"
+
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
+# Not used: the send_sms hook above sends every sms. The CLI turns phone sign-in off unless
+# a provider is enabled, so this one is on with placeholder values and never called.
 [auth.sms.twilio]
-enabled = false
-account_sid = ""
-message_service_sid = ""
-# DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
-auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+enabled = true
+account_sid = "not-used-the-send-sms-hook-sends"
+message_service_sid = "not-used"
+auth_token = "not-used"
 
 # Multi-factor-authentication is available to Supabase Pro plan.
 [auth.mfa]
@@ -319,7 +329,7 @@ verify_enabled = true
 enroll_enabled = false
 verify_enabled = false
 otp_length = 6
-template = "Your code is {{ .Code }}"
+template = "{{ .Code }} är din kod för att logga in i Bojen."
 max_frequency = "5s"
 
 # Configure MFA via WebAuthn

@@ -1,10 +1,10 @@
 /**
- * Staff sign-in (byggplan steps 2.7 and 2.8): a one-time code by e-mail through Supabase
- * Auth, and a second factor from an authenticator app for owners, admins and anyone who
+ * Staff sign-in (byggplan steps 2.7, 2.8 and 3.1): a one-time code by e-mail or sms through
+ * Supabase Auth, and a second factor from an authenticator app for owners, admins and anyone who
  * has added one.
  *
- *   POST /api/auth/code       { email }            → 204, the same answer for unknown addresses
- *   POST /api/auth/verify     { email, code }      → 204 and session cookies, or 401
+ *   POST /api/auth/code       { email } | { phone } → 204, the same answer for unknown ones
+ *   POST /api/auth/verify     { email | phone, code } → 204 and session cookies, or 401
  *   POST /api/auth/mfa-enroll                      → { factorId, qrSvg, secret }
  *   POST /api/auth/mfa-verify { factorId, code }   → { recoveryCodes } the first time, then 204
  *   POST /api/auth/mfa-challenge { code }          → 204 and an aal2 session, or 401
@@ -15,10 +15,11 @@
  * token does, so the middleware refreshes it in time with the refresh cookie.
  */
 import { randomBytes } from "node:crypto";
-import { secondFactorStep, type SecondFactorStep, type StaffAuth } from "@bojen/core";
+import { secondFactorStep, toE164, type SecondFactorStep, type StaffAuth } from "@bojen/core";
 import { hashRecoveryCode, newRecoveryCodes } from "@bojen/core/crypto";
 import {
   findStaffByEmail,
+  findStaffByMobile,
   linkAuthUser,
   recordSecondFactorReset,
   replaceRecoveryCodes,
@@ -145,6 +146,27 @@ export function createStaffAuthRoutes(deps: StaffAuthDeps) {
   return {
     async code(request: Request): Promise<Response> {
       const body = await readBody(request);
+      if (typeof body.phone === "string") {
+        // By sms (step 3.1): Supabase Auth makes the code and hands it to our sms hook.
+        const phone = toE164(body.phone);
+        if (!phone)
+          return Response.json({ error: "invalid_input", detail: "phone" }, { status: 400 });
+        const staff = await findStaffByMobile(deps.db(), phone);
+        // The same answer for unknown numbers, as for unknown addresses.
+        if (staff && (staff.authUserId ?? staff.email)) {
+          const auth = deps.auth();
+          let authUserId = staff.authUserId;
+          if (!authUserId && staff.email) {
+            authUserId = await auth.ensureUser(staff.email.toLowerCase());
+            await linkAuthUser(deps.db(), staff.id, authUserId);
+          }
+          if (authUserId) {
+            await auth.setPhone(authUserId, phone);
+            await auth.sendSmsCode(phone);
+          }
+        }
+        return noContent();
+      }
       if (typeof body.email !== "string" || body.email.length > 254) {
         return Response.json({ error: "invalid_input", detail: "email" }, { status: 400 });
       }
@@ -162,14 +184,16 @@ export function createStaffAuthRoutes(deps: StaffAuthDeps) {
 
     async verify(request: Request): Promise<Response> {
       const body = await readBody(request);
-      if (
-        typeof body.email !== "string" ||
-        typeof body.code !== "string" ||
-        !SIX_DIGITS.test(body.code)
-      ) {
+      if (typeof body.code !== "string" || !SIX_DIGITS.test(body.code)) {
         return Response.json({ error: "invalid_input" }, { status: 400 });
       }
-      const session = await deps.auth().verifyCode(body.email.trim().toLowerCase(), body.code);
+      const phone = typeof body.phone === "string" ? toE164(body.phone) : null;
+      if (typeof body.email !== "string" && !phone) {
+        return Response.json({ error: "invalid_input" }, { status: 400 });
+      }
+      const session = phone
+        ? await deps.auth().verifySmsCode(phone, body.code)
+        : await deps.auth().verifyCode(String(body.email).trim().toLowerCase(), body.code);
       if (!session) return Response.json({ error: "invalid_code" }, { status: 401 });
       return noContent(sessionCookies(session, deps.now(), deps.secure));
     },

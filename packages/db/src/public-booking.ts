@@ -24,7 +24,6 @@ import {
   toE164,
   travelPairsFor,
   travelSeconds,
-  sv,
 } from "@bojen/core";
 import {
   CODES_PER_HOUR,
@@ -36,6 +35,7 @@ import {
 } from "@bojen/core/crypto";
 import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import { approvalNeeded } from "./approval";
+import { sendCodeSms } from "./messaging";
 import { BookingError, bookInTransaction, idempotent, type VisitView } from "./booking";
 import type { Database } from "./client";
 import {
@@ -200,7 +200,12 @@ export async function requestCode(deps: CodeDeps, firm: Firm, phoneInput: string
     createdAt: now,
     expiresAt: new Date(now.getTime() + CODE_TTL_MINUTES * 60_000),
   });
-  await deps.sms.send({ to: phone, body: sv.booking.boat.smsCode(code, firm.name) });
+  await sendCodeSms(
+    { db: deps.db, now: deps.now, sms: deps.sms },
+    { tenantId: firm.tenantId, to: phone, customerId: known.id },
+    "booking_code",
+    { code, firm: firm.name },
+  );
 }
 
 export type VerifyResult =
@@ -321,6 +326,8 @@ export interface SuggestRequest {
   changeDate?: string | null;
   /** First day the customer wants (`YYYY-MM-DD`). Defaults to today. */
   earliest?: string | null;
+  /** When rescheduling: the visit being moved, whose own time counts as free (step 3.4). */
+  excludeVisitId?: string;
 }
 
 export interface PublicSuggestion {
@@ -342,7 +349,7 @@ const NEW_PLACE = "new-place";
 const HORIZON_DAYS = 42;
 
 /** Every visit that holds time in the period, with the place the boat is at that day. */
-async function calendar(db: Db, tenantId: string, from: string, to: string) {
+async function calendar(db: Db, tenantId: string, from: string, to: string, except?: string) {
   const range = timeRange(
     stockholmInstant(from, "00:00"),
     stockholmInstant(addDays(to, 1), "00:00"),
@@ -359,6 +366,7 @@ async function calendar(db: Db, tenantId: string, from: string, to: string) {
      and bp.valid_during @> (lower(v.time_window) at time zone 'Europe/Stockholm')::date
     where v.tenant_id = ${tenantId}
       and v.status <> 'cancelled'
+      and v.id <> ${except ?? "00000000-0000-0000-0000-000000000000"}
       and v.deleted_at is null
       and v.mechanic_id is not null
       and v.time_window && ${range}::tstzrange
@@ -505,7 +513,13 @@ export async function publicSuggestions(
   }
 
   const earliest = request.earliest && request.earliest > today ? request.earliest : today;
-  const cal = await calendar(deps.db, tenantId, earliest, addDays(earliest, HORIZON_DAYS));
+  const cal = await calendar(
+    deps.db,
+    tenantId,
+    earliest,
+    addDays(earliest, HORIZON_DAYS),
+    request.excludeVisitId,
+  );
   const tenantInput = {
     windows: settings.windows,
     bufferMinutes: settings.bufferMinutes,
