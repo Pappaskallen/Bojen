@@ -3,6 +3,7 @@ import { connect, type Database } from "../src/client";
 import {
   accessInfo,
   appUser,
+  approvalRule,
   attachment,
   area,
   auditLog,
@@ -285,6 +286,9 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     responseStatus: 201,
     responseBody: { id: v.id },
   });
+  await tx
+    .insert(approvalRule)
+    .values({ tenantId, serviceTypeId: st.id, customerKind: "new", mode: "manual" });
   await tx.insert(verificationCode).values({
     tenantId,
     phone,

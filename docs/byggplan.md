@@ -24,7 +24,8 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 2.3 – Poäng för tider (2 dagar)
 - [x] Steg 2.4 – API och tillståndsmaskin för bokning (1,5 dagar)
 - [x] Steg 2.5 – Bokningssida och widget (3 dagar)
-- [ ] Steg 2.6 – Manuellt godkännande (0,5 dag)
+- [x] Steg 2.6 – Manuellt godkännande (0,5 dag)
+- [ ] Steg 2.7 – Inloggning för personal (1 dag)
 - [ ] Steg 3.1 – Notifieringstjänst och mallmotor (2 dagar)
 - [ ] Steg 3.2 – Inkommande sms och tolkning av svar (2 dagar)
 - [ ] Steg 3.3 – Flöden för bekräftelse, ankomsttid och rapport (1,5 dagar)
@@ -202,6 +203,19 @@ ett alternativ i stället för att byta tyst.
 - **Mål:** Inställning per tjänst och kundtyp för hur bokningar bekräftas.
 - **Berör:** `schema/tenant_settings.ts`, `apps/web/app/(admin)/forfragningar/*`.
 - **Klart när:** Ett test visar att en ny kunds bokning blir `pending_approval` och att den blir `booked` när mekanikern godkänner den.
+
+#### Steg 2.7 – Inloggning för personal (1 dag)
+*Tillagt 2026-11-11: sidan för förfrågningar i steg 2.6 och alla vyer för personalen i fas 5 kräver inloggning, men inget steg byggde den. Specifikationen del 2 kap. 10 och 11 anger Supabase Auth.*
+- **Mål:** Mekaniker och ägare loggar in, och varje anrop vet vilken firma och vilken person det gäller.
+- **Berör:** `apps/web/app/(admin)/logga-in/*`, `apps/web/lib/server.ts` (`currentStaff`), `packages/db` (koppling `app_user.auth_user_id`), Supabase-konfigurationen.
+- **Gör:**
+  - Supabase Auth med engångskod via sms eller e-post (spec 10.6). Passkey kan läggas till senare.
+  - `tenant_id` och roll läggs i JWT:n via en hook, så att RLS-policyerna från fas 1 gäller.
+  - `currentStaff()` läser sessionen. Då öppnas `/forfragningar` och personalens API-rutter.
+  - Utloggning och sessionstid enligt spec 10.
+- **Klart när:**
+  - Ett test visar att en inloggad mekaniker ser sin firmas förfrågningar och kan godkänna dem, och att en mekaniker i en annan firma inte ser dem.
+  - Utan inloggning svarar personalens rutter 401.
 
 ### Fas 3: Sms och e-post
 

@@ -139,13 +139,29 @@ describe("POST /api/bookings", () => {
     expect(await bad.json()).toEqual({ error: "invalid_input", detail: "start" });
   });
 
-  it("sends a customer's booking for approval", async () => {
+  it("sends a new customer's booking for approval and books it when the mechanic approves (step 2.6)", async () => {
     caller = { tenantId: ids.tenantId, actor: { type: "customer", id: ids.customerId } };
     const response = await routes.create(post("/api/bookings", "customer-1", booking("10:30")));
     expect(response.status).toBe(201);
-    expect(((await response.json()) as { visit: { status: string } }).visit.status).toBe(
-      "pending_approval",
+    const { visit: v } = (await response.json()) as { visit: { id: string; status: string } };
+    expect(v.status).toBe("pending_approval");
+
+    // The customer cannot approve their own booking …
+    const own = await routes.change(
+      post(`/api/bookings/${v.id}/approve`, "approve-own"),
+      v.id,
+      "approve",
     );
+    expect(own.status).toBe(403);
+    // … the mechanic can.
+    caller = staff();
+    const approved = await routes.change(
+      post(`/api/bookings/${v.id}/approve`, "approve-1"),
+      v.id,
+      "approve",
+    );
+    expect(approved.status).toBe(200);
+    expect(((await approved.json()) as { visit: { status: string } }).visit.status).toBe("booked");
   });
 });
 

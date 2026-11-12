@@ -35,6 +35,7 @@ import {
   newCode,
 } from "@bojen/core/crypto";
 import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
+import { approvalNeeded } from "./approval";
 import { BookingError, bookInTransaction, idempotent, type VisitView } from "./booking";
 import type { Database } from "./client";
 import {
@@ -606,8 +607,8 @@ const clean = (value: string | null | undefined, max = 120) => {
 /**
  * Creates what is missing (customer, boat, place) and books the time in one transaction,
  * under the same idempotency key as staff bookings. Pictures are stored afterwards; a picture
- * that fails does not undo the booking. Until the approval rules of step 2.6 exist, every
- * booking from the page waits for the mechanic's approval.
+ * that fails does not undo the booking. Whether the booking waits for the mechanic's
+ * approval follows the firm's rules (step 2.6, `approvalNeeded`).
  */
 export async function submitPublicBooking(
   deps: PublicBookingDeps,
@@ -763,7 +764,10 @@ export async function submitPublicBooking(
         mechanicId: input.mechanicId,
         start: input.start,
         channel: "web",
-        needsApproval: true,
+        needsApproval: await approvalNeeded(tx, tenantId, {
+          serviceTypeId: input.serviceTypeId,
+          customerId,
+        }),
         partsMissing: false,
         description: clean(input.notes, 2000),
       },

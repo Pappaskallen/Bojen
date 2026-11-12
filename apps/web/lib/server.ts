@@ -28,15 +28,19 @@ export function db() {
 }
 
 /**
- * Sign-in does not exist yet. Staff sign in with Supabase Auth and customers act through
- * the links in their sms (steps 2.5 and 3.4); until then every request is refused with 401,
- * so the routes cannot be used without a proven tenant and actor.
+ * The signed-in staff member, or null. Staff sign-in with Supabase Auth is step 2.7; until
+ * then nobody is signed in, so the staff routes answer 401 and the staff pages ask for
+ * sign-in. This is the one place step 2.7 connects.
  */
-function authorize(): Promise<RequestContext | null> {
+export function currentStaff(): Promise<RequestContext | null> {
   return Promise.resolve(null);
 }
 
-export const bookingRoutes = createBookingRoutes({ db, now: () => new Date(), authorize });
+export const bookingRoutes = createBookingRoutes({
+  db,
+  now: () => new Date(),
+  authorize: () => currentStaff(),
+});
 
 function once<T>(make: () => T): () => T {
   let value: T | undefined;

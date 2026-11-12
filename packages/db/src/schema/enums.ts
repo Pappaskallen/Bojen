@@ -146,3 +146,9 @@ export const consentType = pgEnum("consent_type", [
 ]);
 
 export const consentStatus = pgEnum("consent_status", ["granted", "withdrawn"]);
+
+/** Which customers an approval rule is for (W5). */
+export const customerKind = pgEnum("customer_kind", ["new", "existing"]);
+
+/** How a booking from the customer is confirmed (W5). */
+export const approvalMode = pgEnum("approval_mode", ["auto", "manual"]);

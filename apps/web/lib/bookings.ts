@@ -11,6 +11,7 @@
 import type { VisitEvent } from "@bojen/core";
 import {
   BookingError,
+  approvalNeeded,
   changeBooking,
   createBooking,
   type Actor,
@@ -115,16 +116,21 @@ export function createBookingRoutes(deps: BookingRouteDeps) {
       if (b.plannedMinutes !== undefined && !Number.isInteger(b.plannedMinutes)) {
         throw new BadRequest("plannedMinutes");
       }
+      const customerId = uuid(b.customerId, "customerId");
+      const serviceTypeId = uuid(b.serviceTypeId, "serviceTypeId");
+      // Staff decide themselves; a customer's booking follows the firm's rules (step 2.6).
+      const needsApproval = isStaff
+        ? b.needsApproval === true
+        : await approvalNeeded(deps.db(), ctx.tenantId, { serviceTypeId, customerId });
       const result = await createBooking(bookingDeps(), ctx, {
-        customerId: uuid(b.customerId, "customerId"),
+        customerId,
         boatId: b.boatId === undefined || b.boatId === null ? null : uuid(b.boatId, "boatId"),
-        serviceTypeId: uuid(b.serviceTypeId, "serviceTypeId"),
+        serviceTypeId,
         mechanicId: uuid(b.mechanicId, "mechanicId"),
         start: instant(b.start, "start"),
         ...(typeof b.plannedMinutes === "number" ? { plannedMinutes: b.plannedMinutes } : {}),
         channel: channel as (typeof CHANNELS)[number],
-        // Until the approval rules of step 2.6 exist, every customer booking is approved by hand.
-        needsApproval: isStaff ? b.needsApproval === true : true,
+        needsApproval,
         partsMissing: isStaff ? b.partsMissing === true : false,
       });
       return json(

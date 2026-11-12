@@ -73,3 +73,12 @@ export { isSwedishMobile, toE164 } from "./contact/phone";
 export type { GeocodeResult, Geocoder, ObjectStorage, SmsSender } from "./ports";
 export { BOAT_MAKES, ENGINE_MAKES } from "./catalog/brands";
 export { modeTimeline } from "./booking/modes";
+export {
+  DEFAULT_APPROVAL,
+  matchingRule,
+  needsApproval,
+  type ApprovalMode,
+  type ApprovalQuestion,
+  type ApprovalRule,
+  type CustomerKind,
+} from "./booking/approval";

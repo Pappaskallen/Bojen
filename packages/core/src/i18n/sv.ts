@@ -103,6 +103,18 @@ export const sv = {
       notFound: "Sidan finns inte. Kontrollera länken.",
     },
   },
+  requests: {
+    title: "Förfrågningar",
+    intro: "Bokningar som kunder har gjort och som väntar på ditt godkännande.",
+    none: "Inga förfrågningar just nu.",
+    signIn: "Logga in för att se förfrågningarna.",
+    approve: "Godkänn",
+    reject: "Avböj",
+    approved: "Godkänd. Kunden får en bekräftelse.",
+    rejected: "Avböjd.",
+    failed: "Det gick inte. Försök igen.",
+    photos: (n: number) => (n === 1 ? "1 bild" : `${String(n)} bilder`),
+  },
 } as const;
 
 export type Texts = typeof sv;
