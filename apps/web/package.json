@@ -9,16 +9,22 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@bojen/core": "workspace:*",
     "next": "15.5.29",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "@bojen/db": "workspace:*",
+    "@bojen/adapters": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "19.3.0",
-    "@types/react-dom": "19.3.0"
+    "@types/react-dom": "19.3.0",
+    "drizzle-orm": "0.45.4",
+    "@playwright/test": "1.64.1",
+    "lighthouse": "13.6.0"
   }
 }

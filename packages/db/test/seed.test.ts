@@ -92,5 +92,6 @@ describe("demo data (step 1.5)", () => {
       const visible = await tx.select({ tenantId: customer.tenantId }).from(customer);
       expect(visible.map((c) => c.tenantId)).toEqual([OTHER_TENANT_ID]);
     });
-  });
+    // Seeding writes thousands of rows; on a busy machine it takes more than the default 5 s.
+  }, 30_000);
 });

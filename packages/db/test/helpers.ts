@@ -3,6 +3,8 @@ import { connect, type Database } from "../src/client";
 import {
   accessInfo,
   appUser,
+  approvalRule,
+  attachment,
   area,
   auditLog,
   boat,
@@ -13,9 +15,11 @@ import {
   campaignRecipient,
   consent,
   customer,
+  domainEvent,
   drive,
   engine,
   engineHoursReading,
+  idempotencyKey,
   job,
   jobLine,
   jobPart,
@@ -31,6 +35,10 @@ import {
   tenant,
   visit,
   waitlistEntry,
+  scheduleBlock,
+  travelCache,
+  verificationCode,
+  workSchedule,
 } from "../src/schema";
 import { timeRange } from "../src/schema/_types";
 
@@ -138,6 +146,27 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     })
     .returning();
   if (!l) throw new Error("location not created");
+  const [l2] = await tx
+    .insert(location)
+    .values({
+      tenantId,
+      type: "yard",
+      name: `${name} varv`,
+      position: { lng: 18.72, lat: 59.3 },
+      accessMethod: "ferry",
+      crossingMinutes: 20,
+    })
+    .returning();
+  if (!l2) throw new Error("second location not created");
+  await tx.insert(travelCache).values({
+    tenantId,
+    fromLocationId: l.id,
+    toLocationId: l2.id,
+    departureHour: new Date("2027-04-20T06:00:00Z"),
+    driveSeconds: 600,
+    distanceMeters: 4000,
+    provider: "fake",
+  });
   await tx.insert(locationAccessRule).values({ tenantId, locationId: l.id, parking: "Grusplanen" });
   await tx.insert(boatPlacement).values({
     tenantId,
@@ -183,6 +212,15 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     .insert(jobLine)
     .values({ tenantId, jobId: j.id, type: "labour", description: "Arbete", unitPriceOre: 95_000 });
   await tx.insert(jobPart).values({ tenantId, jobId: j.id, partId: p.id, supplierId: sup.id });
+  await tx
+    .insert(workSchedule)
+    .values({ tenantId, userId: mechanic.id, weekday: 1, startTime: "07:00", endTime: "17:00" });
+  await tx.insert(scheduleBlock).values({
+    tenantId,
+    userId: mechanic.id,
+    during: timeRange(new Date("2027-07-05T00:00:00Z"), new Date("2027-07-26T00:00:00Z")),
+    reason: "Semester",
+  });
 
   const [cl] = await tx
     .insert(call)
@@ -233,6 +271,37 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     action: "access_code_viewed",
     subjectType: "visit",
     subjectId: v.id,
+  });
+  await tx.insert(domainEvent).values({
+    tenantId,
+    aggregateType: "visit",
+    aggregateId: v.id,
+    type: "visit.created",
+    actorType: "system",
+  });
+  await tx.insert(idempotencyKey).values({
+    tenantId,
+    key: `${name}-key`,
+    requestHash: "0".repeat(64),
+    responseStatus: 201,
+    responseBody: { id: v.id },
+  });
+  await tx
+    .insert(approvalRule)
+    .values({ tenantId, serviceTypeId: st.id, customerKind: "new", mode: "manual" });
+  await tx.insert(verificationCode).values({
+    tenantId,
+    phone,
+    codeHash: "0".repeat(64),
+    expiresAt: new Date("2027-01-01T00:10:00Z"),
+  });
+  await tx.insert(attachment).values({
+    tenantId,
+    ownerType: "job",
+    ownerId: j.id,
+    storageKey: `${tenantId}/jobs/${j.id}/drev.jpg`,
+    contentType: "image/jpeg",
+    sizeBytes: 1234,
   });
   await tx.insert(kpiSnapshot).values({
     tenantId,

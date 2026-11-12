@@ -10,9 +10,11 @@ import { appUser } from "./user";
 /**
  * A visit in the calendar. The pipeline follows the job; the calendar follows visits.
  *
- * `time_window` is the window promised to the customer, stored in UTC as a half-open
- * `tstzrange`. An exclusion constraint in migration 0003 stops one mechanic from having
- * two visits that overlap, unless one of them is cancelled.
+ * `time_window` is the planned working time on site, stored in UTC as a half-open
+ * `tstzrange`. The window promised to the customer (for example 08–12) is the firm's
+ * booking window that contains its start (packages/core/src/scheduling). An exclusion
+ * constraint in migration 0003 stops one mechanic from having two visits that overlap,
+ * unless one of them is cancelled.
  */
 export const visit = pgTable(
   "visit",

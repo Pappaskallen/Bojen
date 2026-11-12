@@ -34,6 +34,7 @@ import {
   serviceType,
   tenant,
   visit,
+  workSchedule,
 } from "./schema";
 import { timeRange, type LngLat } from "./schema/_types";
 
@@ -45,11 +46,23 @@ export const OTHER_TENANT_ID = "00000000-0000-4000-8000-000000000002";
 
 /** The marinas with approximate positions (WGS 84). Not yet checked against a map service. */
 export const DEMO_MARINAS = {
-  bullando: { name: "Bullandö Marina", position: { lng: 18.6486, lat: 59.2969 } },
-  djuro: { name: "Djurö Båtvarv", position: { lng: 18.6964, lat: 59.3122 } },
-  saltsjobaden: { name: "Saltsjöbadens Båtklubb", position: { lng: 18.3036, lat: 59.2803 } },
-  sandhamn: { name: "Sandhamns gästhamn", position: { lng: 18.9105, lat: 59.2885 } },
-} satisfies Record<string, { name: string; position: LngLat }>;
+  bullando: {
+    name: "Bullandö Marina",
+    slug: "bullando-marina",
+    position: { lng: 18.6486, lat: 59.2969 },
+  },
+  djuro: { name: "Djurö Båtvarv", slug: "djuro-batvarv", position: { lng: 18.6964, lat: 59.3122 } },
+  saltsjobaden: {
+    name: "Saltsjöbadens Båtklubb",
+    slug: "saltsjobadens-batklubb",
+    position: { lng: 18.3036, lat: 59.2803 },
+  },
+  sandhamn: {
+    name: "Sandhamns gästhamn",
+    slug: "sandhamns-gasthamn",
+    position: { lng: 18.9105, lat: 59.2885 },
+  },
+} satisfies Record<string, { name: string; slug: string; position: LngLat }>;
 
 function at<T>(items: readonly T[], index: number): T {
   const item = items[index];
@@ -272,17 +285,57 @@ export async function seedDemoData(db: Writer, seed = 2026) {
   await db.insert(tenant).values({
     id: tenantId,
     name: "Jonas Båtservice",
+    slug: "jonas-batservice",
+    settings: {
+      booking: { marinaDayDiscount: { kind: "waive_callout" }, calloutPriceOre: 69_500 },
+    },
     orgNumber: "556000-0000",
     phone: "+46846500400", // PTS range for fiction, 08-46 50 04 00
   });
   const [jonas, elin] = await db
     .insert(appUser)
     .values([
-      { tenantId, name: "Jonas Ek", role: "owner", mobile: fictionalMobile(90) },
-      { tenantId, name: "Elin Berg", role: "mechanic", mobile: fictionalMobile(91) },
+      {
+        tenantId,
+        name: "Jonas Ek",
+        role: "owner",
+        mobile: fictionalMobile(90),
+        email: "jonas@jonas-batservice.test",
+      },
+      {
+        tenantId,
+        name: "Elin Berg",
+        role: "mechanic",
+        mobile: fictionalMobile(91),
+        email: "elin@jonas-batservice.test",
+      },
     ])
     .returning();
   if (!jonas || !elin) throw new Error("mechanics not created");
+
+  // Jonas works weekdays 07–12 and 12:30–17; Elin 07–16 and Saturdays in May.
+  await db.insert(workSchedule).values([
+    ...[1, 2, 3, 4, 5].flatMap((weekday) => [
+      { tenantId, userId: jonas.id, weekday, startTime: "07:00", endTime: "12:00" },
+      { tenantId, userId: jonas.id, weekday, startTime: "12:30", endTime: "17:00" },
+    ]),
+    ...[1, 2, 3, 4, 5].map((weekday) => ({
+      tenantId,
+      userId: elin.id,
+      weekday,
+      startTime: "07:00",
+      endTime: "16:00",
+    })),
+    {
+      tenantId,
+      userId: elin.id,
+      weekday: 6,
+      startTime: "08:00",
+      endTime: "14:00",
+      validFrom: "2027-05-01",
+      validTo: "2027-05-31",
+    },
+  ]);
 
   // The yard and the club are customers too: they own their location and can book.
   const djuroYard = await insertOne(
@@ -566,8 +619,12 @@ export async function seedDemoData(db: Writer, seed = 2026) {
 /** A second, small firm so that isolation can be checked against real-looking data. */
 export async function seedOtherTenant(db: Writer) {
   const tenantId = OTHER_TENANT_ID;
-  await db.insert(tenant).values({ id: tenantId, name: "Skärgårdsmekarna" });
-  await db.insert(appUser).values({ tenantId, name: "Kim Holm", role: "owner" });
+  await db
+    .insert(tenant)
+    .values({ id: tenantId, name: "Skärgårdsmekarna", slug: "skargardsmekarna" });
+  await db
+    .insert(appUser)
+    .values({ tenantId, name: "Kim Holm", role: "owner", email: "kim@skargardsmekarna.test" });
   const c = await insertOne(
     db
       .insert(customer)

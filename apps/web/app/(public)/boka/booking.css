@@ -1,0 +1,186 @@
+/* The public booking page. Plain CSS, no framework: it must load fast on 4G (W1). */
+:root {
+  --brand: #0a4d68;
+  --text: #1b1f23;
+  --muted: #59636e;
+  --line: #d0d7de;
+  --bg: #ffffff;
+  --soft: #f3f6f8;
+  --error: #b3261e;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    16px/1.5 system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+
+.booking-page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.booking .firm {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.booking h1 {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.booking h2 {
+  font-size: 1.2rem;
+}
+
+.progress {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 8px 0 16px;
+}
+
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+legend {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding: 0;
+}
+
+.group {
+  margin-top: 16px;
+}
+
+.toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.choice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.choice:has(input:checked) {
+  border-color: var(--brand);
+  background: var(--soft);
+}
+
+.choice input {
+  margin-top: 4px;
+  accent-color: var(--brand);
+}
+
+.choice span {
+  display: flex;
+  flex-direction: column;
+}
+
+.choice small {
+  color: var(--muted);
+}
+
+.choice.marina .badge {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.field span {
+  font-weight: 500;
+}
+
+input:not([type="radio"]):not([type="file"]),
+select,
+textarea {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--brand);
+  background: var(--brand);
+  color: #ffffff;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+button.secondary {
+  background: var(--bg);
+  color: var(--brand);
+  margin-bottom: 12px;
+}
+
+button:disabled {
+  opacity: 0.6;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  gap: 12px;
+}
+
+.error {
+  color: var(--error);
+  font-weight: 500;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+}
+
+.summary dt {
+  color: var(--muted);
+}
+
+.summary dd {
+  margin: 0;
+}

@@ -1,4 +1,5 @@
 import {
+  check,
   foreignKey,
   index,
   jsonb,
@@ -8,7 +9,7 @@ import {
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
-import { baseColumns, tenantIsolationPolicy } from "./_shared";
+import { baseColumns, isSlug, tenantIsolationPolicy } from "./_shared";
 import { bytea, geographyPoint } from "./_types";
 import { area } from "./area";
 import { customer } from "./customer";
@@ -23,6 +24,8 @@ export const location = pgTable(
     tenantId: uuid("tenant_id").notNull(),
     type: locationType("type").notNull(),
     name: text("name").notNull(),
+    /** Used in the marina link `boka.bojen.se/{firm}/m/{slug}` (W7). */
+    slug: text("slug"),
     address: text("address"),
     /** Empty until the address has been geocoded. */
     position: geographyPoint("position"),
@@ -47,6 +50,8 @@ export const location = pgTable(
       foreignColumns: [area.tenantId, area.id],
     }),
     unique("location_tenant_id_id_key").on(t.tenantId, t.id),
+    unique("location_tenant_id_slug_key").on(t.tenantId, t.slug),
+    check("location_slug_format", isSlug(t.slug)),
     index("location_position_idx").using("gist", t.position),
     tenantIsolationPolicy(),
   ],

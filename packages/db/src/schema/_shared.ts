@@ -31,6 +31,14 @@ export function tenantIsolationPolicy(column: "tenant_id" | "id" = "tenant_id") 
 /** Regex for E.164 phone numbers, for example +46701234567. */
 export const E164_PATTERN = "^\\+[1-9][0-9]{6,14}$";
 
+/** Lower-case words joined by hyphens, for example `bullando-marina`. Used in public links. */
+export const SLUG_PATTERN = "^[a-z0-9]+(-[a-z0-9]+)*$";
+
+/** Check expression: the column is null or holds a slug. */
+export function isSlug(column: AnyPgColumn): SQL {
+  return sql`${column} ~ ${sql.raw(`'${SLUG_PATTERN}'`)}`;
+}
+
 /** Check expression: the column is null or holds an E.164 number. */
 export function isE164(column: AnyPgColumn): SQL {
   return sql`${column} ~ ${sql.raw(`'${E164_PATTERN}'`)}`;

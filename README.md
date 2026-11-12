@@ -20,7 +20,7 @@ Arbetsnamn. Specifikationen ligger i `docs/`, byggplanen i `docs/byggplan.md`.
 |---|---|---|
 | Ansök om integrationspartnerskap hos Fortnox | Godkännandet tar tid; steg 8 | Nu |
 | Värva 3–5 pilotfirmor i Stockholms skärgård | Testdata, feedback, pilot 1 mars | 20 nov |
-| Konton: Supabase (eu-north-1), 46elks, Azure Speech (Sweden Central), Google Maps Platform, Mailgun EU, Anthropic | Behövs från fas 2–6; tester klarar sig med fejkadaptrar | Före respektive fas |
+| Konton: Supabase (eu-north-1), 46elks, Azure Speech (Sweden Central), Mailgun EU, Anthropic | Behövs från fas 2–6; tester klarar sig med fejkadaptrar | Före respektive fas |
 | Röstprototyp i Vapi för pilotfirmorna | Testa manus och röst tidigt | December |
 
 ## Kommandon
@@ -32,7 +32,9 @@ Kör `corepack enable` en gång, sedan:
 | `pnpm install` | Installerar beroenden |
 | `pnpm lint` / `pnpm typecheck` / `pnpm test` | Kontrollerna som CI kör (plus `pnpm format:check`) |
 | `pnpm format` | Formaterar koden med Prettier |
-| `pnpm db:start` / `pnpm db:stop` / `pnpm db:status` | Lokal Supabase utan tjänster som inte behövs |
+| `pnpm db:start` / `pnpm db:stop` / `pnpm db:status` | Lokal Supabase utan tjänster som inte behövs (Storage ingår från steg 2.5) |
+| `pnpm e2e` | Playwright mot bokningssidan, widgeten, inloggningen för personal och Lighthouse. Kräver `pnpm db:start` (Auth, Storage och Mailpit). Bygger webbappen och **tömmer den lokala databasen** och fyller den med testdata |
+| Mailpit, http://127.0.0.1:54324 | Här hamnar inloggningskoderna för personalen lokalt. Testpersonalen är `jonas@jonas-batservice.test`, `elin@jonas-batservice.test` och `kim@skargardsmekarna.test` |
 | `pnpm db:generate` / `pnpm db:migrate` | Skapar en migrering från schemat / kör migreringarna |
 | `pnpm db:seed` | Tömmer den lokala databasen och lägger in testdata (Jonas Båtservice). Vägrar köra mot annat än localhost |
 | `pnpm --filter @bojen/web dev` | Next.js på http://localhost:3000 |
