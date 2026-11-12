@@ -86,14 +86,25 @@ describe("Supabase auth", () => {
       tenant_id: "t-1",
       app_user_id: "a-1",
       app_role: "mechanic",
+      aal: "aal2",
     });
-    const { fetch, calls } = recordingFetch(() => Response.json({ id: "u-1" }));
+    const { fetch, calls } = recordingFetch(() =>
+      Response.json({
+        id: "u-1",
+        factors: [
+          { id: "f-1", factor_type: "totp", status: "verified" },
+          { id: "f-2", factor_type: "totp", status: "unverified" },
+        ],
+      }),
+    );
     const auth = createSupabaseAuth({ ...options, fetch });
     expect(await auth.claims(access)).toEqual({
       authUserId: "u-1",
       tenantId: "t-1",
       appUserId: "a-1",
       role: "mechanic",
+      aal: "aal2",
+      factorIds: ["f-1"],
     });
     expect((calls[0]?.init.headers as Record<string, string>).Authorization).toBe(
       `Bearer ${access}`,
@@ -112,6 +123,77 @@ describe("Supabase auth", () => {
       fetch: recordingFetch(() => Response.json({ id: "u-2" })).fetch,
     });
     expect(await other.claims(token({ sub: "u-1", tenant_id: "t-1" }))).toBeNull();
+  });
+});
+
+describe("Supabase second factor", () => {
+  it("removes an unconfirmed factor before adding a new one", async () => {
+    const { fetch, calls } = recordingFetch((url, init) => {
+      if (url.endsWith("/user")) {
+        return Response.json({
+          id: "u-1",
+          factors: [{ id: "old", factor_type: "totp", status: "unverified" }],
+        });
+      }
+      if (init.method === "DELETE") return Response.json({});
+      return Response.json({
+        id: "f-1",
+        totp: { qr_code: "<svg/>", secret: "ABC", uri: "otpauth://" },
+      });
+    });
+    const auth = createSupabaseAuth({ ...options, fetch });
+    expect(await auth.enrollTotp("tok")).toEqual({
+      factorId: "f-1",
+      qrSvg: "<svg/>",
+      secret: "ABC",
+    });
+    expect(calls.map((c) => `${c.init.method ?? "GET"} ${c.url}`)).toEqual([
+      "GET http://supabase.test/auth/v1/user",
+      "DELETE http://supabase.test/auth/v1/factors/old",
+      "POST http://supabase.test/auth/v1/factors",
+    ]);
+    expect(JSON.parse(String(calls[2]?.init.body))).toMatchObject({ factor_type: "totp" });
+  });
+
+  it("challenges and verifies a code into an aal2 session", async () => {
+    const { fetch, calls } = recordingFetch((url) =>
+      url.endsWith("/challenge")
+        ? Response.json({ id: "c-1" })
+        : Response.json({ access_token: "a2", refresh_token: "r2", expires_in: 3600 }),
+    );
+    const auth = createSupabaseAuth({ ...options, fetch });
+    expect(await auth.verifyTotp("tok", "f-1", " 123456 ")).toMatchObject({ accessToken: "a2" });
+    expect(calls[1]?.url).toBe("http://supabase.test/auth/v1/factors/f-1/verify");
+    expect(JSON.parse(String(calls[1]?.init.body))).toEqual({
+      challenge_id: "c-1",
+      code: "123456",
+    });
+  });
+
+  it("answers null to a wrong code", async () => {
+    const { fetch } = recordingFetch((url) =>
+      url.endsWith("/challenge")
+        ? Response.json({ id: "c-1" })
+        : Response.json({}, { status: 422 }),
+    );
+    expect(
+      await createSupabaseAuth({ ...options, fetch }).verifyTotp("tok", "f-1", "000000"),
+    ).toBeNull();
+  });
+
+  it("removes every factor of a user with the service key", async () => {
+    const { fetch, calls } = recordingFetch((_url, init) =>
+      init.method === "DELETE"
+        ? Response.json({})
+        : Response.json({ factors: [{ id: "f-1", factor_type: "totp", status: "verified" }] }),
+    );
+    const auth = createSupabaseAuth({ ...options, fetch });
+    expect(await auth.hasFactor("u-1")).toBe(true);
+    await auth.removeFactors("u-1");
+    expect(calls.at(-1)?.url).toBe("http://supabase.test/auth/v1/admin/users/u-1/factors/f-1");
+    expect((calls.at(-1)?.init.headers as Record<string, string>).Authorization).toBe(
+      "Bearer service",
+    );
   });
 });
 

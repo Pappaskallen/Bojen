@@ -11,14 +11,17 @@ import {
 } from "@bojen/adapters";
 import type { Geocoder, MapsProvider, ObjectStorage, SmsSender, StaffAuth } from "@bojen/core";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { connect, type DbConnection } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createPublicRoutes } from "./public-booking";
+import { createStaffAdminRoutes } from "./staff-admin";
 import {
   ACCESS_COOKIE,
   createStaffAuthRoutes,
   staffFromRequest,
-  staffFromToken,
+  staffSession,
+  type StaffSession,
 } from "./staff-auth";
 
 /**
@@ -51,10 +54,29 @@ export const staffAuth = once<StaffAuth>(() => {
   return createSupabaseAuth({ url, anonKey, serviceRoleKey });
 });
 
-/** The signed-in staff member on a page, from the session cookie, or null. */
-export async function currentStaff(): Promise<RequestContext | null> {
+/** The signed-in staff member on a page, before or after the second factor, or null. */
+export async function currentSession(): Promise<StaffSession | null> {
   const token = (await cookies()).get(ACCESS_COOKIE)?.value ?? null;
-  return token ? staffFromToken(staffAuth(), token) : null;
+  return token ? staffSession(staffAuth(), token) : null;
+}
+
+/**
+ * For staff pages: the complete session, or a redirect to whatever is missing: sign-in,
+ * adding an authenticator app, or the code from it (step 2.8).
+ */
+export async function requireStaff(path: string): Promise<StaffSession> {
+  const session = await currentSession();
+  const next = `nasta=${encodeURIComponent(path)}`;
+  if (!session) redirect(`/logga-in?${next}`);
+  if (session.step === "enroll") redirect(`/sakerhet/tvafaktor?${next}`);
+  if (session.step === "challenge") redirect(`/logga-in/tvafaktor?${next}`);
+  return session;
+}
+
+/** Kept for callers that only need who it is; null unless the session is complete. */
+export async function currentStaff(): Promise<RequestContext | null> {
+  const session = await currentSession();
+  return session?.step === "none" ? session.context : null;
 }
 
 export const bookingRoutes = createBookingRoutes({
@@ -62,6 +84,8 @@ export const bookingRoutes = createBookingRoutes({
   now: () => new Date(),
   authorize: (request) => staffFromRequest(staffAuth(), request),
 });
+
+export const staffAdminRoutes = createStaffAdminRoutes({ db, auth: staffAuth });
 
 export const staffAuthRoutes = createStaffAuthRoutes({
   db,

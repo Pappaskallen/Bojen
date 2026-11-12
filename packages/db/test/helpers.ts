@@ -26,6 +26,7 @@ import {
   kpiSnapshot,
   location,
   locationAccessRule,
+  mfaRecoveryCode,
   message,
   part,
   serviceType,
@@ -289,6 +290,9 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
   await tx
     .insert(approvalRule)
     .values({ tenantId, serviceTypeId: st.id, customerKind: "new", mode: "manual" });
+  await tx
+    .insert(mfaRecoveryCode)
+    .values({ tenantId, appUserId: mechanic.id, codeHash: "0".repeat(64) });
   await tx.insert(verificationCode).values({
     tenantId,
     phone,

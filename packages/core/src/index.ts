@@ -78,6 +78,7 @@ export type {
   SmsSender,
   StaffAuth,
   StaffClaims,
+  TotpEnrollment,
 } from "./ports";
 export { BOAT_MAKES, ENGINE_MAKES } from "./catalog/brands";
 export { modeTimeline } from "./booking/modes";
@@ -90,3 +91,9 @@ export {
   type ApprovalRule,
   type CustomerKind,
 } from "./booking/approval";
+export {
+  secondFactorRequired,
+  secondFactorStep,
+  type SecondFactorStep,
+  type StaffRole,
+} from "./auth/second-factor";

@@ -29,6 +29,13 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/forfragningar/:path*", "/api/bookings/:path*"],
+  matcher: [
+    "/forfragningar/:path*",
+    "/sakerhet/:path*",
+    "/logga-in/tvafaktor",
+    "/api/bookings/:path*",
+    "/api/staff/:path*",
+    "/api/auth/:path*",
+  ],
   runtime: "nodejs",
 };

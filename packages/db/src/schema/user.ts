@@ -6,6 +6,7 @@ import {
   pgPolicy,
   pgTable,
   text,
+  timestamp,
   unique,
   uniqueIndex,
   uuid,
@@ -47,6 +48,32 @@ export const appUser = pgTable(
     }),
     index("app_user_tenant_id_idx").on(t.tenantId),
     check("app_user_mobile_e164", isE164(t.mobile)),
+    tenantIsolationPolicy(),
+  ],
+);
+
+/**
+ * Recovery codes for a staff member's second factor (byggplan step 2.8). Only a hash bound
+ * to the person is stored (packages/core/src/crypto/recovery.ts). A used code is kept with
+ * `used_at`, so it cannot be used again.
+ */
+export const mfaRecoveryCode = pgTable(
+  "mfa_recovery_code",
+  {
+    ...baseColumns,
+    tenantId: uuid("tenant_id").notNull(),
+    appUserId: uuid("app_user_id").notNull(),
+    codeHash: text("code_hash").notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+  },
+  (t) => [
+    foreignKey({ columns: [t.tenantId], foreignColumns: [tenant.id] }),
+    foreignKey({
+      name: "mfa_recovery_code_user_fk",
+      columns: [t.tenantId, t.appUserId],
+      foreignColumns: [appUser.tenantId, appUser.id],
+    }),
+    index("mfa_recovery_code_user_idx").on(t.tenantId, t.appUserId),
     tenantIsolationPolicy(),
   ],
 );

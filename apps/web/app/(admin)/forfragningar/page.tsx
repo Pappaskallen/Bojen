@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { sv } from "@bojen/core/i18n/sv";
 import { pendingRequests } from "@bojen/db";
-import { currentStaff, db } from "../../../lib/server";
-import { redirect } from "next/navigation";
+import { db, requireStaff } from "../../../lib/server";
 import { SignOutButton } from "../sign-out";
 import { RequestList } from "./request-list";
 
@@ -14,9 +13,8 @@ export const metadata: Metadata = {
 
 /** Bookings waiting for approval (byggplan step 2.6). Staff only (step 2.7). */
 export default async function RequestsPage() {
-  const staff = await currentStaff();
-  if (!staff || staff.actor.type !== "staff") redirect("/logga-in?nasta=/forfragningar");
-  const requests = await pendingRequests(db(), staff.tenantId);
+  const staff = await requireStaff("/forfragningar");
+  const requests = await pendingRequests(db(), staff.context.tenantId);
   return (
     <main className="requests booking">
       <h1>{sv.requests.title}</h1>
