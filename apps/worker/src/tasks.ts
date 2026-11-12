@@ -1,6 +1,7 @@
 import type { EmailSender, SmsSender } from "@bojen/core";
 import { SEND_MESSAGE_TASK } from "@bojen/db";
 import type { Task, TaskList } from "graphile-worker";
+import { CHECK_TASK, sendAvailabilityCheck } from "./flows/availabilityCheck";
 import type { FlowDeps } from "./flows/deps";
 import { DOMAIN_EVENT_TASK, handleDomainEvent } from "./flows/events";
 import { ETA_TASK, sendMorningEta } from "./flows/morningEta";
@@ -34,6 +35,7 @@ export function taskList(deps: WorkerDeps): TaskList {
       const eventId = field(payload, "eventId");
       helpers.logger.info(`event ${eventId}: ${await handleDomainEvent(deps, eventId)}`);
     },
+    [CHECK_TASK]: visitTask((tenantId, visitId) => sendAvailabilityCheck(deps, tenantId, visitId)),
     [ETA_TASK]: visitTask((tenantId, visitId) => sendMorningEta(deps, tenantId, visitId)),
     [SURVEY_TASK]: visitTask((tenantId, visitId) => sendSurvey(deps, tenantId, visitId)),
   };

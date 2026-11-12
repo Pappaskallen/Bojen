@@ -10,6 +10,7 @@ import {
   databaseUrl,
   domainEvent,
   engine,
+  job,
   location,
   managePage,
   message,
@@ -19,6 +20,7 @@ import {
   survey,
   task,
   tenant,
+  visit,
   workSchedule,
   type Database,
 } from "@bojen/db";
@@ -265,6 +267,146 @@ describe("short links in F1 (step 3.4)", () => {
   }, 60_000);
 });
 
+describe("the availability check F3 (step 4.1)", () => {
+  it("goes 24 h before, on Friday for a Monday, and not for late or emergency bookings", async () => {
+    await inRollback(async (db) => {
+      let clock = at("2026-11-16T14:00:00"); // Monday afternoon
+      const sms = createFakeSms();
+      const deps = {
+        db,
+        sms,
+        email: createFakeEmail(),
+        now: () => clock,
+        optOutKey: "flow-test-opt-out-key",
+        link: () => "bojen.se/x/Kp3d9AbC",
+      };
+      const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
+      const f = await setup(db);
+      let n = 0;
+      const book = async (start: Date, urgency: "planned" | "emergency" = "planned") => {
+        const booked = await createBooking(
+          { db, now: () => clock },
+          {
+            tenantId: f.tenantId,
+            actor: { type: "staff", id: f.mechanicId },
+            idempotencyKey: `check-${String(++n)}`,
+          },
+          {
+            customerId: f.customerId,
+            boatId: f.boatId,
+            serviceTypeId: f.serviceTypeId,
+            mechanicId: f.mechanicId,
+            start,
+            channel: "phone",
+            needsApproval: false,
+            partsMissing: false,
+          },
+        );
+        if (urgency !== "planned") {
+          await db.update(job).set({ urgency }).where(eq(job.id, booked.visit.jobId));
+        }
+        return booked.visit.id;
+      };
+      const statusOf = async (visitId: string) =>
+        (
+          await db.select({ s: visit.availabilityStatus }).from(visit).where(eq(visit.id, visitId))
+        )[0]?.s;
+
+      const wednesday = await book(at("2026-11-18T10:00:00"));
+      const monday = await book(at("2026-11-23T10:00:00"));
+      const late = await book(at("2026-11-17T13:00:00")); // 23 hours ahead
+      const emergency = await book(at("2026-11-19T10:00:00"), "emergency");
+      await runDue();
+
+      // Late and emergency bookings get no check and count as confirmed.
+      expect(await pending("visit_check")).toEqual([
+        at("2026-11-17T10:00:00"),
+        at("2026-11-20T12:00:00"),
+      ]);
+      expect(await statusOf(late)).toBe("skipped");
+      expect(await statusOf(emergency)).toBe("skipped");
+      expect(await statusOf(wednesday)).toBe("not_sent");
+
+      // Tuesday 10:00, not a minute before.
+      clock = at("2026-11-17T09:59:00");
+      expect((await runDue()).filter((t) => t === "visit_check")).toEqual([]);
+      clock = at("2026-11-17T10:00:00");
+      expect(await runDue()).toEqual(["visit_check", "send_message"]);
+      expect(sms.lastTo(PHONE)).toBe(
+        "Hej Per! I morgon kl 08-12 kommer vi till Bustern. Står den på land på Bullandö, med nyckeln där du har angett? Svara JA, NEJ eller ÄNDRA. /Flödesfirman",
+      );
+      expect(await statusOf(wednesday)).toBe("pending");
+
+      // The Monday visit is asked about on Friday at 12, as "På måndag".
+      clock = at("2026-11-20T12:00:00");
+      expect((await runDue()).filter((t) => t !== "visit_eta")).toEqual([
+        "visit_check",
+        "send_message",
+      ]);
+      expect(sms.lastTo(PHONE)).toContain("Hej Per! På måndag kl 08-12 kommer vi till Bustern.");
+      expect(await statusOf(monday)).toBe("pending");
+    });
+  }, 60_000);
+
+  it("moves with a reschedule, and an old job sends nothing", async () => {
+    await inRollback(async (db) => {
+      let clock = at("2026-11-16T14:00:00");
+      const sms = createFakeSms();
+      const deps = {
+        db,
+        sms,
+        email: createFakeEmail(),
+        now: () => clock,
+        optOutKey: "flow-test-opt-out-key",
+        link: () => "bojen.se/x/Kp3d9AbC",
+      };
+      const tasks = taskList(deps);
+      const { runDue, pending } = await jobRunner(db, tasks, () => clock);
+      const f = await setup(db);
+      const staff = { tenantId: f.tenantId, actor: { type: "staff" as const, id: f.mechanicId } };
+      const booked = await createBooking(
+        { db, now: () => clock },
+        { ...staff, idempotencyKey: "check-move-book" },
+        {
+          customerId: f.customerId,
+          boatId: f.boatId,
+          serviceTypeId: f.serviceTypeId,
+          mechanicId: f.mechanicId,
+          start: at("2026-11-18T10:00:00"),
+          channel: "phone",
+          needsApproval: false,
+          partsMissing: false,
+        },
+      );
+      await runDue();
+      expect(await pending("visit_check")).toEqual([at("2026-11-17T10:00:00")]);
+
+      clock = at("2026-11-16T15:00:00");
+      await changeBooking(
+        { db, now: () => clock },
+        { ...staff, idempotencyKey: "check-move" },
+        booked.visit.id,
+        { event: "reschedule", start: at("2026-11-19T13:00:00") },
+      );
+      await runDue();
+      expect(await pending("visit_check")).toEqual([at("2026-11-18T13:00:00")]);
+
+      // A job left from the old time, run by hand on Tuesday, sends nothing.
+      clock = at("2026-11-17T10:00:00");
+      const sentBefore = sms.sent.length;
+      await tasks.visit_check!({ tenantId: f.tenantId, visitId: booked.visit.id }, {
+        logger: { info: () => undefined },
+      } as unknown as JobHelpers);
+      expect(await runDue()).toEqual([]);
+      expect(sms.sent.length).toBe(sentBefore);
+
+      clock = at("2026-11-18T13:00:00");
+      expect(await runDue()).toEqual(["visit_check", "send_message"]);
+      expect(sms.lastTo(PHONE)).toContain("I morgon kl 12-16 kommer vi till Bustern.");
+    });
+  }, 60_000);
+});
+
 describe("flows F1, F5, F7 and F9", () => {
   it("a booking is confirmed at once, F5 goes at 07:00, F9 18 h after done", async () => {
     try {
@@ -334,6 +476,12 @@ describe("flows F1, F5, F7 and F9", () => {
             ),
           );
         expect(confirmation).toMatchObject({ status: "sent", sentAt: clock });
+
+        // --- F3: the check goes 24 hours before, Tuesday 08:00 (step 4.1). ---
+        expect(await pending("visit_check")).toEqual([at("2026-11-17T08:00:00")]);
+        clock = at("2026-11-17T08:00:00");
+        expect(await runDue()).toEqual(["visit_check", "send_message"]);
+        expect(sms.lastTo(PHONE)).toContain("I morgon kl 08-12 kommer vi till Bustern.");
 
         // --- F5: put in for Wednesday 07:00, and nothing goes out before. ---
         expect(await pending("visit_eta")).toEqual([at("2026-11-18T07:00:00")]);
@@ -430,6 +578,7 @@ describe("flows F1, F5, F7 and F9", () => {
           [
             "f1_confirmation",
             "f1_confirmation",
+            "f3_check_land",
             "f5_eta",
             "f7_report",
             "f7_report",

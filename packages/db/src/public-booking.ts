@@ -785,6 +785,7 @@ export async function submitPublicBooking(
         partsMissing: false,
         description: clean(input.notes, 2000),
       },
+      deps.now(),
     );
     jobId = visitView.jobId;
     return visitView;

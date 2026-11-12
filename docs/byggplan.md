@@ -31,7 +31,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 3.2 – Inkommande sms och tolkning av svar (2 dagar)
 - [x] Steg 3.3 – Flöden för bekräftelse, ankomsttid och rapport (1,5 dagar)
 - [x] Steg 3.4 – Korta länkar och kundsida (1 dag)
-- [ ] Steg 4.1 – Schemaläggning av kontrollen (1 dag)
+- [x] Steg 4.1 – Schemaläggning av kontrollen (1 dag)
 - [ ] Steg 4.2 – Tillståndsmaskin för svaren (1,5 dagar)
 - [ ] Steg 4.3 – Väntelista och återfyllnad (1,5 dagar)
 - [ ] Steg 5.1 – Kundlista, sökning och kundkort (2 dagar)
