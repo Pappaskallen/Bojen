@@ -17,3 +17,4 @@ export * from "./customers";
 export * from "./boats";
 export * from "./places";
 export * from "./pipeline";
+export * from "./day";

@@ -164,3 +164,10 @@ export {
   type PipelineColumn,
   type PipelineStatus,
 } from "./pipeline/pipeline";
+export {
+  MAX_EXHAUSTIVE_STOPS,
+  suggestOrder,
+  type RouteStop,
+  type RouteSuggestion,
+  type TravelLookup,
+} from "./route/order";

@@ -24,10 +24,22 @@ import type {
 } from "@bojen/core";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { connect, moveCard, revealBoatAccess, type DbConnection } from "@bojen/db";
+import {
+  addPart,
+  addVisitPhoto,
+  changeBooking,
+  connect,
+  moveCard,
+  recordHours,
+  revealBoatAccess,
+  setPartStatus,
+  visitDayFor,
+  type DbConnection,
+} from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createBoatAccessRoute } from "./boat-access";
 import { createCustomerPage } from "./customer-page";
+import { createDayRoute } from "./day-route";
 import { createPipelineRoute } from "./pipeline-route";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
@@ -133,7 +145,7 @@ const sms = once<SmsSender>(() => {
   };
 });
 
-const maps = once<MapsProvider>(() =>
+export const maps = once<MapsProvider>(() =>
   process.env.OSRM_URL ? createOsrmMaps({ baseUrl: process.env.OSRM_URL }) : createFakeMaps(),
 );
 
@@ -169,6 +181,46 @@ const linkKey = once(() => {
 
 /** AWS KMS in production, the local KMS otherwise (step 1.6). */
 const kms = once<Kms>(() => kmsFromEnv(process.env, production));
+
+/** The mechanic's day view (step 5.5): start, done, hours, parts and pictures. */
+export const dayRoute = createDayRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  visitDay: (actor, visitId) => visitDayFor(db(), actor, visitId),
+  start: async (actor, visitId, key) => {
+    await changeBooking(
+      { db: db(), now: () => new Date() },
+      {
+        tenantId: actor.tenantId,
+        actor: { type: "staff", id: actor.userId },
+        idempotencyKey: `idag:${key}`,
+      },
+      visitId,
+      { event: "start" },
+    );
+  },
+  complete: async (actor, visitId, key) => {
+    await changeBooking(
+      { db: db(), now: () => new Date() },
+      {
+        tenantId: actor.tenantId,
+        actor: { type: "staff", id: actor.userId },
+        idempotencyKey: `idag:${key}`,
+      },
+      visitId,
+      { event: "complete" },
+    );
+  },
+  hours: (actor, visitId, engineId, hours) =>
+    recordHours(db(), actor, visitId, engineId, hours, new Date()),
+  addPart: async (actor, visitId, input) => {
+    await addPart(db(), actor, visitId, input);
+  },
+  partStatus: (actor, visitId, jobPartId, status) =>
+    setPartStatus(db(), actor, visitId, jobPartId, status),
+  photo: async (actor, visitId, photo) => {
+    await addVisitPhoto({ db: db(), storage: storage() }, actor, visitId, photo);
+  },
+});
 
 /** Moving cards on the pipeline (step 5.4). */
 export const pipelineRoute = createPipelineRoute({

@@ -325,6 +325,7 @@ ett alternativ i stället för att byta tyst.
   - Inloggning med passkey (WebAuthn), som alternativ till engångskod (spec 10.7).
   - Appen låses och låses upp biometriskt med Face ID eller fingeravtryck via WebAuthn med användarverifiering (spec 10.7).
   - Grindkod och nyckelplats visas bara efter biometrisk upplåsning och döljs igen efter 60 sekunder (spec 10.4). Offline sparas de krypterat på telefonen från kvällen innan och raderas när jobbet är klart eller efter 24 timmar. En PWA kommer inte åt iOS Keychain eller Android Keystore; skillnaden mot specifikationen beskrivs och stäms av innan steget börjar.
+  - (Avstämt med Robert 2026-11-13: koderna krypteras på telefonen med en nyckel ur mekanikerns passkey via WebAuthn PRF, så de bara går att läsa efter Face ID eller fingeravtryck; på telefoner utan PRF visas de bara med täckning. Röstanteckningen byggs med en fejkadapter tills Azure-kontot finns. Steget görs i fyra delar som committas var för sig: a) dagvy, rutt, Starta och Klart, gångtimmar, delar och bilder; b) offline med service worker och kö i IndexedDB; c) passkey, biometriskt lås och koder; d) rapportutkast, röstanteckning och fakturaunderlag.)
 - **Klart när:**
   - Ett Playwright-test i offline-läge går igenom: mekanikern markerar ett jobb klart med bild och anteckning, och när nätet kommer tillbaka synkas allt och rapportutkastet skapas.
   - Ett test visar att koden inte visas utan upplåsning, att den döljs efter 60 sekunder och att den raderas från telefonen när jobbet är klart.

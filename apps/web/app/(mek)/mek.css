@@ -1,0 +1,77 @@
+/* The mechanic's day view (step 5.5): big targets for a phone with cold fingers. */
+.day-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.day-visit {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  scroll-margin-top: 16px;
+}
+
+.day-visit:target {
+  border-color: var(--brand);
+}
+
+.day-visit header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.day-visit .when {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.day-visit h2 {
+  margin: 4px 0;
+  font-size: 1.1rem;
+}
+
+.day-visit .meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.day-visit details {
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.day-visit summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.day-visit form {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.day-visit .inline {
+  grid-template-columns: 1fr auto;
+  align-items: end;
+}
+
+.day-visit .actions button {
+  min-height: 48px;
+  min-width: 120px;
+}
+
+.day-pager {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0 16px;
+}

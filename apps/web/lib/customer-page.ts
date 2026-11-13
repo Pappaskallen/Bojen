@@ -75,12 +75,11 @@ export const slotValue = (s: Pick<PublicSuggestion, "mechanicId" | "start">) =>
 export function createCustomerPage(deps: CustomerPageDeps) {
   const linkDeps = () => ({ db: deps.db(), now: deps.now, linkKey: deps.linkKey() });
 
-  const back = (request: Request, code: string, query: string) =>
+  // A relative address, so the browser stays on the host it came from (see day-route.ts).
+  const back = (_request: Request, code: string, query: string) =>
     new Response(null, {
       status: 303,
-      headers: {
-        location: new URL(`/x/${encodeURIComponent(code)}?${query}`, request.url).toString(),
-      },
+      headers: { location: `/x/${encodeURIComponent(code)}?${query}` },
     });
 
   async function form(request: Request): Promise<FormData | null> {
