@@ -1,43 +1,13 @@
 import { appUser, auditLog, connect, customer, job, visit } from "@bojen/db";
 import { DEMO_TENANT_ID } from "@bojen/db/seed";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 import { REQUEST_PHONE } from "./global-setup";
-import { MAILPIT, emailCode, type MailpitList } from "./staff-login";
-import { totp } from "./totp";
+import { MAILPIT, emailCode, secondFactor, signInOwner, type MailpitList } from "./staff-login";
 
 const JONAS = "jonas@jonas-batservice.test"; // owner
 const ELIN = "elin@jonas-batservice.test"; // mechanic
 const KIM = "kim@skargardsmekarna.test"; // owner of the other firm
-
-/** The authenticator-app secret of each owner, once added; the tests' stand-in for a phone. */
-const secrets = new Map<string, string>();
-
-/** The second step for owners: adding the app the first time, its code after that. */
-async function secondFactor(page: Page, email: string) {
-  const secret = secrets.get(email);
-  if (secret) {
-    await expect(page).toHaveURL(/\/logga-in\/tvafaktor/);
-    await page.getByLabel("Kod från appen").fill(await totp(secret));
-    await page.getByRole("button", { name: "Bekräfta" }).click();
-    return;
-  }
-  await expect(page).toHaveURL(/\/sakerhet\/tvafaktor/);
-  const newSecret = (await page.getByTestId("totp-secret").textContent()) ?? "";
-  secrets.set(email, newSecret);
-  await page.getByLabel("Kod från appen").fill(await totp(newSecret));
-  await page.getByRole("button", { name: "Bekräfta" }).click();
-  await expect(
-    page.getByRole("list", { name: "Spara dina reservkoder" }).getByRole("listitem"),
-  ).toHaveCount(10);
-  await page.getByRole("button", { name: "Jag har sparat koderna" }).click();
-}
-
-async function signInOwner(page: Page, email: string, path = "/forfragningar") {
-  await emailCode(page, email, path);
-  await secondFactor(page, email);
-  await expect(page).toHaveURL(new RegExp(`${path}$`));
-}
 
 test("an owner without a second factor gets no further until the app is added (step 2.8)", async ({
   page,

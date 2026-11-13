@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { inspect } from "node:util";
 import { describe, expect, it } from "vitest";
-import { ACCESS_WINDOW_MS, decideAccess } from "./access-rule";
+import { ACCESS_WINDOW_MS, decideAccess, decideBoatAccess } from "./access-rule";
 import { DecryptionError, decryptField, encryptField, fieldAad } from "./cipher";
 import { Secret } from "./secret";
 
@@ -110,5 +110,59 @@ describe("access rule", () => {
     expect(
       decideAccess({ userId: "o1", role: "owner", visit, now: at(-30 * ACCESS_WINDOW_MS) }),
     ).toEqual({ allowed: true, reason: "owner" });
+  });
+});
+
+describe("decideBoatAccess (the boat card, step 5.2)", () => {
+  const now = new Date("2026-11-18T10:00:00Z");
+  const hours = (n: number) => new Date(now.getTime() + n * 3_600_000);
+  const elin = "elin";
+  const visits = [
+    { id: "far", mechanicId: elin, start: hours(-48) },
+    { id: "near", mechanicId: elin, start: hours(3) },
+    { id: "someone-else", mechanicId: "jonas", start: hours(1) },
+  ];
+
+  it("lets the owner see the code at any time, without a visit", () => {
+    expect(decideBoatAccess({ userId: "jonas", role: "owner", visits: [], now })).toEqual({
+      allowed: true,
+      reason: "owner",
+      visitId: null,
+    });
+  });
+
+  it("lets a mechanic through their own nearest visit within 12 hours", () => {
+    expect(decideBoatAccess({ userId: elin, role: "mechanic", visits, now })).toEqual({
+      allowed: true,
+      reason: "assigned_mechanic",
+      visitId: "near",
+    });
+  });
+
+  it("refuses a mechanic whose own visits are all further off than 12 hours", () => {
+    const later = [{ id: "v", mechanicId: elin, start: hours(13) }];
+    expect(decideBoatAccess({ userId: elin, role: "mechanic", visits: later, now })).toEqual({
+      allowed: false,
+      reason: "outside_window",
+    });
+  });
+
+  it("refuses a mechanic without a visit to the boat, even when another has one now", () => {
+    const others = [{ id: "v", mechanicId: "jonas", start: hours(0) }];
+    expect(decideBoatAccess({ userId: elin, role: "mechanic", visits: others, now })).toEqual({
+      allowed: false,
+      reason: "not_assigned",
+    });
+    expect(decideBoatAccess({ userId: elin, role: "mechanic", visits: [], now })).toEqual({
+      allowed: false,
+      reason: "not_assigned",
+    });
+  });
+
+  it("refuses administrators, as for a visit", () => {
+    expect(decideBoatAccess({ userId: "a", role: "admin", visits, now })).toEqual({
+      allowed: false,
+      reason: "role_not_allowed",
+    });
   });
 });

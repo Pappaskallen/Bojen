@@ -85,7 +85,9 @@ export default async function CustomerCardPage({ params }: Props) {
           <ul className="boat-list">
             {card.boats.map((b) => (
               <li key={b.id}>
-                <strong>{boatLabel(b)}</strong>
+                <strong>
+                  <Link href={`/batar/${b.id}`}>{boatLabel(b)}</Link>
+                </strong>
                 <span className="badge">{word(crm.ownershipRole, b.role)}</span>
                 {b.status === "active" ? null : (
                   <span className="badge">{word(crm.boatStatus, b.status)}</span>

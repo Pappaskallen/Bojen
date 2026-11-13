@@ -32,9 +32,12 @@ export const config = {
   matcher: [
     "/forfragningar/:path*",
     "/sakerhet/:path*",
+    "/kunder/:path*",
+    "/batar/:path*",
     "/logga-in/tvafaktor",
     "/api/bookings/:path*",
     "/api/staff/:path*",
+    "/api/batar/:path*",
     "/api/auth/:path*",
   ],
   runtime: "nodejs",

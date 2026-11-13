@@ -56,6 +56,8 @@ export interface Geocoder {
 /** Files such as pictures of the drive. Supabase Storage in production. */
 export interface ObjectStorage {
   put(key: string, body: Uint8Array, contentType: string): Promise<void>;
+  /** A link that shows the file for `seconds`, for an `<img>` on a staff page. The bucket is private. */
+  signedUrl(key: string, seconds: number): Promise<string>;
 }
 
 /** A signed-in session from the auth provider. */

@@ -35,7 +35,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 4.2 – Tillståndsmaskin för svaren (1,5 dagar)
 - [x] Steg 4.3 – Väntelista och återfyllnad (1,5 dagar)
 - [x] Steg 5.1 – Kundlista, sökning och kundkort (2 dagar)
-- [ ] Steg 5.2 – Båtkort med tidslinje (2 dagar)
+- [x] Steg 5.2 – Båtkort med tidslinje (2 dagar)
 - [ ] Steg 5.3 – Marinakort (1 dag)
 - [ ] Steg 5.4 – Pipeline (1 dag)
 - [ ] Steg 5.5 – Mekanikerns dagvy som PWA, offline (3 dagar)

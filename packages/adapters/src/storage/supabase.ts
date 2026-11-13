@@ -53,5 +53,21 @@ export function createSupabaseStorage(options: SupabaseStorageOptions): ObjectSt
         throw new Error(`Supabase Storage refused the upload: ${String(response.status)}`);
       }
     },
+
+    async signedUrl(key, seconds) {
+      const path = key.split("/").map(encodeURIComponent).join("/");
+      const response = await send(`${base}/object/sign/${options.bucket}/${path}`, {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({ expiresIn: seconds }),
+      });
+      if (!response.ok) {
+        throw new Error(`Supabase Storage refused to sign a link: ${String(response.status)}`);
+      }
+      const { signedURL } = (await response.json()) as { signedURL?: string };
+      if (!signedURL) throw new Error("Supabase Storage returned no signed link");
+      // The answer is relative to /storage/v1.
+      return `${base}${signedURL.startsWith("/") ? "" : "/"}${signedURL}`;
+    },
   };
 }

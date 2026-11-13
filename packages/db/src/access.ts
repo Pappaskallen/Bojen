@@ -16,6 +16,7 @@ import {
   type Kms,
   Secret,
   decideAccess,
+  decideBoatAccess,
   decryptField,
   encryptField,
   fieldAad,
@@ -24,7 +25,16 @@ import { stockholmDate } from "@bojen/core";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Database } from "./client";
 import { placementOn } from "./queries/location";
-import { accessInfo, appUser, auditLog, job, locationAccessRule, tenant, visit } from "./schema";
+import {
+  accessInfo,
+  appUser,
+  auditLog,
+  boat,
+  job,
+  locationAccessRule,
+  tenant,
+  visit,
+} from "./schema";
 
 type Executor = Pick<Database, "select" | "insert" | "update">;
 
@@ -35,7 +45,10 @@ export interface AccessDeps {
 }
 
 export type AccessDeniedReason =
-  Extract<AccessDecision, { allowed: false }>["reason"] | "unknown_user" | "visit_not_found";
+  | Extract<AccessDecision, { allowed: false }>["reason"]
+  | "unknown_user"
+  | "visit_not_found"
+  | "boat_not_found";
 
 export class AccessDeniedError extends Error {
   constructor(readonly reason: AccessDeniedReason) {
@@ -228,24 +241,35 @@ export async function decryptAccess(
   }
   await log("access_code_viewed", decision.reason);
 
-  const key = await dataKey(deps, user.tenantId);
-  const tenantId = user.tenantId;
-  const [info] = found.boatId
+  return openAccess(deps, user.tenantId, found.boatId, stockholmDate(start));
+}
+
+/**
+ * The boat's code and key location, and the gate code and key box where the boat is on
+ * `day`. Only after the rule has allowed it and the attempt is logged.
+ */
+async function openAccess(
+  deps: AccessDeps,
+  tenantId: string,
+  boatId: string | null,
+  day: string,
+): Promise<RevealedAccess> {
+  const { db } = deps;
+  const key = await dataKey(deps, tenantId);
+  const [info] = boatId
     ? await db
         .select()
         .from(accessInfo)
         .where(
           and(
             eq(accessInfo.tenantId, tenantId),
-            eq(accessInfo.boatId, found.boatId),
+            eq(accessInfo.boatId, boatId),
             isNull(accessInfo.deletedAt),
           ),
         )
     : [];
 
-  const placement = found.boatId
-    ? await placementOn(db, found.boatId, stockholmDate(start))
-    : undefined;
+  const placement = boatId ? await placementOn(db, boatId, day) : undefined;
   const [rule] = placement
     ? await db
         .select()
@@ -277,4 +301,83 @@ export async function decryptAccess(
     contactName: info?.contactName ?? null,
     contactPhone: info?.contactPhone ?? null,
   };
+}
+
+/**
+ * The access information from the boat card (step 5.2): for the owner at any time, for a
+ * mechanic only through their own visit to the boat within 12 hours of its start. Every
+ * attempt is written to `audit_log` against the boat, allowed or not, with the visit it went
+ * through. Throws `AccessDeniedError` when the rule refuses.
+ */
+export async function revealBoatAccess(
+  deps: AccessDeps,
+  userId: string,
+  boatId: string,
+): Promise<RevealedAccess> {
+  const { db } = deps;
+  const [user] = await db
+    .select({ id: appUser.id, tenantId: appUser.tenantId, role: appUser.role })
+    .from(appUser)
+    .where(and(eq(appUser.id, userId), isNull(appUser.deletedAt)));
+  if (!user) throw new AccessDeniedError("unknown_user");
+
+  const log = (
+    action: "access_code_viewed" | "access_code_denied",
+    reason: string,
+    visitId: string | null = null,
+  ) =>
+    db.insert(auditLog).values({
+      tenantId: user.tenantId,
+      userId: user.id,
+      action,
+      subjectType: "boat",
+      subjectId: boatId,
+      details: visitId ? { reason, visitId } : { reason },
+    });
+
+  const [found] = await db
+    .select({ id: boat.id })
+    .from(boat)
+    .where(and(eq(boat.tenantId, user.tenantId), eq(boat.id, boatId), isNull(boat.deletedAt)));
+  if (!found) {
+    await log("access_code_denied", "boat_not_found");
+    throw new AccessDeniedError("boat_not_found");
+  }
+
+  const visits = await db
+    .select({
+      id: visit.id,
+      mechanicId: visit.mechanicId,
+      startEpoch: sql<string>`extract(epoch from lower(${visit.timeWindow}))`,
+    })
+    .from(visit)
+    .innerJoin(job, and(eq(job.tenantId, visit.tenantId), eq(job.id, visit.jobId)))
+    .where(
+      and(
+        eq(visit.tenantId, user.tenantId),
+        eq(job.boatId, boatId),
+        isNull(visit.deletedAt),
+        sql`${visit.status} not in ('cancelled', 'done', 'no_access')`,
+      ),
+    );
+  const now = deps.now();
+  const decision = decideBoatAccess({
+    userId: user.id,
+    role: user.role,
+    visits: visits.map((v) => ({
+      id: v.id,
+      mechanicId: v.mechanicId,
+      start: new Date(Number(v.startEpoch) * 1000),
+    })),
+    now,
+  });
+  if (!decision.allowed) {
+    await log("access_code_denied", decision.reason);
+    throw new AccessDeniedError(decision.reason);
+  }
+  await log("access_code_viewed", decision.reason, decision.visitId);
+
+  const through = visits.find((v) => v.id === decision.visitId);
+  const day = stockholmDate(through ? new Date(Number(through.startEpoch) * 1000) : now);
+  return openAccess(deps, user.tenantId, boatId, day);
 }

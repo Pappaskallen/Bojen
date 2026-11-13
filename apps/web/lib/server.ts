@@ -24,8 +24,9 @@ import type {
 } from "@bojen/core";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { connect, type DbConnection } from "@bojen/db";
+import { connect, revealBoatAccess, type DbConnection } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
+import { createBoatAccessRoute } from "./boat-access";
 import { createCustomerPage } from "./customer-page";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
@@ -140,7 +141,7 @@ const geocoder = once<Geocoder>(() =>
     : createFakeGeocoder(),
 );
 
-const storage = once<ObjectStorage>(() => {
+export const storage = once<ObjectStorage>(() => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (url && key) return createSupabaseStorage({ url, serviceRoleKey: key, bucket: "attachments" });
@@ -166,6 +167,13 @@ const linkKey = once(() => {
 
 /** AWS KMS in production, the local KMS otherwise (step 1.6). */
 const kms = once<Kms>(() => kmsFromEnv(process.env, production));
+
+/** The code from the boat card (step 5.2): the rule and the log are in `revealBoatAccess`. */
+export const boatAccessRoute = createBoatAccessRoute({
+  authorize: (request) => staffFromRequest(staffAuth(), request),
+  reveal: (userId, boatId) =>
+    revealBoatAccess({ db: db(), kms: kms(), now: () => new Date() }, userId, boatId),
+});
 
 export const customerPage = createCustomerPage({
   db,

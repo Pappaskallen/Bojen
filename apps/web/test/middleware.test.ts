@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { middleware } from "../middleware";
+import { config, middleware } from "../middleware";
 
 const env = {
   NEXT_PUBLIC_SUPABASE_URL: "http://supabase.test",
@@ -53,5 +53,21 @@ describe("session refresh middleware", () => {
 
     const refused = await middleware(request("bojen_refresh=revoked"));
     expect(refused.headers.getSetCookie().every((c) => c.includes("Max-Age=0"))).toBe(true);
+  });
+});
+
+describe("which paths refresh the session", () => {
+  it("covers every staff page and route, also the customer and boat cards", () => {
+    for (const path of [
+      "/forfragningar/:path*",
+      "/sakerhet/:path*",
+      "/kunder/:path*",
+      "/batar/:path*",
+      "/api/bookings/:path*",
+      "/api/staff/:path*",
+      "/api/batar/:path*",
+    ]) {
+      expect(config.matcher).toContain(path);
+    }
   });
 });

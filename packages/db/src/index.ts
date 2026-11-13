@@ -14,3 +14,4 @@ export * from "./flows";
 export * from "./short-links";
 export * from "./waitlist";
 export * from "./customers";
+export * from "./boats";

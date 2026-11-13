@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { totp } from "./totp";
 
 /** Mailpit, where local Supabase Auth delivers its e-mail. */
 export const MAILPIT = "http://127.0.0.1:54324";
@@ -41,4 +42,33 @@ export async function emailCode(page: Page, email: string, path = "/forfragninga
   await expect(page.getByText(/Om adressen finns hos oss/)).toBeVisible();
   await page.getByLabel("Kod från e-post").fill(await codeFromMail(page, email, since));
   await page.getByRole("button", { name: "Logga in" }).click();
+}
+
+/** The authenticator-app secret of each owner, once added; the tests' stand-in for a phone. */
+const secrets = new Map<string, string>();
+
+/** The second step for owners: adding the app the first time, its code after that. */
+export async function secondFactor(page: Page, email: string) {
+  const secret = secrets.get(email);
+  if (secret) {
+    await expect(page).toHaveURL(/\/logga-in\/tvafaktor/);
+    await page.getByLabel("Kod från appen").fill(await totp(secret));
+    await page.getByRole("button", { name: "Bekräfta" }).click();
+    return;
+  }
+  await expect(page).toHaveURL(/\/sakerhet\/tvafaktor/);
+  const newSecret = (await page.getByTestId("totp-secret").textContent()) ?? "";
+  secrets.set(email, newSecret);
+  await page.getByLabel("Kod från appen").fill(await totp(newSecret));
+  await page.getByRole("button", { name: "Bekräfta" }).click();
+  await expect(
+    page.getByRole("list", { name: "Spara dina reservkoder" }).getByRole("listitem"),
+  ).toHaveCount(10);
+  await page.getByRole("button", { name: "Jag har sparat koderna" }).click();
+}
+
+export async function signInOwner(page: Page, email: string, path = "/forfragningar") {
+  await emailCode(page, email, path);
+  await secondFactor(page, email);
+  await expect(page).toHaveURL(new RegExp(`${path}$`));
 }
