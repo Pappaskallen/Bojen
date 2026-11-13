@@ -69,7 +69,7 @@ export {
   type BookingSettings,
 } from "./booking/settings";
 export { checkSlot, type SlotCheck, type SlotProblem } from "./scheduling/slot";
-export { isSwedishMobile, toE164 } from "./contact/phone";
+export { formatPhone, isSwedishMobile, toE164 } from "./contact/phone";
 export type {
   AuthSession,
   EmailSender,
@@ -146,3 +146,12 @@ export {
   type FreedSlot,
   type Ranked,
 } from "./waitlist/match";
+export {
+  MAX_QUERY_LENGTH,
+  MAX_TERMS,
+  containsPattern,
+  parseSearch,
+  phoneDigits,
+  type ParsedSearch,
+  type SearchTerm,
+} from "./search/query";

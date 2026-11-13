@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { sv } from "@bojen/core/i18n/sv";
 import { pendingRequests } from "@bojen/db";
 import { db, requireStaff } from "../../../lib/server";
+import { AdminNav } from "../nav";
 import { SignOutButton } from "../sign-out";
 import { RequestList } from "./request-list";
 
@@ -17,6 +18,7 @@ export default async function RequestsPage() {
   const requests = await pendingRequests(db(), staff.context.tenantId);
   return (
     <main className="requests booking">
+      <AdminNav current="requests" />
       <h1>{sv.requests.title}</h1>
       <p>{sv.requests.intro}</p>
       <SignOutButton />

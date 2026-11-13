@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { sv } from "@bojen/core/i18n/sv";
 import { listStaff } from "@bojen/db";
 import { db, requireStaff, staffAuth } from "../../../lib/server";
+import { AdminNav } from "../nav";
 import { SignOutButton } from "../sign-out";
 import { StaffTable, type StaffRow } from "./staff-table";
 
@@ -28,6 +29,7 @@ export default async function SecurityPage() {
   );
   return (
     <main className="booking">
+      <AdminNav current="security" />
       <h1>{sv.security.title}</h1>
       <p>{sv.security.intro}</p>
       <SignOutButton />

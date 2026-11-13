@@ -1,0 +1,165 @@
+/* The staff pages: menu, customer list and customer card (byggplan step 5.1). Builds on the
+   plain styles of the booking page (booking.css), which the admin layout also loads. */
+.booking-page:has(.crm) {
+  max-width: 880px;
+}
+
+.admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin-bottom: 12px;
+}
+
+.admin-nav [aria-current="page"] {
+  font-weight: 600;
+}
+
+.help {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.customer-search {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: end;
+  margin: 16px 0;
+}
+
+.customer-search label {
+  grid-column: 1 / -1;
+  font-weight: 600;
+}
+
+.customer-search .help {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.results-for {
+  margin: 0 0 8px;
+}
+
+.customer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.customer-list a {
+  display: grid;
+  gap: 2px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.customer-list a:hover,
+.customer-list a:focus-visible {
+  background: var(--soft);
+}
+
+.customer-list .name {
+  font-weight: 600;
+}
+
+.customer-list .meta,
+.customer-list .boats {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.badge {
+  display: inline-block;
+  width: fit-content;
+  margin-left: 8px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.crm h1 + .badge,
+.crm p.badge {
+  margin-left: 0;
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.boat-list,
+.visit-list,
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.boat-list li {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.boat-list .meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.visit-list li {
+  display: grid;
+  grid-template-columns: 9rem 11rem 1fr;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.visit-list .status[data-status="cancelled"],
+.visit-list .status[data-status="no_access"] {
+  color: var(--error);
+}
+
+.timeline li {
+  margin: 0 0 12px;
+  padding: 4px 0 4px 12px;
+  border-left: 3px solid var(--line);
+}
+
+.timeline li[data-direction="inbound"] {
+  border-left-color: var(--brand);
+}
+
+.timeline p {
+  margin: 0;
+}
+
+.timeline .head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .visit-list li {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

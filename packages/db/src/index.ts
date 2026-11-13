@@ -13,3 +13,4 @@ export * from "./inbound";
 export * from "./flows";
 export * from "./short-links";
 export * from "./waitlist";
+export * from "./customers";

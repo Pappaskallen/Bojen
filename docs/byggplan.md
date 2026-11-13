@@ -34,7 +34,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 4.1 – Schemaläggning av kontrollen (1 dag)
 - [x] Steg 4.2 – Tillståndsmaskin för svaren (1,5 dagar)
 - [x] Steg 4.3 – Väntelista och återfyllnad (1,5 dagar)
-- [ ] Steg 5.1 – Kundlista, sökning och kundkort (2 dagar)
+- [x] Steg 5.1 – Kundlista, sökning och kundkort (2 dagar)
 - [ ] Steg 5.2 – Båtkort med tidslinje (2 dagar)
 - [ ] Steg 5.3 – Marinakort (1 dag)
 - [ ] Steg 5.4 – Pipeline (1 dag)
@@ -298,6 +298,7 @@ ett alternativ i stället för att byta tyst.
 
 #### Steg 5.1 – Kundlista, sökning och kundkort (2 dagar)
 - **Berör:** `apps/web/app/(admin)/kunder/*`, sökindex (`pg_trgm`).
+  - (Sökindexet är tabellen `customer_search`, en text per kund med trigramindex, som triggers uppdaterar när kunden, en båt, en motor, ett drev, en placering eller en marinas namn ändras. Index på varje kolumn för sig höll inte för en sökning över tolv kolumner i fem tabeller. Ändrat med Robert 2026-11-13.)
 - **Klart när:** En sökning på telefon, namn, båtmodell, serienummer eller marina tar under 300 ms med 5 000 kunder i testdata. Kundkortet visar båtar, besök och en tidslinje med meddelanden.
 
 #### Steg 5.2 – Båtkort med tidslinje (2 dagar)

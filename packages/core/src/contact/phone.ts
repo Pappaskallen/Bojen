@@ -19,3 +19,26 @@ export function toE164(input: string): string | null {
 export function isSwedishMobile(e164: string): boolean {
   return /^\+467[02369]\d{7}$/.test(e164);
 }
+
+/**
+ * A stored number as Swedes write it: `+46701740601` is `070-174 06 01` and `+4686500400` is
+ * `08-650 04 00`. Any other number is shown as stored: other area codes have two to four
+ * digits and nothing here tells them apart.
+ */
+export function formatPhone(e164: string): string {
+  const mobile = /^\+46(7[02369])(\d{3})(\d{2})(\d{2})$/.exec(e164);
+  if (mobile) return `0${mobile[1] ?? ""}-${mobile[2] ?? ""} ${mobile[3] ?? ""} ${mobile[4] ?? ""}`;
+  const stockholm = /^\+468(\d{6,8})$/.exec(e164);
+  if (stockholm) {
+    const n = stockholm[1] ?? "";
+    const groups = n.length === 8 ? [3, 3, 2] : n.length === 7 ? [3, 2, 2] : [2, 2, 2];
+    const parts: string[] = [];
+    let at = 0;
+    for (const size of groups) {
+      parts.push(n.slice(at, at + size));
+      at += size;
+    }
+    return `08-${parts.join(" ")}`;
+  }
+  return e164;
+}
