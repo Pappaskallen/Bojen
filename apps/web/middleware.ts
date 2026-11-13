@@ -34,6 +34,7 @@ export const config = {
     "/sakerhet/:path*",
     "/kunder/:path*",
     "/batar/:path*",
+    "/marinor/:path*",
     "/logga-in/tvafaktor",
     "/api/bookings/:path*",
     "/api/staff/:path*",

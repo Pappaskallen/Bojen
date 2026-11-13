@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { crm } from "@bojen/core/i18n/sv";
 
-type Page = "requests" | "customers" | "security";
+type Page = "requests" | "customers" | "places" | "security";
 
 const LINKS: { page: Page; href: string }[] = [
   { page: "requests", href: "/forfragningar" },
   { page: "customers", href: "/kunder" },
+  { page: "places", href: "/marinor" },
   { page: "security", href: "/sakerhet" },
 ];
 

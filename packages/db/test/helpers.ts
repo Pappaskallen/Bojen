@@ -26,6 +26,7 @@ import {
   kpiSnapshot,
   location,
   locationAccessRule,
+  locationContact,
   mfaRecoveryCode,
   message,
   part,
@@ -171,6 +172,9 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     provider: "fake",
   });
   await tx.insert(locationAccessRule).values({ tenantId, locationId: l.id, parking: "Grusplanen" });
+  await tx
+    .insert(locationContact)
+    .values({ tenantId, locationId: l.id, name: "Hamnkaptenen", role: "Hamnkapten", phone });
   await tx.insert(boatPlacement).values({
     tenantId,
     boatId: b.id,

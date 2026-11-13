@@ -168,6 +168,9 @@ const linkKey = once(() => {
 /** AWS KMS in production, the local KMS otherwise (step 1.6). */
 const kms = once<Kms>(() => kmsFromEnv(process.env, production));
 
+/** The public address of the app, without a trailing slash, for links staff share. */
+export const appUrl = () => (process.env.APP_URL ?? "").replace(/\/+$/, "");
+
 /** The code from the boat card (step 5.2): the rule and the log are in `revealBoatAccess`. */
 export const boatAccessRoute = createBoatAccessRoute({
   authorize: (request) => staffFromRequest(staffAuth(), request),

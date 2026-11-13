@@ -31,6 +31,7 @@ import {
   jobLine,
   location,
   locationAccessRule,
+  locationContact,
   serviceType,
   tenant,
   visit,
@@ -432,6 +433,31 @@ export async function seedDemoData(db: Writer, seed = 2026) {
     ])
     .returning();
   if (!bullando || !djuro || !saltsjobaden || !sandhamn) throw new Error("marinas not created");
+
+  await db.insert(locationContact).values([
+    {
+      tenantId,
+      locationId: bullando.id,
+      name: "Lena Strand",
+      role: "Hamnkapten",
+      phone: "+46705550101",
+      email: "hamn@bullando.test",
+    },
+    {
+      tenantId,
+      locationId: bullando.id,
+      name: "Marinakontoret",
+      role: "Reception",
+      phone: "+4686500400",
+    },
+    {
+      tenantId,
+      locationId: djuro.id,
+      name: "Per Varvsson",
+      role: "Varvschef",
+      phone: "+46705550102",
+    },
+  ]);
 
   await db.insert(locationAccessRule).values([
     {

@@ -113,9 +113,11 @@ export default async function BoatCardPage({ params }: Props) {
                 <strong>{word(crm.season, p.season)}</strong>
                 {p.current ? <span className="badge">{t.here}</span> : null}
                 <span>
-                  {[p.place, p.spotId ? t.spot(p.spotId) : null, word(crm.placementMode, p.mode)]
+                  <Link href={`/marinor/${p.locationId}`}>{p.place}</Link>
+                  {[p.spotId ? t.spot(p.spotId) : null, word(crm.placementMode, p.mode)]
                     .filter(Boolean)
-                    .join(", ")}
+                    .map((part) => `, ${part}`)
+                    .join("")}
                 </span>
                 <span className="meta">
                   {[

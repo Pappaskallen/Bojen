@@ -148,6 +148,13 @@
       "when": 1794549528678,
       "tag": "0020_customer_search",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794566439748,
+      "tag": "0021_location_contact",
+      "breakpoints": true
     }
   ]
 }
