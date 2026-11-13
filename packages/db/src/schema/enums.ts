@@ -50,7 +50,14 @@ export const jobPipelineStatus = pgEnum("job_pipeline_status", [
 
 export const jobUrgency = pgEnum("job_urgency", ["planned", "soon", "emergency"]);
 
-export const jobChannel = pgEnum("job_channel", ["phone", "web", "campaign", "marina"]);
+export const jobChannel = pgEnum("job_channel", [
+  "phone",
+  "web",
+  "campaign",
+  "marina",
+  /** A time freed by a cancellation and taken from the waitlist (F4, step 4.3). */
+  "waitlist",
+]);
 
 export const visitStatus = pgEnum("visit_status", [
   "tentative",

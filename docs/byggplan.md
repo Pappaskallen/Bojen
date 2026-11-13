@@ -33,7 +33,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 3.4 – Korta länkar och kundsida (1 dag)
 - [x] Steg 4.1 – Schemaläggning av kontrollen (1 dag)
 - [x] Steg 4.2 – Tillståndsmaskin för svaren (1,5 dagar)
-- [ ] Steg 4.3 – Väntelista och återfyllnad (1,5 dagar)
+- [x] Steg 4.3 – Väntelista och återfyllnad (1,5 dagar)
 - [ ] Steg 5.1 – Kundlista, sökning och kundkort (2 dagar)
 - [ ] Steg 5.2 – Båtkort med tidslinje (2 dagar)
 - [ ] Steg 5.3 – Marinakort (1 dag)
@@ -291,7 +291,7 @@ ett alternativ i stället för att byta tyst.
 #### Steg 4.3 – Väntelista och återfyllnad (1,5 dagar)
 - **Mål:** Flöde F4.
 - **Berör:** `packages/core/waitlist/match.ts`, `apps/worker/flows/waitlistOffer.ts`.
-- **Gör:** Matcha på område eller avstånd inom 10 km, tjänstens längd, krav på läge och datumintervall. Erbjudandet skickas i omgångar om 5 kunder, och den som svarar JA först får tiden. Därefter går erbjudandet till nästa omgång, högst tre omgångar.
+- **Gör:** Matcha på område eller avstånd inom 10 km, tjänstens längd, krav på läge och datumintervall. Erbjudandet skickas i omgångar om 5 kunder, och den som svarar JA först får tiden. Därefter går erbjudandet till nästa omgång, högst tre omgångar. (Kundvärde, som sorterar sist, är antal utförda besök. Förslaget till mekanikern att dra fram ett jobb från en senare dag när ingen passar kommer med dagvyn i steg 5.5. Ändrat med Robert 2026-11-12.)
 - **Klart när:** Ett test med tre kunder på väntelistan som alla svarar JA visar att exakt en får tiden och att de två andra får sms om att tiden är tagen. Den som svarar efter att tiden är tagen får också sms om det.
 
 ### Fas 5: CRM-vyer

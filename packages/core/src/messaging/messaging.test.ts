@@ -38,6 +38,7 @@ const DATA: Record<string, string> = {
   placeDetail: "brygga B, plats 14",
   mode: "i sjön",
   day: "På måndag",
+  at: "nära",
   keyText: "Nyckel i nyckelskåpet vid hamnkontoret",
   link: "bojen.se/x/Kp3d9AB",
   googleLink: "g.page/r/CbXk3a9Q/review",

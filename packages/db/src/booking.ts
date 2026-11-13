@@ -104,7 +104,7 @@ export interface CreateBookingInput {
   start: Date;
   /** Defaults to the service's length. */
   plannedMinutes?: number;
-  channel: "phone" | "web" | "campaign" | "marina";
+  channel: "phone" | "web" | "campaign" | "marina" | "waitlist";
   needsApproval: boolean;
   partsMissing: boolean;
   /** What the customer wrote, kept on the job. */

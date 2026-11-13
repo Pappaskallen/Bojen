@@ -21,6 +21,7 @@ import {
   task,
   tenant,
   visit,
+  waitlistEntry,
   workSchedule,
   type Database,
 } from "@bojen/db";
@@ -123,6 +124,7 @@ async function setup(db: Database) {
     customerId: per!.id,
     boatId: bustern!.id,
     serviceTypeId: layUp!.id,
+    locationId: marina!.id,
   };
 }
 
@@ -525,7 +527,13 @@ describe("answers to the availability check (step 4.2)", () => {
     await checked(async (c) => {
       c.setClock(at("2026-11-17T10:30:00"));
       await c.reply("Nej");
-      expect((await c.runDue()).sort()).toEqual(["domain_event", "domain_event", "send_message"]);
+      // The answer, the cancellation's own event, the receipt and F4's first round.
+      expect((await c.runDue()).sort()).toEqual([
+        "domain_event",
+        "domain_event",
+        "send_message",
+        "waitlist_round",
+      ]);
       expect(await c.state()).toEqual({ status: "cancelled", availability: "declined" });
       expect(c.sms.lastTo(PHONE)).toBe(
         "Okej, vi avbokar. Välj en ny tid här: bojen.se/boka/flodesfirman - eller svara NY så ringer vi dig. /Flödesfirman",
@@ -644,6 +652,377 @@ describe("answers to the availability check (step 4.2)", () => {
       // F5 still goes in the morning.
       expect(await c.pending("visit_eta")).toEqual([at("2026-11-18T07:00:00")]);
     });
+  }, 60_000);
+});
+
+describe("the waitlist fills a cancelled time (F4, step 4.3)", () => {
+  const FIRM_PHONE_OFFSET = 70_111_3000;
+  const phoneOf = (n: number) => `+46${String(FIRM_PHONE_OFFSET + n)}`;
+
+  /** A customer waiting for a time: their own boat on land, at `locationId`, and an entry. */
+  async function waiter(
+    db: Database,
+    f: Awaited<ReturnType<typeof setup>>,
+    n: number,
+    over: { locationId?: string; createdAt?: Date } = {},
+  ) {
+    const [c] = await db
+      .insert(customer)
+      .values({ tenantId: f.tenantId, name: `Kund ${String(n)}`, phone: phoneOf(n) })
+      .returning();
+    const [b] = await db
+      .insert(boat)
+      .values({ tenantId: f.tenantId, name: `Båt ${String(n)}` })
+      .returning();
+    await db.insert(boatPlacement).values({
+      tenantId: f.tenantId,
+      boatId: b!.id,
+      locationId: over.locationId ?? f.locationId,
+      season: "winter",
+      mode: "land",
+      haulOutDate: "2026-10-15",
+      launchDate: "2027-05-01",
+    });
+    await db.insert(waitlistEntry).values({
+      tenantId: f.tenantId,
+      customerId: c!.id,
+      boatId: b!.id,
+      serviceTypeId: f.serviceTypeId,
+      ...(over.createdAt ? { createdAt: over.createdAt } : {}),
+    });
+    return { customerId: c!.id, phone: phoneOf(n) };
+  }
+
+  /** Monday 14:00. Per's visit on Wednesday 10:00 is booked and then cancelled by Per. */
+  async function cancelled(
+    fn: (c: {
+      db: Database;
+      f: Awaited<ReturnType<typeof setup>>;
+      visitId: string;
+      sms: ReturnType<typeof createFakeSms>;
+      runDue: () => Promise<string[]>;
+      pending: (identifier: string) => Promise<Date[]>;
+      setClock: (to: Date) => void;
+      reply: (from: string, body: string) => Promise<void>;
+      cancel: (visitId: string) => Promise<void>;
+      told: (phone: string, template: string) => Promise<number>;
+      holders: () => Promise<{ customerId: string; channel: string }[]>;
+    }) => Promise<void>,
+    start = at("2026-11-18T10:00:00"),
+  ) {
+    await inRollback(async (db) => {
+      let clock = at("2026-11-16T14:00:00");
+      const sms = createFakeSms();
+      const deps = {
+        db,
+        sms,
+        email: createFakeEmail(),
+        now: () => clock,
+        optOutKey: "flow-test-opt-out-key",
+        link: () => "bojen.se/boka/flodesfirman",
+      };
+      const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
+      const f = await setup(db);
+      const staff = { tenantId: f.tenantId, actor: { type: "staff" as const, id: f.mechanicId } };
+      const booked = await createBooking(
+        { db, now: () => clock },
+        { ...staff, idempotencyKey: "waitlist-book" },
+        {
+          customerId: f.customerId,
+          boatId: f.boatId,
+          serviceTypeId: f.serviceTypeId,
+          mechanicId: f.mechanicId,
+          start,
+          channel: "phone",
+          needsApproval: false,
+          partsMissing: false,
+        },
+      );
+      const visitId = booked.visit.id;
+      await runDue();
+      let n = 0;
+      await fn({
+        db,
+        f,
+        visitId,
+        sms,
+        runDue,
+        pending,
+        setClock: (to) => {
+          clock = to;
+        },
+        reply: async (from, body) => {
+          await receiveSms(
+            { db, now: () => clock, optOutKey: deps.optOutKey, classifier: createFakeClassifier() },
+            { externalId: `elks-waitlist-${String(++n)}`, from, to: FIRM_NUMBER, body },
+          );
+        },
+        cancel: async (id) => {
+          await changeBooking(
+            { db, now: () => clock },
+            {
+              tenantId: f.tenantId,
+              // The firm cancels: 44 hours ahead is inside the customer's own 48-hour limit.
+              actor: { type: "staff", id: f.mechanicId },
+              idempotencyKey: `waitlist-cancel-${id}`,
+            },
+            id,
+            { event: "cancel" },
+          );
+        },
+        told: async (phone, template) =>
+          (
+            await db
+              .select({ id: message.id })
+              .from(message)
+              .where(
+                and(
+                  eq(message.tenantId, f.tenantId),
+                  eq(message.template, template),
+                  eq(message.toAddress, phone),
+                  eq(message.direction, "outbound"),
+                ),
+              )
+          ).length,
+        holders: async () =>
+          (
+            await db.execute<{ customer_id: string; channel: string }>(sql`
+              select j.customer_id, j.channel from visit v
+              join job j on j.tenant_id = v.tenant_id and j.id = v.job_id
+              where v.tenant_id = ${f.tenantId} and v.mechanic_id = ${f.mechanicId}
+                and v.status <> 'cancelled'
+                and v.time_window && ${`[${start.toISOString()},${new Date(start.getTime() + 7_200_000).toISOString()})`}::tstzrange`)
+          ).map((r) => ({ customerId: r.customer_id, channel: r.channel })),
+      });
+    });
+  }
+
+  const OFFER = (boatName: string) =>
+    `Ledig tid! ons 18/11 kl 08-12 på Bullandö - passar Vinterkonservering för ${boatName}? Svara JA inom 1 tim så är den din. /Flödesfirman`;
+
+  it("three on the list all answer JA: exactly one gets the time and the others are told", async () => {
+    await cancelled(async (c) => {
+      const a = await waiter(c.db, c.f, 1, { createdAt: new Date("2026-10-01T10:00:00Z") });
+      const b = await waiter(c.db, c.f, 2, { createdAt: new Date("2026-10-02T10:00:00Z") });
+      const d = await waiter(c.db, c.f, 3, { createdAt: new Date("2026-10-03T10:00:00Z") });
+
+      // Per cancels: the offer goes to all three at once, the one who waited longest first.
+      await c.cancel(c.visitId);
+      await c.runDue();
+      expect(c.sms.lastTo(a.phone)).toBe(OFFER("Båt 1"));
+      expect(c.sms.lastTo(b.phone)).toBe(OFFER("Båt 2"));
+      expect(c.sms.lastTo(d.phone)).toBe(OFFER("Båt 3"));
+      expect(await c.holders()).toEqual([]);
+
+      // All three answer JA, a few minutes apart, before the worker has handled any.
+      c.setClock(at("2026-11-16T14:10:00"));
+      await c.reply(a.phone, "JA");
+      await c.reply(b.phone, "ja");
+      await c.reply(d.phone, "Japp");
+      await c.runDue();
+
+      // The first answer got the time, as a booking made by the customer, from the waitlist.
+      expect(await c.holders()).toEqual([{ customerId: a.customerId, channel: "waitlist" }]);
+      const entries = await c.db
+        .select()
+        .from(waitlistEntry)
+        .where(eq(waitlistEntry.tenantId, c.f.tenantId));
+      expect(entries.map((e) => [e.customerId, e.status]).sort()).toEqual(
+        [
+          [a.customerId, "booked"],
+          [b.customerId, "waiting"],
+          [d.customerId, "waiting"],
+        ].sort(),
+      );
+      // The winner gets the usual confirmation, and the others are told once.
+      expect(c.sms.lastTo(a.phone)).toContain("Bokat: Vinterkonservering ons 18/11 kl 08-12");
+      expect(await c.told(a.phone, "f4_taken")).toBe(0);
+      for (const other of [b, d]) {
+        expect(await c.told(other.phone, "f4_taken")).toBe(1);
+        expect(c.sms.lastTo(other.phone)).toBe(
+          "Tiden blev tyvärr tagen. Du står kvar på väntelistan - vi hör av oss!",
+        );
+      }
+    });
+  }, 60_000);
+
+  it("the others who have not answered are told at once, and a late JA is told as well", async () => {
+    await cancelled(async (c) => {
+      const a = await waiter(c.db, c.f, 1, { createdAt: new Date("2026-10-01T10:00:00Z") });
+      const b = await waiter(c.db, c.f, 2, { createdAt: new Date("2026-10-02T10:00:00Z") });
+      const d = await waiter(c.db, c.f, 3, { createdAt: new Date("2026-10-03T10:00:00Z") });
+      await c.cancel(c.visitId);
+      await c.runDue();
+
+      c.setClock(at("2026-11-16T14:10:00"));
+      await c.reply(d.phone, "JA");
+      await c.runDue();
+      expect(await c.holders()).toEqual([{ customerId: d.customerId, channel: "waitlist" }]);
+      // Nobody else has answered: both are told that the time is gone.
+      expect(await c.told(a.phone, "f4_taken")).toBe(1);
+      expect(await c.told(b.phone, "f4_taken")).toBe(1);
+
+      // One of them answers JA after all and gets an answer, and still no second booking.
+      c.setClock(at("2026-11-16T14:20:00"));
+      await c.reply(a.phone, "JA");
+      await c.runDue();
+      expect(await c.told(a.phone, "f4_taken")).toBe(2);
+      expect((await c.holders()).length).toBe(1);
+      expect(await c.told(d.phone, "f4_taken")).toBe(0);
+    });
+  }, 60_000);
+
+  it("NEJ keeps the customer on the list and books nothing", async () => {
+    await cancelled(async (c) => {
+      const a = await waiter(c.db, c.f, 1, { createdAt: new Date("2026-10-01T10:00:00Z") });
+      await c.cancel(c.visitId);
+      await c.runDue();
+      c.setClock(at("2026-11-16T14:05:00"));
+      await c.reply(a.phone, "nej");
+      await c.runDue();
+      const [entry] = await c.db
+        .select()
+        .from(waitlistEntry)
+        .where(eq(waitlistEntry.customerId, a.customerId));
+      expect(entry?.status).toBe("waiting");
+      expect(await c.holders()).toEqual([]);
+      expect(await c.told(a.phone, "f4_taken")).toBe(0);
+    });
+  }, 60_000);
+
+  it("offers to five at a time, an hour apart, in at most three rounds", async () => {
+    await cancelled(async (c) => {
+      const people: Awaited<ReturnType<typeof waiter>>[] = [];
+      for (let i = 1; i <= 12; i++) {
+        people.push(
+          await waiter(c.db, c.f, i, {
+            createdAt: new Date(`2026-10-${String(i).padStart(2, "0")}T10:00:00Z`),
+          }),
+        );
+      }
+      const offered = async () => {
+        const out = [];
+        for (const [i, p] of people.entries()) {
+          if ((await c.told(p.phone, "f4_offer")) > 0) out.push(i + 1);
+        }
+        return out;
+      };
+
+      await c.cancel(c.visitId);
+      await c.runDue();
+      expect(await offered()).toEqual([1, 2, 3, 4, 5]);
+      expect(await c.pending("waitlist_round")).toEqual([at("2026-11-16T15:00:00")]);
+
+      c.setClock(at("2026-11-16T14:59:00"));
+      await c.runDue();
+      expect(await offered()).toEqual([1, 2, 3, 4, 5]);
+      c.setClock(at("2026-11-16T15:00:00"));
+      await c.runDue();
+      expect(await offered()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+      expect(await c.pending("waitlist_round")).toEqual([at("2026-11-16T16:00:00")]);
+
+      c.setClock(at("2026-11-16T16:00:00"));
+      await c.runDue();
+      expect(await offered()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+      // Nobody is left to ask, and there is never a fourth round.
+      expect(await c.pending("waitlist_round")).toEqual([]);
+      c.setClock(at("2026-11-17T09:00:00"));
+      await c.runDue();
+      expect(await offered()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+
+      // A JA to the first round's offer, long after its hour, is not an answer to it.
+      const before = c.sms.sent.length;
+      await c.reply(people[0]!.phone, "JA");
+      await c.runDue();
+      expect(await c.holders()).toEqual([]);
+      expect(c.sms.sent.length).toBe(before);
+    });
+  }, 60_000);
+
+  it("asks only those the time suits, not a boat 50 km away", async () => {
+    await cancelled(async (c) => {
+      const [far] = await c.db
+        .insert(location)
+        .values({
+          tenantId: c.f.tenantId,
+          type: "marina",
+          name: "Norrtälje",
+          position: { lng: 18.7, lat: 59.76 },
+        })
+        .returning();
+      const near = await waiter(c.db, c.f, 1, { createdAt: new Date("2026-10-05T10:00:00Z") });
+      const away = await waiter(c.db, c.f, 2, {
+        locationId: far!.id,
+        createdAt: new Date("2026-10-01T10:00:00Z"),
+      });
+      const second = await waiter(c.db, c.f, 3, { createdAt: new Date("2026-10-06T10:00:00Z") });
+      // The first round asks only the one who suits, not the one 50 km away.
+      await c.cancel(c.visitId);
+      await c.runDue();
+      expect(await c.told(away.phone, "f4_offer")).toBe(0);
+      expect([
+        await c.told(near.phone, "f4_offer"),
+        await c.told(second.phone, "f4_offer"),
+      ]).toEqual([1, 1]);
+    });
+  }, 60_000);
+
+  it("stops asking when someone else has been given the time", async () => {
+    await cancelled(async (c) => {
+      const people: Awaited<ReturnType<typeof waiter>>[] = [];
+      for (let i = 1; i <= 8; i++) {
+        people.push(
+          await waiter(c.db, c.f, i, {
+            createdAt: new Date(`2026-10-${String(i).padStart(2, "0")}T10:00:00Z`),
+          }),
+        );
+      }
+      await c.cancel(c.visitId);
+      await c.runDue();
+      expect(await c.told(people[4]!.phone, "f4_offer")).toBe(1);
+      expect(await c.told(people[5]!.phone, "f4_offer")).toBe(0);
+
+      // The mechanic books the time for someone who phoned, before the second round.
+      c.setClock(at("2026-11-16T14:30:00"));
+      await createBooking(
+        { db: c.db, now: () => at("2026-11-16T14:30:00") },
+        {
+          tenantId: c.f.tenantId,
+          actor: { type: "staff", id: c.f.mechanicId },
+          idempotencyKey: "waitlist-phoned",
+        },
+        {
+          customerId: c.f.customerId,
+          boatId: c.f.boatId,
+          serviceTypeId: c.f.serviceTypeId,
+          mechanicId: c.f.mechanicId,
+          start: at("2026-11-18T10:00:00"),
+          channel: "phone",
+          needsApproval: false,
+          partsMissing: false,
+        },
+      );
+      c.setClock(at("2026-11-16T15:00:00"));
+      await c.runDue();
+      for (const p of people.slice(5)) expect(await c.told(p.phone, "f4_offer")).toBe(0);
+
+      // A JA to the first round is told that the time is gone, and nothing is booked twice.
+      c.setClock(at("2026-11-16T14:40:00"));
+      await c.reply(people[0]!.phone, "JA");
+      await c.runDue();
+      expect(await c.told(people[0]!.phone, "f4_taken")).toBeGreaterThan(0);
+      expect((await c.holders()).map((h) => h.channel)).toEqual(["phone"]);
+    });
+  }, 60_000);
+
+  it("does not start for a time less than two hours ahead", async () => {
+    await cancelled(async (c) => {
+      const a = await waiter(c.db, c.f, 1);
+      c.setClock(at("2026-11-18T08:30:00"));
+      await c.cancel(c.visitId);
+      await c.runDue();
+      expect(await c.told(a.phone, "f4_offer")).toBe(0);
+    }, at("2026-11-18T10:00:00"));
   }, 60_000);
 });
 

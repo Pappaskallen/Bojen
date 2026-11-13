@@ -6,6 +6,7 @@ import { ESCALATION_TASK, REMINDER_TASK, handleCheckEvent } from "./flows/availa
 import type { FlowDeps } from "./flows/deps";
 import { DOMAIN_EVENT_TASK, handleDomainEvent } from "./flows/events";
 import { ETA_TASK, sendMorningEta } from "./flows/morningEta";
+import { WAITLIST_TASK, sendWaitlistRound } from "./flows/waitlistOffer";
 import { SURVEY_TASK, sendSurvey } from "./flows/survey";
 import { sendMessageTask } from "./tasks/sendMessage";
 
@@ -43,6 +44,12 @@ export function taskList(deps: WorkerDeps): TaskList {
     [ESCALATION_TASK]: visitTask((tenantId, visitId) =>
       handleCheckEvent(deps, tenantId, visitId, "escalation_due", `escalation:${visitId}`),
     ),
+    [WAITLIST_TASK]: async (payload, helpers) => {
+      const visitId = field(payload, "visitId");
+      const round = Number(field(payload, "round"));
+      const outcome = await sendWaitlistRound(deps, field(payload, "tenantId"), visitId, round);
+      helpers.logger.info(`waitlist ${visitId} round ${String(round)}: ${outcome}`);
+    },
     [ETA_TASK]: visitTask((tenantId, visitId) => sendMorningEta(deps, tenantId, visitId)),
     [SURVEY_TASK]: visitTask((tenantId, visitId) => sendSurvey(deps, tenantId, visitId)),
   };

@@ -1,0 +1,1 @@
+ALTER TYPE "public"."job_channel" ADD VALUE 'waitlist';

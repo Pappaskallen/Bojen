@@ -227,6 +227,8 @@ export interface DomainEventRow {
   payload: Record<string, unknown>;
   /** `customer`, `staff` or `system`. */
   actorType: string;
+  /** The customer's or the staff member's id; empty for the system. */
+  actorId: string | null;
   occurredAt: Date;
 }
 
@@ -240,6 +242,7 @@ export async function loadDomainEvent(db: Db, eventId: string): Promise<DomainEv
       type: domainEvent.type,
       payload: domainEvent.payload,
       actorType: domainEvent.actorType,
+      actorId: domainEvent.actorId,
       occurredAt: domainEvent.occurredAt,
     })
     .from(domainEvent)

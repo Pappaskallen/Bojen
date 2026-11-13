@@ -231,7 +231,7 @@ export const messages = {
     f3_reminder:
       "Påminnelse: vi kommer {day} kl {window} till {placeShort}. Är båten tillgänglig? Svara JA, NEJ eller ÄNDRA.",
     f4_offer:
-      "Ledig tid! {weekday} {date} kl {window} på/nära {placeShort} – passar {serviceShort} för {boat}? Svara JA inom 1 tim så är den din. /{firm}",
+      "Ledig tid! {weekday} {date} kl {window} {at} {placeShort} – passar {serviceShort} för {boat}? Svara JA inom 1 tim så är den din. /{firm}",
     f4_taken: "Tiden blev tyvärr tagen. Du står kvar på väntelistan – vi hör av oss!",
     f5_eta:
       "God morgon! {mechanicFirstName} beräknas vara vid {boat} på {placeShort} ca kl {etaFrom}–{etaTo} i dag. /{firm}",

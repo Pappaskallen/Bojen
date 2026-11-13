@@ -4,6 +4,7 @@ import { handleCheckEvent } from "./availabilityFollowup";
 import { sendConfirmation } from "./confirmation";
 import type { FlowDeps } from "./deps";
 import { scheduleEta } from "./morningEta";
+import { handleOfferAnswer, startWaitlist } from "./waitlistOffer";
 import { type ReportContent, sendServiceReport } from "./serviceReport";
 import { handleSurveyAnswer, scheduleSurvey } from "./survey";
 
@@ -17,6 +18,8 @@ export type EventOutcome =
   | "report"
   | "survey_answer"
   | "check_answer"
+  | "waitlist_started"
+  | "waitlist_answer"
   | "ignored";
 
 const CHECK_QUESTION = /^f3_(check_|reminder$)/;
@@ -69,6 +72,12 @@ export async function handleDomainEvent(deps: FlowDeps, eventId: string): Promis
       }
       return (await scheduleEta(deps, visit)) ? "eta_moved" : "ignored";
     }
+    case "visit.cancel":
+      // A freed time goes to the waitlist (F4, step 4.3).
+      if (!visitId) return "ignored";
+      return (await startWaitlist(deps, tenantId, visitId)) === "started"
+        ? "waitlist_started"
+        : "ignored";
     case "visit.complete":
       if (!visitId) return "ignored";
       await scheduleSurvey(deps, tenantId, visitId, event.occurredAt);
@@ -96,6 +105,23 @@ export async function handleDomainEvent(deps: FlowDeps, eventId: string): Promis
           event.id,
         );
         return outcome === "ignored" ? "ignored" : "check_answer";
+      }
+      // An answer to an offer of a freed time (F4, step 4.3).
+      if (
+        payload.questionTemplate === "f4_offer" &&
+        payload.confident === true &&
+        typeof payload.visitId === "string" &&
+        event.actorId &&
+        (payload.intent === "yes" || payload.intent === "no")
+      ) {
+        const outcome = await handleOfferAnswer(
+          deps,
+          tenantId,
+          payload.visitId,
+          event.actorId,
+          payload.intent,
+        );
+        return outcome === "ignored" ? "ignored" : "waitlist_answer";
       }
       if (
         payload.questionTemplate === "f9_survey" &&
