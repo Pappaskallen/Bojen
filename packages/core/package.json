@@ -9,7 +9,8 @@
     "./crypto": "./src/crypto/index.ts",
     "./catalog": "./src/catalog/brands.ts",
     "./messaging": "./src/messaging/index.ts",
-    "./links": "./src/links/shortLink.ts"
+    "./links": "./src/links/shortLink.ts",
+    "./pipeline": "./src/pipeline/pipeline.ts"
   },
   "scripts": {
     "lint": "eslint .",

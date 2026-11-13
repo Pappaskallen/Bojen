@@ -37,6 +37,7 @@ import {
   visit,
   workSchedule,
 } from "./schema";
+import { jobAfterVisitDone } from "./pipeline";
 import { timeRange } from "./schema/_types";
 
 export type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -550,6 +551,8 @@ export async function changeBooking(
       },
       deps.now(),
     );
+    // The last visit done moves the job's card to done (step 5.4).
+    if (status === "done") await jobAfterVisitDone(tx, ctx.tenantId, before.jobId, deps.now());
     return after;
   });
 }

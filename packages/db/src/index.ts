@@ -16,3 +16,4 @@ export * from "./waitlist";
 export * from "./customers";
 export * from "./boats";
 export * from "./places";
+export * from "./pipeline";

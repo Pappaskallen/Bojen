@@ -64,6 +64,8 @@ describe("which paths refresh the session", () => {
       "/kunder/:path*",
       "/batar/:path*",
       "/marinor/:path*",
+      "/pipeline/:path*",
+      "/api/pipeline/:path*",
       "/api/bookings/:path*",
       "/api/staff/:path*",
       "/api/batar/:path*",

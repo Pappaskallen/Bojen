@@ -1,4 +1,4 @@
-import { loadDomainEvent, visitContext } from "@bojen/db";
+import { jobAfterInvoice, loadDomainEvent, visitContext } from "@bojen/db";
 import { scheduleCheck } from "./availabilityCheck";
 import { handleCheckEvent } from "./availabilityFollowup";
 import { sendConfirmation } from "./confirmation";
@@ -20,6 +20,7 @@ export type EventOutcome =
   | "check_answer"
   | "waitlist_started"
   | "waitlist_answer"
+  | "invoiced"
   | "ignored";
 
 const CHECK_QUESTION = /^f3_(check_|reminder$)/;
@@ -77,6 +78,12 @@ export async function handleDomainEvent(deps: FlowDeps, eventId: string): Promis
       if (!visitId) return "ignored";
       return (await startWaitlist(deps, tenantId, visitId)) === "started"
         ? "waitlist_started"
+        : "ignored";
+    case "invoice.created":
+      // From Fortnox in step 8; the card moves to invoiced (step 5.4).
+      if (typeof payload.jobId !== "string") return "ignored";
+      return (await jobAfterInvoice(deps.db, tenantId, payload.jobId, event.occurredAt))
+        ? "invoiced"
         : "ignored";
     case "visit.complete":
       if (!visitId) return "ignored";

@@ -271,3 +271,77 @@
 .date-list li {
   padding: 2px 0;
 }
+
+/* The pipeline (step 5.4): seven columns side by side, scrolling sideways on a phone. */
+.booking-page:has(.pipeline-page) {
+  max-width: none;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(180px, 1fr));
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.board .column {
+  min-height: 200px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--soft);
+  border: 2px solid transparent;
+}
+
+.board .column.over {
+  border-color: var(--brand);
+}
+
+.board h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.board .count {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+
+.board ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.board .card {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.board .card[draggable="true"] {
+  cursor: grab;
+}
+
+.board .card .name {
+  font-weight: 600;
+}
+
+.board .card .meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.board .move {
+  display: grid;
+  gap: 2px;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}

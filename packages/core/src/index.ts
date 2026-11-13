@@ -155,3 +155,12 @@ export {
   type ParsedSearch,
   type SearchTerm,
 } from "./search/query";
+export {
+  PIPELINE_COLUMNS,
+  isPipelineStatus,
+  mayMoveCard,
+  statusAfterInvoice,
+  statusAfterVisitDone,
+  type PipelineColumn,
+  type PipelineStatus,
+} from "./pipeline/pipeline";

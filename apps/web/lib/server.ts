@@ -24,16 +24,18 @@ import type {
 } from "@bojen/core";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { connect, revealBoatAccess, type DbConnection } from "@bojen/db";
+import { connect, moveCard, revealBoatAccess, type DbConnection } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createBoatAccessRoute } from "./boat-access";
 import { createCustomerPage } from "./customer-page";
+import { createPipelineRoute } from "./pipeline-route";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
 import { ELKS_IPS, createWebhookRoutes } from "./webhooks";
 import {
   ACCESS_COOKIE,
   createStaffAuthRoutes,
+  sessionFromRequest,
   staffFromRequest,
   staffSession,
   type StaffSession,
@@ -167,6 +169,12 @@ const linkKey = once(() => {
 
 /** AWS KMS in production, the local KMS otherwise (step 1.6). */
 const kms = once<Kms>(() => kmsFromEnv(process.env, production));
+
+/** Moving cards on the pipeline (step 5.4). */
+export const pipelineRoute = createPipelineRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  move: (mover, jobId, to) => moveCard(db(), mover, jobId, to),
+});
 
 /** The public address of the app, without a trailing slash, for links staff share. */
 export const appUrl = () => (process.env.APP_URL ?? "").replace(/\/+$/, "");
