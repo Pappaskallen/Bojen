@@ -30,8 +30,10 @@ import {
   changeBooking,
   connect,
   moveCard,
+  onceOnly,
   recordHours,
   revealBoatAccess,
+  saveNote,
   setPartStatus,
   visitDayFor,
   type DbConnection,
@@ -210,15 +212,31 @@ export const dayRoute = createDayRoute({
       { event: "complete" },
     );
   },
-  hours: (actor, visitId, engineId, hours) =>
-    recordHours(db(), actor, visitId, engineId, hours, new Date()),
-  addPart: async (actor, visitId, input) => {
-    await addPart(db(), actor, visitId, input);
+  // Each once per key, so a form the offline queue sends again is not done twice (step 5.5b).
+  hours: async (actor, visitId, key, engineId, hours) => {
+    await onceOnly(db(), actor.tenantId, key, `timmar:${visitId}`, (tx) =>
+      recordHours(tx, actor, visitId, engineId, hours, new Date()),
+    );
   },
-  partStatus: (actor, visitId, jobPartId, status) =>
-    setPartStatus(db(), actor, visitId, jobPartId, status),
-  photo: async (actor, visitId, photo) => {
-    await addVisitPhoto({ db: db(), storage: storage() }, actor, visitId, photo);
+  addPart: async (actor, visitId, key, input) => {
+    await onceOnly(db(), actor.tenantId, key, `del:${visitId}`, async (tx) => {
+      await addPart(tx, actor, visitId, input);
+    });
+  },
+  partStatus: async (actor, visitId, key, jobPartId, status) => {
+    await onceOnly(db(), actor.tenantId, key, `delstatus:${visitId}`, (tx) =>
+      setPartStatus(tx, actor, visitId, jobPartId, status),
+    );
+  },
+  photo: async (actor, visitId, key, photo) => {
+    await onceOnly(db(), actor.tenantId, key, `bild:${visitId}`, async (tx) => {
+      await addVisitPhoto({ db: tx, storage: storage() }, actor, visitId, photo);
+    });
+  },
+  note: async (actor, visitId, key, note) => {
+    await onceOnly(db(), actor.tenantId, key, `anteckning:${visitId}`, (tx) =>
+      saveNote(tx, actor, visitId, note),
+    );
   },
 });
 

@@ -613,6 +613,17 @@ export const crm = {
     photoCount: (n: number) => (n === 1 ? "1 bild" : `${String(n)} bilder`),
     addPhoto: "Ta eller välj bild",
     upload: "Ladda upp",
+    notes: "Anteckning",
+    notesHelp: "Det du skriver här blir underlag för rapporten.",
+    saveNote: "Spara anteckning",
+    offline: {
+      waiting: (n: number) =>
+        n === 1 ? "1 ändring väntar på täckning." : `${String(n)} ändringar väntar på täckning.`,
+      saved: "Sparat på telefonen. Det skickas när det finns täckning.",
+      sending: "Skickar det som väntade …",
+      signIn: "Logga in igen för att skicka det som väntar. Inget har försvunnit.",
+      refused: (label: string, why: string) => `${label}: ${why}`,
+    },
     partStatus: {
       needed: "Behövs",
       ordered: "Beställd",
@@ -626,6 +637,8 @@ export const crm = {
       del: "Delen är tillagd.",
       delstatus: "Delen är uppdaterad.",
       bild: "Bilden är sparad.",
+      anteckning: "Anteckningen är sparad.",
+      synk: "Allt som väntade är skickat.",
     } as Record<string, string>,
     errors: {
       forbidden: "Du kan bara ändra dina egna besök.",

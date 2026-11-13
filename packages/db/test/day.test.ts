@@ -7,7 +7,9 @@ import {
   addVisitPhoto,
   dayRoute,
   dayVisits,
+  onceOnly,
   recordHours,
+  saveNote,
   setPartStatus,
 } from "../src/day";
 import {
@@ -259,6 +261,69 @@ describe("what the mechanic records on site", () => {
       );
       // An engine of another boat is refused.
       expect(await code(recordHours(tx, f.me, f.visitId, g.engineId, 600, NOW))).toBe("not_found");
+    });
+  });
+});
+
+describe("forms sent more than once (step 5.5b)", () => {
+  it("does the work once per key, and again for a new key", async () => {
+    await withRollback(async (tx) => {
+      const f = await firm(tx);
+      const key = "1b671a64-40d5-491e-99b0-da01ff1f00f4";
+      const add = () =>
+        onceOnly(tx, f.tenantId, key, `del:${f.visitId}`, async (inner) => {
+          await addPart(inner, f.me, f.visitId, { articleNumber: "21951346" });
+        });
+      expect(await add()).toBe("done");
+      expect(await add()).toBe("replayed");
+      expect(
+        await onceOnly(
+          tx,
+          f.tenantId,
+          "2b671a64-40d5-491e-99b0-da01ff1f00f4",
+          "x",
+          async (inner) => {
+            await addPart(inner, f.me, f.visitId, { articleNumber: "21951346" });
+          },
+        ),
+      ).toBe("done");
+      const rows = await tx
+        .select()
+        .from(jobPart)
+        .where(and(eq(jobPart.jobId, f.jobId), eq(jobPart.source, "van")));
+      expect(rows).toHaveLength(2);
+    });
+  });
+
+  it("leaves the key free when the work fails, so it can be sent again", async () => {
+    await withRollback(async (tx) => {
+      const f = await firm(tx);
+      const key = "3b671a64-40d5-491e-99b0-da01ff1f00f4";
+      await expect(
+        onceOnly(tx, f.tenantId, key, "timmar", (inner) =>
+          recordHours(inner, f.me, f.visitId, f.engineId, 1, NOW),
+        ),
+      ).rejects.toMatchObject({ code: "hours_below_last" });
+      expect(
+        await onceOnly(tx, f.tenantId, key, "timmar", (inner) =>
+          recordHours(inner, f.me, f.visitId, f.engineId, 500, NOW),
+        ),
+      ).toBe("done");
+    });
+  });
+
+  it("keeps the mechanic's note on the visit, the latest text winning", async () => {
+    await withRollback(async (tx) => {
+      const f = await firm(tx);
+      await saveNote(tx, f.me, f.visitId, "  Impellern sliten. ");
+      await saveNote(tx, f.me, f.visitId, "Impellern bytt, bälgen sprucken.");
+      const [v] = await dayVisits(tx, f.tenantId, f.mechanicId, DAY);
+      expect(v?.notes).toBe("Impellern bytt, bälgen sprucken.");
+      await saveNote(tx, f.me, f.visitId, "   ");
+      expect((await dayVisits(tx, f.tenantId, f.mechanicId, DAY))[0]?.notes).toBeNull();
+      expect(await code(saveNote(tx, f.me, f.visitId, "x".repeat(4001)))).toBe("invalid_input");
+      const other = { tenantId: f.tenantId, userId: f.otherId, role: "mechanic" as const };
+      expect(await code(saveNote(tx, other, f.visitId, "Hej"))).toBe("forbidden");
     });
   });
 });

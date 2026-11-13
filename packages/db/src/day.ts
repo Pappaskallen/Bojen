@@ -4,7 +4,7 @@
  * pictures. Only the visit's own mechanic, the owner and an administrator may record anything
  * on a visit.
  */
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   bookingSettings,
   promisedWindow,
@@ -25,6 +25,7 @@ import {
   customer,
   engine,
   engineHoursReading,
+  idempotencyKey,
   job,
   jobPart,
   location,
@@ -70,6 +71,8 @@ export interface DayVisit {
   engines: DayEngine[];
   parts: DayPart[];
   photos: number;
+  /** What the mechanic has written on site. */
+  notes: string | null;
 }
 
 const OPEN = [
@@ -103,6 +106,7 @@ export async function dayVisits(
       start: sql<Date>`lower(${visit.timeWindow})`.mapWith((v: string) => new Date(v)),
       end: sql<Date>`upper(${visit.timeWindow})`.mapWith((v: string) => new Date(v)),
       status: visit.status,
+      notes: visit.notes,
       service: serviceType.name,
       description: job.description,
       customerId: customer.id,
@@ -261,6 +265,7 @@ export async function dayVisits(
           status: p.status,
         })),
       photos: photos.find((p) => p.ownerId === r.id)?.n ?? 0,
+      notes: r.notes,
     };
   });
 }
@@ -494,6 +499,50 @@ export async function addVisitPhoto(
     .returning({ id: attachment.id });
   if (!row) throw new Error("attachment not created");
   return row.id;
+}
+
+export const MAX_NOTE_LENGTH = 4000;
+
+/** What the mechanic writes on site; the latest text replaces the earlier. */
+export async function saveNote(db: Db, actor: DayActor, visitId: string, text: string) {
+  const note = text.trim();
+  if (note.length > MAX_NOTE_LENGTH) throw new DayError("invalid_input");
+  await ownVisit(db, actor, visitId);
+  await db
+    .update(visit)
+    .set({ notes: note || null })
+    .where(and(eq(visit.tenantId, actor.tenantId), eq(visit.id, visitId)));
+}
+
+/**
+ * Runs `work` once per key: a form sent again from the offline queue, after an answer that
+ * never arrived, finds its key taken and does nothing (step 5.5b). The key and the work share
+ * one transaction, so a failed attempt leaves the key free.
+ */
+export async function onceOnly(
+  db: Pick<Database, "transaction">,
+  tenantId: string,
+  key: string,
+  operation: string,
+  work: (tx: Db) => Promise<void>,
+): Promise<"done" | "replayed"> {
+  if (!key || key.length > 200) throw new DayError("invalid_input");
+  return db.transaction(async (tx) => {
+    const [claimed] = await tx
+      .insert(idempotencyKey)
+      .values({
+        tenantId,
+        key: `day:${key}`,
+        requestHash: createHash("sha256").update(operation).digest("hex"),
+        responseStatus: 200,
+        responseBody: {},
+      })
+      .onConflictDoNothing()
+      .returning({ id: idempotencyKey.id });
+    if (!claimed) return "replayed";
+    await work(tx as unknown as Db);
+    return "done";
+  });
 }
 
 /** The day to show: `YYYY-MM-DD` from the address, else today in Stockholm. */

@@ -27,6 +27,7 @@ function deps(over: Partial<DayRouteDeps> = {}): DayRouteDeps {
     addPart: vi.fn(ok),
     partStatus: vi.fn(ok),
     photo: vi.fn(ok),
+    note: vi.fn(ok),
     ...over,
   };
 }
@@ -54,14 +55,18 @@ describe("the day view's forms", () => {
 
   it("reads hours written the Swedish way", async () => {
     const d = deps();
-    await createDayRoute(d)(post({ engineId: ENGINE, hours: "1 342,5" }), VISIT, "timmar");
-    expect(d.hours).toHaveBeenCalledWith(expect.anything(), VISIT, ENGINE, 1342.5);
+    await createDayRoute(d)(
+      post({ key: KEY, engineId: ENGINE, hours: "1 342,5" }),
+      VISIT,
+      "timmar",
+    );
+    expect(d.hours).toHaveBeenCalledWith(expect.anything(), VISIT, KEY, ENGINE, 1342.5);
   });
 
   it("says what was wrong, on the page", async () => {
     const refuse = (error: Error) =>
       createDayRoute(deps({ hours: () => Promise.reject(error) }))(
-        post({ engineId: ENGINE, hours: "10" }),
+        post({ key: KEY, engineId: ENGINE, hours: "10" }),
         VISIT,
         "timmar",
       );
@@ -81,6 +86,52 @@ describe("the day view's forms", () => {
     const route = createDayRoute(deps());
     expect((await route(post({ key: KEY }), "x", "starta")).status).toBe(404);
     expect((await route(post({ key: KEY }), VISIT, "radera")).status).toBe(404);
+  });
+
+  it("needs a key on every form, so a form sent twice is done once", async () => {
+    const d = deps();
+    const r = await createDayRoute(d)(post({ engineId: ENGINE, hours: "10" }), VISIT, "timmar");
+    expect(r.headers.get("location")).toContain("fel=invalid_input");
+    expect(d.hours).not.toHaveBeenCalled();
+  });
+
+  it("saves a note", async () => {
+    const d = deps();
+    await createDayRoute(d)(post({ key: KEY, note: " Bälgen sprucken. " }), VISIT, "anteckning");
+    expect(d.note).toHaveBeenCalledWith(expect.anything(), VISIT, KEY, "Bälgen sprucken.");
+  });
+
+  it("answers the offline queue with JSON: done, refused for good, or try again", async () => {
+    const json = (fields: Record<string, string>) => {
+      const form = new FormData();
+      for (const [k, v] of Object.entries(fields)) form.set(k, v);
+      return new Request(`http://127.0.0.1:3100/api/idag/${VISIT}/x`, {
+        method: "POST",
+        headers: { accept: "application/json" },
+        body: form,
+      });
+    };
+    const done = await createDayRoute(deps())(json({ key: KEY }), VISIT, "klart");
+    expect(done.status).toBe(200);
+    expect(await done.json()).toEqual({ ok: true, done: "klart" });
+
+    const refused = await createDayRoute(
+      deps({ complete: () => Promise.reject(new BookingError("invalid_transition")) }),
+    )(json({ key: KEY }), VISIT, "klart");
+    expect(refused.status).toBe(422);
+    expect(await refused.json()).toEqual({ ok: false, problem: "wrong_state" });
+
+    const broken = await createDayRoute(
+      deps({ complete: () => Promise.reject(new Error("database down")) }),
+    )(json({ key: KEY }), VISIT, "klart");
+    expect(broken.status).toBe(500);
+
+    const signedOut = await createDayRoute(deps({ session: () => Promise.resolve(null) }))(
+      json({ key: KEY }),
+      VISIT,
+      "klart",
+    );
+    expect(signedOut.status).toBe(401);
   });
 
   it("turns refusals into the page's words", () => {

@@ -8,6 +8,7 @@ import { db, maps, requireStaff } from "../../../lib/server";
 import { word } from "../../(admin)/kunder/format";
 import { AdminNav } from "../../(admin)/nav";
 import { SignOutButton } from "../../(admin)/sign-out";
+import { OfflineQueue } from "./offline";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -49,6 +50,7 @@ export default async function TodayPage({ searchParams }: Props) {
         <span>{t.other(day)}</span>
         <Link href={`/idag?dag=${addDays(day, 1)}`}>{t.next}</Link>
       </nav>
+      <OfflineQueue />
       {done && t.doneMessage[done] ? <p role="status">{t.doneMessage[done]}</p> : null}
       {problem ? (
         <p className="error" role="alert">
@@ -106,13 +108,23 @@ export default async function TodayPage({ searchParams }: Props) {
                   {v.boat ? <Link href={`/batar/${v.boat.id}`}>{crm.boat.title}</Link> : null}
                 </div>
                 {START_FROM.includes(v.status) ? (
-                  <form method="post" action={action(v.id, "starta")} className="actions">
+                  <form
+                    method="post"
+                    action={action(v.id, "starta")}
+                    className="actions"
+                    data-offline={`${t.start}: ${v.customer.name}`}
+                  >
                     <input type="hidden" name="key" value={randomUUID()} />
                     <button type="submit">{t.start}</button>
                   </form>
                 ) : null}
                 {v.status === "in_progress" ? (
-                  <form method="post" action={action(v.id, "klart")} className="actions">
+                  <form
+                    method="post"
+                    action={action(v.id, "klart")}
+                    className="actions"
+                    data-offline={`${t.done}: ${v.customer.name}`}
+                  >
                     <input type="hidden" name="key" value={randomUUID()} />
                     <button type="submit">{t.done}</button>
                   </form>
@@ -127,7 +139,9 @@ export default async function TodayPage({ searchParams }: Props) {
                         method="post"
                         action={action(v.id, "timmar")}
                         className="inline"
+                        data-offline={`${t.hours}: ${v.customer.name}`}
                       >
+                        <input type="hidden" name="key" value={randomUUID()} />
                         <input type="hidden" name="engineId" value={e.id} />
                         <label className="field">
                           <span>
@@ -153,7 +167,9 @@ export default async function TodayPage({ searchParams }: Props) {
                       method="post"
                       action={action(v.id, "delstatus")}
                       className="inline"
+                      data-offline={`${t.parts}: ${v.customer.name}`}
                     >
+                      <input type="hidden" name="key" value={randomUUID()} />
                       <input type="hidden" name="jobPartId" value={p.id} />
                       <label className="field">
                         <span>
@@ -172,7 +188,12 @@ export default async function TodayPage({ searchParams }: Props) {
                       </button>
                     </form>
                   ))}
-                  <form method="post" action={action(v.id, "del")}>
+                  <form
+                    method="post"
+                    action={action(v.id, "del")}
+                    data-offline={`${t.addPart}: ${v.customer.name}`}
+                  >
+                    <input type="hidden" name="key" value={randomUUID()} />
                     <label className="field">
                       <span>{t.articleNumber}</span>
                       <input name="articleNumber" required maxLength={60} autoComplete="off" />
@@ -193,7 +214,13 @@ export default async function TodayPage({ searchParams }: Props) {
                   <summary>
                     {t.photos} ({t.photoCount(v.photos)})
                   </summary>
-                  <form method="post" action={action(v.id, "bild")} encType="multipart/form-data">
+                  <form
+                    method="post"
+                    action={action(v.id, "bild")}
+                    encType="multipart/form-data"
+                    data-offline={`${t.photos}: ${v.customer.name}`}
+                  >
+                    <input type="hidden" name="key" value={randomUUID()} />
                     <label className="field">
                       <span>{t.addPhoto}</span>
                       <input
@@ -205,6 +232,27 @@ export default async function TodayPage({ searchParams }: Props) {
                       />
                     </label>
                     <button type="submit">{t.upload}</button>
+                  </form>
+                </details>
+
+                <details open={Boolean(v.notes)}>
+                  <summary>{t.notes}</summary>
+                  <form
+                    method="post"
+                    action={action(v.id, "anteckning")}
+                    data-offline={`${t.notes}: ${v.customer.name}`}
+                  >
+                    <input type="hidden" name="key" value={randomUUID()} />
+                    <label className="field">
+                      <span>{t.notesHelp}</span>
+                      <textarea
+                        name="note"
+                        rows={4}
+                        maxLength={4000}
+                        defaultValue={v.notes ?? ""}
+                      />
+                    </label>
+                    <button type="submit">{t.saveNote}</button>
                   </form>
                 </details>
               </li>

@@ -114,7 +114,7 @@ test("a mechanic starts a visit, records hours, a part and a picture, and finish
   await card.getByLabel(/Yamaha F150/).fill("250");
   await card.getByRole("button", { name: "Spara" }).first().click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText("kan inte vara lägre");
-  await card.getByText("Gångtimmar").click();
+  // The refusal comes back without a reload, so the section is still open.
   await card.getByLabel(/Yamaha F150/).fill("342,5");
   await card.getByRole("button", { name: "Spara" }).first().click();
   await expect(page.getByRole("main").getByRole("status")).toHaveText("Gångtimmarna är sparade.");

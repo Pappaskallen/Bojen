@@ -155,6 +155,13 @@
       "when": 1794566439748,
       "tag": "0021_location_contact",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794577511386,
+      "tag": "0022_visit_notes",
+      "breakpoints": true
     }
   ]
 }
