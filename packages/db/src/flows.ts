@@ -4,7 +4,7 @@
  * survey rows.
  */
 import { stockholmDate } from "@bojen/core";
-import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import type { Database } from "./client";
 import {
   appUser,
@@ -227,6 +227,8 @@ export interface DomainEventRow {
   payload: Record<string, unknown>;
   /** `customer`, `staff` or `system`. */
   actorType: string;
+  /** The customer's or the staff member's id; empty for the system. */
+  actorId: string | null;
   occurredAt: Date;
 }
 
@@ -240,6 +242,7 @@ export async function loadDomainEvent(db: Db, eventId: string): Promise<DomainEv
       type: domainEvent.type,
       payload: domainEvent.payload,
       actorType: domainEvent.actorType,
+      actorId: domainEvent.actorId,
       occurredAt: domainEvent.occurredAt,
     })
     .from(domainEvent)
@@ -304,4 +307,132 @@ export async function answerSurvey(
 export async function createTask(db: Db, values: typeof task.$inferInsert): Promise<string | null> {
   const [row] = await db.insert(task).values(values).returning({ id: task.id });
   return row?.id ?? null;
+}
+
+export interface CheckContext {
+  urgency: "planned" | "soon" | "emergency";
+  /** When the visit got its current time: booked, approved or last rescheduled. */
+  bookedAt: Date;
+  availabilityStatus: string;
+  /** The place has a gate code on file, so the check asks if it still holds. Never the code. */
+  hasGateCode: boolean;
+}
+
+/** What the availability check (F3, step 4.1) needs beyond the visit itself. */
+export async function checkContext(
+  db: Pick<Database, "execute">,
+  tenantId: string,
+  visitId: string,
+): Promise<CheckContext | null> {
+  const [row] = await db.execute<{
+    urgency: CheckContext["urgency"];
+    booked_at: string;
+    availability_status: string;
+    has_gate_code: boolean;
+  }>(sql`
+    select j.urgency,
+           v.availability_status,
+           coalesce(
+             (select max(e.occurred_at) from domain_event e
+              where e.tenant_id = v.tenant_id and e.aggregate_type = 'visit'
+                and e.aggregate_id = v.id
+                and e.type in ('visit.created', 'visit.approve', 'visit.parts_arrived', 'visit.reschedule')),
+             v.created_at
+           ) as booked_at,
+           exists (
+             select 1 from boat_placement bp
+             join location_access_rule r
+               on r.tenant_id = bp.tenant_id and r.location_id = bp.location_id
+              and r.deleted_at is null and r.gate_code_encrypted is not null
+             where bp.tenant_id = v.tenant_id and bp.boat_id = j.boat_id and bp.deleted_at is null
+               and bp.valid_during @> (lower(v.time_window) at time zone 'Europe/Stockholm')::date
+           ) as has_gate_code
+    from visit v
+    join job j on j.tenant_id = v.tenant_id and j.id = v.job_id
+    where v.tenant_id = ${tenantId} and v.id = ${visitId}`);
+  if (!row) return null;
+  return {
+    urgency: row.urgency,
+    bookedAt: new Date(row.booked_at),
+    availabilityStatus: row.availability_status,
+    hasGateCode: row.has_gate_code,
+  };
+}
+
+/**
+ * Marks the check as sent and waiting for an answer. False when it was not `not_sent`, so
+ * two jobs for the same visit send one check.
+ */
+export async function startAvailabilityCheck(
+  db: Db,
+  tenantId: string,
+  visitId: string,
+): Promise<boolean> {
+  const rows = await db
+    .update(visit)
+    .set({ availabilityStatus: "pending" })
+    .where(
+      and(
+        eq(visit.tenantId, tenantId),
+        eq(visit.id, visitId),
+        eq(visit.status, "booked"),
+        eq(visit.availabilityStatus, "not_sent"),
+      ),
+    )
+    .returning({ id: visit.id });
+  return rows.length > 0;
+}
+
+/** A visit that gets no check (booked within 24 hours, or an emergency) counts as confirmed. */
+export async function skipAvailabilityCheck(db: Db, tenantId: string, visitId: string) {
+  await db
+    .update(visit)
+    .set({ availabilityStatus: "skipped" })
+    .where(
+      and(
+        eq(visit.tenantId, tenantId),
+        eq(visit.id, visitId),
+        eq(visit.availabilityStatus, "not_sent"),
+      ),
+    );
+}
+
+/**
+ * Moves the availability check from one of `from` to `to`. False when it was in none of
+ * them, so an answer, a reminder and the escalation never act on the same state twice.
+ */
+export async function moveAvailability(
+  db: Db,
+  tenantId: string,
+  visitId: string,
+  from: readonly (typeof visit.$inferSelect.availabilityStatus)[],
+  to: typeof visit.$inferSelect.availabilityStatus,
+): Promise<boolean> {
+  const rows = await db
+    .update(visit)
+    .set({ availabilityStatus: to })
+    .where(
+      and(
+        eq(visit.tenantId, tenantId),
+        eq(visit.id, visitId),
+        inArray(visit.availabilityStatus, [...from]),
+      ),
+    )
+    .returning({ id: visit.id });
+  return rows.length > 0;
+}
+
+/** Closes the open task to call about a visit, when the customer answered after all. */
+export async function closeCallTask(db: Db, tenantId: string, visitId: string, at: Date) {
+  await db
+    .update(task)
+    .set({ status: "done", completedAt: at })
+    .where(
+      and(
+        eq(task.tenantId, tenantId),
+        eq(task.visitId, visitId),
+        eq(task.type, "call_back"),
+        eq(task.status, "open"),
+      ),
+    );
 }

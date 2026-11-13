@@ -9,6 +9,12 @@ import {
 import { manageLinkExpiry, shortLinkUrl } from "@bojen/core/links";
 import { type Database, type VisitContext, createShortLink } from "@bojen/db";
 
+/**
+ * `manage`: the booking's own page. `report`: the service report. `rebook`: the firm's
+ * booking page, for a new time after a cancelled visit.
+ */
+export type LinkUse = "manage" | "report" | "rebook";
+
 /** What every flow needs. The clock is injected, so tests run the flows at any time. */
 export interface FlowDeps {
   db: Database;
@@ -16,7 +22,7 @@ export interface FlowDeps {
   /** `SMS_OPT_OUT_KEY`, for the STOPP list. */
   optOutKey: string;
   /** The customer's link for a visit, as written in the sms. */
-  link: (visit: VisitContext, purpose: "manage" | "report") => string | Promise<string>;
+  link: (visit: VisitContext, purpose: LinkUse) => string | Promise<string>;
 }
 
 /**
@@ -26,7 +32,7 @@ export interface FlowDeps {
  */
 export function customerLinks(db: Database, linkKey: string, base: string) {
   const page = bookingPageLink(base);
-  return async (visit: VisitContext, purpose: "manage" | "report") => {
+  return async (visit: VisitContext, purpose: LinkUse) => {
     if (purpose !== "manage") return page(visit);
     const code = await createShortLink(db, linkKey, {
       tenantId: visit.tenantId,

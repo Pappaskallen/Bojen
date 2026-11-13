@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { bookingSettings, dayMonth, promisedWindow, weekdayShort } from "@bojen/core";
-import { sv } from "@bojen/core/i18n/sv";
+import { customerPage as t, sv } from "@bojen/core/i18n/sv";
 import { slotValue, type Done, type Problem } from "../../../../lib/customer-page";
 import { customerPage } from "../../../../lib/server";
 
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 /** The code is the key to the page: keep it out of search engines and other sites' logs. */
 export const metadata: Metadata = {
-  title: `${sv.customerPage.title} – ${sv.app.name}`,
+  title: `${t.title} – ${sv.app.name}`,
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };
@@ -18,7 +18,6 @@ type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const t = sv.customerPage;
 const DONE: Record<Done, string> = {
   ombokad: t.done.rescheduled,
   avbokad: t.done.cancelled,

@@ -12,3 +12,4 @@ export * from "./messaging";
 export * from "./inbound";
 export * from "./flows";
 export * from "./short-links";
+export * from "./waitlist";

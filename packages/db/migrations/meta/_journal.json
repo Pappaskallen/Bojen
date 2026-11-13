@@ -134,6 +134,13 @@
       "when": 1794499882558,
       "tag": "0018_short_link",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794519985163,
+      "tag": "0019_waitlist_channel",
+      "breakpoints": true
     }
   ]
 }

@@ -104,7 +104,7 @@ export interface CreateBookingInput {
   start: Date;
   /** Defaults to the service's length. */
   plannedMinutes?: number;
-  channel: "phone" | "web" | "campaign" | "marina";
+  channel: "phone" | "web" | "campaign" | "marina" | "waitlist";
   needsApproval: boolean;
   partsMissing: boolean;
   /** What the customer wrote, kept on the job. */
@@ -117,6 +117,8 @@ export interface ChangeBookingInput {
   start?: Date;
   mechanicId?: string;
   partsMissing?: boolean;
+  /** Why, for the event log: for example `availability_check` when the customer answered NEJ. */
+  reason?: string;
 }
 
 const MINUTE = 60_000;
@@ -356,7 +358,9 @@ export async function createBooking(
   if (input.start.getTime() <= deps.now().getTime()) {
     throw new BookingError("invalid_input", "start is in the past");
   }
-  return idempotent(deps, ctx, "create", input, 201, (tx) => bookInTransaction(tx, ctx, input));
+  return idempotent(deps, ctx, "create", input, 201, (tx) =>
+    bookInTransaction(tx, ctx, input, deps.now()),
+  );
 }
 
 /**
@@ -368,6 +372,8 @@ export async function bookInTransaction(
   tx: Tx,
   ctx: Pick<BookingContext, "tenantId" | "actor">,
   input: CreateBookingInput,
+  /** The injected clock, so the flows time from when the booking was made (step 4.1). */
+  occurredAt?: Date,
 ): Promise<VisitView> {
   const [service] = await tx
     .select({ minutes: serviceType.defaultDurationMinutes })
@@ -425,13 +431,20 @@ export async function bookInTransaction(
     start: input.start,
     end,
   });
-  await recordEvent(tx, ctx, created.id, "visit.created", {
-    status,
-    start: result.start,
-    end: result.end,
-    mechanicId: input.mechanicId,
-    channel: input.channel,
-  });
+  await recordEvent(
+    tx,
+    ctx,
+    created.id,
+    "visit.created",
+    {
+      status,
+      start: result.start,
+      end: result.end,
+      mechanicId: input.mechanicId,
+      channel: input.channel,
+    },
+    occurredAt,
+  );
   return result;
 }
 
@@ -533,6 +546,7 @@ export async function changeBooking(
             }
           : {}),
         day: stockholmDate(start),
+        ...(input.reason ? { reason: input.reason } : {}),
       },
       deps.now(),
     );
