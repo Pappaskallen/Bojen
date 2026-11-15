@@ -27,6 +27,9 @@ export default defineConfig({
     locale: "sv-SE",
     timezoneId: "Europe/Stockholm",
     trace: "retain-on-failure",
+    // A click that cannot happen fails on its own, with the element and the reason in the
+    // message, instead of running into the test's timeout without saying which.
+    actionTimeout: 15_000,
   },
   projects: [{ name: "mobile", use: { ...devices["Pixel 7"] } }],
   webServer: {
