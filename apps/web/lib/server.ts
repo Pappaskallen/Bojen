@@ -36,6 +36,7 @@ import {
   codesForPhone,
   changeBooking,
   connect,
+  createSpringCampaign,
   moveCard,
   onceOnly,
   passkeyOwner,
@@ -47,12 +48,14 @@ import {
   saveNote,
   saveReport,
   setPartStatus,
+  startCampaign,
   visitBoatPicture,
   visitDayFor,
   type DbConnection,
 } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createBoatAccessRoute } from "./boat-access";
+import { createCampaignRoutes } from "./campaign-routes";
 import { createBoatPictureRoute } from "./boat-picture-route";
 import { createCustomerPage } from "./customer-page";
 import { createCodesRoute } from "./codes-route";
@@ -366,6 +369,21 @@ const optOutKey = once(() => {
   if (production) throw new Error("SMS_OPT_OUT_KEY must be at least 32 characters");
   return "development-only-opt-out-key-not-secret";
 });
+
+/** The campaigns (step 5.6): drafts and starting them; the sending is the worker's. */
+export const campaignRoutes = createCampaignRoutes({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  create: (tenantId, input) => createSpringCampaign(db(), tenantId, input),
+  start: (tenantId, campaignId) =>
+    startCampaign(
+      { db: db(), now: () => new Date(), optOutKey: optOutKey() },
+      tenantId,
+      campaignId,
+    ),
+});
+
+/** The spring campaign's recipients before it starts, for the draft's page. */
+export const campaignOptOutKey = () => optOutKey();
 
 export const webhookRoutes = createWebhookRoutes({
   db,

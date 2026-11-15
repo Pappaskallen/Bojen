@@ -328,6 +328,10 @@ export interface SuggestRequest {
   earliest?: string | null;
   /** When rescheduling: the visit being moved, whose own time counts as free (step 3.4). */
   excludeVisitId?: string;
+  /** Days searched; default 42. The spring campaign searches one week (step 5.6). */
+  horizonDays?: number;
+  /** How many times; default 3. */
+  limit?: number;
 }
 
 export interface PublicSuggestion {
@@ -513,11 +517,12 @@ export async function publicSuggestions(
   }
 
   const earliest = request.earliest && request.earliest > today ? request.earliest : today;
+  const horizon = request.horizonDays ?? HORIZON_DAYS;
   const cal = await calendar(
     deps.db,
     tenantId,
     earliest,
-    addDays(earliest, HORIZON_DAYS),
+    addDays(earliest, horizon),
     request.excludeVisitId,
   );
   const tenantInput = {
@@ -548,8 +553,8 @@ export async function publicSuggestions(
     partsLeadDays: 0,
     travel,
     now,
-    horizonDays: HORIZON_DAYS,
-    limit: 3,
+    horizonDays: horizon,
+    limit: request.limit ?? 3,
   });
   return suggestions.map((s) => ({
     mechanicId: s.mechanicId,

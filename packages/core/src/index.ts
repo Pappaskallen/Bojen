@@ -199,3 +199,29 @@ export {
   type ProposedLine,
 } from "./reports/invoice";
 export { reportContent, type ReportContent } from "./reports/content";
+export {
+  autumnBefore,
+  looksLikeLayUp,
+  looksLikeSpringService,
+  springOf,
+  springSegment,
+  type Exclusion,
+  type SegmentResult,
+  type SpringCandidate,
+  type SpringSegment,
+} from "./campaigns/segment";
+export {
+  DEFAULT_BATCH_SIZE,
+  DEFAULT_TARGET_WEEK,
+  HOLD_DAYS,
+  SEND_TIME,
+  SEND_WEEKDAYS,
+  chooseSlot,
+  dayOfIsoWeek,
+  isoWeekOf,
+  nextRound,
+  nextSendAt,
+  targetWeek,
+  type SlotOption,
+  type TargetWeek,
+} from "./campaigns/proposeSlot";

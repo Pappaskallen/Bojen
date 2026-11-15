@@ -39,7 +39,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 5.3 – Marinakort (1 dag)
 - [x] Steg 5.4 – Pipeline (1 dag)
 - [x] Steg 5.5 – Mekanikerns dagvy som PWA, offline (3 dagar)
-- [ ] Steg 5.6 – Vårkampanj, enkel version (2 dagar)
+- [x] Steg 5.6 – Vårkampanj, enkel version (2 dagar)
 - [ ] Steg 6.1 – Verktygs-API för agenten (1,5 dagar)
 - [ ] Steg 6.2 – Röstagenten (4 dagar)
 - [ ] Steg 6.3 – Efterbearbetning (1,5 dagar)
@@ -342,6 +342,7 @@ ett alternativ i stället för att byta tyst.
   - Utskick i omgångar.
   - Svaret JA blir en bokning, ANNAN ger en länk och NEJ ger frågan om båten är såld.
   - Reservationen släpps efter 14 dagar.
+  - (Avstämt med Robert 2026-11-15: segment C väntar på ServicePlan; den reserverade tiden får ett eget läge, Reserverad.)
 - **Klart när:** Med testdatan (förra året) skapar en kampanj reservationer i rätt vecka, och svaret JA ger ett bokat besök och sms enligt F1.
 
 ### Fas 6: Receptionisten

@@ -20,3 +20,4 @@ export * from "./pipeline";
 export * from "./day";
 export * from "./passkeys";
 export * from "./reports";
+export * from "./campaigns";

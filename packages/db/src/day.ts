@@ -84,6 +84,7 @@ export interface DayVisit {
 
 const OPEN = [
   "tentative",
+  "reserved",
   "booked",
   "confirmed",
   "unconfirmed",

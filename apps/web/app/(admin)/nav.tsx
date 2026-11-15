@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { crm } from "@bojen/core/i18n/sv";
 
-type Page = "today" | "requests" | "pipeline" | "customers" | "places" | "security";
+type Page = "today" | "requests" | "pipeline" | "customers" | "places" | "campaigns" | "security";
 
 const LINKS: { page: Page; href: string }[] = [
   { page: "today", href: "/idag" },
@@ -9,6 +9,7 @@ const LINKS: { page: Page; href: string }[] = [
   { page: "pipeline", href: "/pipeline" },
   { page: "customers", href: "/kunder" },
   { page: "places", href: "/marinor" },
+  { page: "campaigns", href: "/kampanjer" },
   { page: "security", href: "/sakerhet" },
 ];
 

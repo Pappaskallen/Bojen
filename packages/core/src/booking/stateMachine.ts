@@ -2,6 +2,7 @@
  * The life of a visit (byggplan step 2.4, spec 6.1 and flows F2–F4).
  *
  *   tentative ──parts_arrived──▶ booked ──confirm──▶ confirmed
+ *   reserved ──accept──▶ booked (a campaign's held time, when the customer says JA, F11)
  *   pending_approval ──approve──▶ booked (or tentative while parts are missing)
  *   booked ──mark_unconfirmed──▶ unconfirmed ──confirm──▶ confirmed
  *   booked | confirmed | unconfirmed ──start──▶ in_progress ──complete──▶ done
@@ -14,6 +15,8 @@
 
 export const VISIT_STATUSES = [
   "tentative",
+  /** Held for a customer by a campaign until they answer (F11, step 5.6). */
+  "reserved",
   "pending_approval",
   "booked",
   "confirmed",
@@ -29,6 +32,7 @@ export const VISIT_EVENTS = [
   "approve",
   "reject",
   "parts_arrived",
+  "accept",
   "confirm",
   "mark_unconfirmed",
   "reschedule",
@@ -43,6 +47,7 @@ export type ActorType = "customer" | "staff" | "system";
 
 const BEFORE_WORK = [
   "tentative",
+  "reserved",
   "pending_approval",
   "booked",
   "confirmed",
@@ -57,10 +62,12 @@ const TRANSITIONS: Record<VisitEvent, Partial<Record<VisitStatus, VisitStatus>>>
   approve: { pending_approval: "booked" },
   reject: { pending_approval: "cancelled" },
   parts_arrived: { tentative: "booked" },
+  accept: { reserved: "booked" },
   confirm: { booked: "confirmed", unconfirmed: "confirmed" },
   mark_unconfirmed: { booked: "unconfirmed" },
   reschedule: {
     tentative: "tentative",
+    reserved: "reserved",
     pending_approval: "pending_approval",
     booked: "booked",
     confirmed: "booked",
@@ -75,8 +82,9 @@ const TRANSITIONS: Record<VisitEvent, Partial<Record<VisitStatus, VisitStatus>>>
 /** Who may trigger each event. Staff may do everything. */
 const ALLOWED: Record<Exclude<ActorType, "staff">, readonly VisitEvent[]> = {
   customer: ["confirm", "reschedule", "cancel"],
-  // The system confirms on a clear YES by sms (F3) and moves tentative visits on (F2).
-  system: ["confirm", "parts_arrived", "mark_unconfirmed", "cancel"],
+  // The system confirms on a clear YES by sms (F3), moves tentative visits on (F2), and books
+  // or releases a campaign's held time (F11).
+  system: ["confirm", "parts_arrived", "accept", "mark_unconfirmed", "cancel"],
 };
 
 export class InvalidTransitionError extends Error {
@@ -116,7 +124,10 @@ export function nextStatus(
 export function initialStatus(options: {
   needsApproval: boolean;
   partsMissing: boolean;
+  /** A campaign holds the time until the customer answers (F11). */
+  reserved?: boolean;
 }): VisitStatus {
+  if (options.reserved) return "reserved";
   if (options.needsApproval) return "pending_approval";
   if (options.partsMissing) return "tentative";
   return "booked";

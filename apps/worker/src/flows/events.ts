@@ -6,6 +6,7 @@ import type { FlowDeps } from "./deps";
 import { scheduleEta } from "./morningEta";
 import { handleOfferAnswer, startWaitlist } from "./waitlistOffer";
 import { type ReportContent, sendServiceReport } from "./serviceReport";
+import { handleCampaignAnswer, handleSoldAnswer } from "./campaign";
 import { handleSurveyAnswer, scheduleSurvey } from "./survey";
 
 export const DOMAIN_EVENT_TASK = "domain_event";
@@ -21,6 +22,8 @@ export type EventOutcome =
   | "waitlist_started"
   | "waitlist_answer"
   | "invoiced"
+  | "campaign_answer"
+  | "boat_sold"
   | "ignored";
 
 const CHECK_QUESTION = /^f3_(check_|reminder$)/;
@@ -51,8 +54,11 @@ export async function handleDomainEvent(deps: FlowDeps, eventId: string): Promis
         return "confirmation";
       }
       return "ignored";
+    // Booked after approval, after the parts came (F2), or after JA to a held time in the
+    // spring campaign (F11): F1 as for any booking.
     case "visit.approve":
     case "visit.parts_arrived":
+    case "visit.accept":
       if (visitId && payload.to === "booked") {
         await sendConfirmation(deps, tenantId, visitId);
         await planCheck(deps, tenantId, visitId);
@@ -74,8 +80,12 @@ export async function handleDomainEvent(deps: FlowDeps, eventId: string): Promis
       return (await scheduleEta(deps, visit)) ? "eta_moved" : "ignored";
     }
     case "visit.cancel":
-      // A freed time goes to the waitlist (F4, step 4.3).
+      // A freed time goes to the waitlist (F4, step 4.3). A campaign's held time that is
+      // released was never the customer's, months ahead: it just goes back to the calendar.
       if (!visitId) return "ignored";
+      if (typeof payload.reason === "string" && payload.reason.startsWith("campaign_")) {
+        return "ignored";
+      }
       return (await startWaitlist(deps, tenantId, visitId)) === "started"
         ? "waitlist_started"
         : "ignored";
@@ -129,6 +139,25 @@ export async function handleDomainEvent(deps: FlowDeps, eventId: string): Promis
           payload.intent,
         );
         return outcome === "ignored" ? "ignored" : "waitlist_answer";
+      }
+      // The answer to a held time in the spring campaign (F11, step 5.6).
+      if (
+        typeof payload.questionTemplate === "string" &&
+        payload.questionTemplate.startsWith("f11_spring") &&
+        payload.confident === true &&
+        typeof payload.visitId === "string" &&
+        (payload.intent === "yes" || payload.intent === "another_time" || payload.intent === "no")
+      ) {
+        const outcome = await handleCampaignAnswer(deps, tenantId, payload.visitId, payload.intent);
+        return outcome === "ignored" ? "ignored" : "campaign_answer";
+      }
+      if (
+        payload.questionTemplate === "f11_sold_question" &&
+        payload.intent === "sold" &&
+        payload.confident === true &&
+        typeof payload.visitId === "string"
+      ) {
+        return (await handleSoldAnswer(deps, tenantId, payload.visitId)) ? "boat_sold" : "ignored";
       }
       if (
         payload.questionTemplate === "f9_survey" &&

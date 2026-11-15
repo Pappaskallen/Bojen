@@ -1,7 +1,9 @@
 import {
   createFakeEmail,
   createFakeSms,
+  createFakeMaps,
   createMailgunEmail,
+  createOsrmMaps,
   elksFromEnv,
   systemClock,
 } from "@bojen/adapters";
@@ -84,6 +86,9 @@ async function main() {
       optOutKey: optOutKey(),
       link: customerLinks(db, linkKey(), process.env.APP_URL ?? "bojen.se"),
       reports: reportDeps(production),
+      maps: process.env.OSRM_URL
+        ? createOsrmMaps({ baseUrl: process.env.OSRM_URL })
+        : createFakeMaps(),
     }),
   });
   console.info(`[worker] ${systemClock.now().toISOString()} started`);

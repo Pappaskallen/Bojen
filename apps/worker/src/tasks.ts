@@ -1,4 +1,4 @@
-import type { EmailSender, SmsSender } from "@bojen/core";
+import type { EmailSender, MapsProvider, SmsSender } from "@bojen/core";
 import { REPORT_TASK, SEND_MESSAGE_TASK, type DraftDeps, writeReportDraft } from "@bojen/db";
 import type { Task, TaskList } from "graphile-worker";
 import { CHECK_TASK, sendAvailabilityCheck } from "./flows/availabilityCheck";
@@ -9,12 +9,20 @@ import { ETA_TASK, sendMorningEta } from "./flows/morningEta";
 import { WAITLIST_TASK, sendWaitlistRound } from "./flows/waitlistOffer";
 import { SURVEY_TASK, sendSurvey } from "./flows/survey";
 import { sendMessageTask } from "./tasks/sendMessage";
+import {
+  CAMPAIGN_RELEASE_TASK,
+  CAMPAIGN_ROUND_TASK,
+  releaseCampaignHold,
+  sendCampaignRound,
+} from "./flows/campaign";
 
 export interface WorkerDeps extends FlowDeps {
   sms: SmsSender;
   email: EmailSender;
   /** The report draft (step 5.5d): storage for the voice notes, the writer, speech to text. */
   reports?: Pick<DraftDeps, "storage" | "writer" | "transcriber">;
+  /** Travel times for the times the spring campaign holds (step 5.6). */
+  maps?: MapsProvider;
 }
 
 function field(payload: unknown, name: string): string {
@@ -54,6 +62,26 @@ export function taskList(deps: WorkerDeps): TaskList {
     },
     [ETA_TASK]: visitTask((tenantId, visitId) => sendMorningEta(deps, tenantId, visitId)),
     [SURVEY_TASK]: visitTask((tenantId, visitId) => sendSurvey(deps, tenantId, visitId)),
+    [CAMPAIGN_RELEASE_TASK]: async (payload, helpers) => {
+      const recipientId = field(payload, "recipientId");
+      const outcome = await releaseCampaignHold(deps, field(payload, "tenantId"), recipientId);
+      helpers.logger.info(`campaign recipient ${recipientId}: ${outcome}`);
+    },
+    ...(deps.maps
+      ? {
+          [CAMPAIGN_ROUND_TASK]: async (payload, helpers) => {
+            const campaignId = field(payload, "campaignId");
+            const maps = deps.maps;
+            if (!maps) return;
+            const outcome = await sendCampaignRound(
+              { ...deps, maps },
+              field(payload, "tenantId"),
+              campaignId,
+            );
+            helpers.logger.info(`campaign ${campaignId}: ${outcome}`);
+          },
+        }
+      : {}),
     ...(deps.reports ? reportTasks({ db: deps.db, now: deps.now, ...deps.reports }) : {}),
   };
 }

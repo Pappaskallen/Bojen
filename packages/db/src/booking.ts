@@ -109,6 +109,8 @@ export interface CreateBookingInput {
   channel: "phone" | "web" | "campaign" | "marina" | "waitlist";
   needsApproval: boolean;
   partsMissing: boolean;
+  /** A campaign holds the time until the customer answers (F11, step 5.6). */
+  reserved?: boolean;
   /** What the customer wrote, kept on the job. */
   description?: string | null;
 }
@@ -346,7 +348,14 @@ async function recordEvent(
 }
 
 const pipelineFor = (status: VisitStatus) =>
-  status === "pending_approval" ? "inquiry" : status === "tentative" ? "parts_ordered" : "booked";
+  status === "pending_approval"
+    ? "inquiry"
+    : status === "tentative"
+      ? "parts_ordered"
+      : // A campaign's held time is an offer until the customer says JA (step 5.6).
+        status === "reserved"
+        ? "quote"
+        : "booked";
 
 /** Books a new job and its first visit. */
 export async function createBooking(
@@ -552,6 +561,19 @@ export async function changeBooking(
       },
       deps.now(),
     );
+    // JA to a campaign's held time moves the offer's card on to booked (step 5.6).
+    if (input.event === "accept") {
+      await tx
+        .update(job)
+        .set({ pipelineStatus: "booked" })
+        .where(
+          and(
+            eq(job.tenantId, ctx.tenantId),
+            eq(job.id, before.jobId),
+            eq(job.pipelineStatus, "quote"),
+          ),
+        );
+    }
     // The last visit done moves the job's card to done (step 5.4).
     if (status === "done") {
       await jobAfterVisitDone(tx, ctx.tenantId, before.jobId, deps.now());

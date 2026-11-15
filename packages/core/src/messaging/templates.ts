@@ -89,6 +89,7 @@ export const SMS_TEMPLATES = {
   f11_spring_discount: { flow: "F11", category: "marketing", maxSegments: 3 },
   f11_spring_b: { flow: "F11", category: "marketing", maxSegments: 3 },
   f11_sold_question: { flow: "F11", category: "reply", maxSegments: 1 },
+  f11_other_times: { flow: "F11", category: "reply", maxSegments: 2 },
   f12_autumn: { flow: "F12", category: "marketing", maxSegments: 3 },
   f12_haulout_question: { flow: "F12", category: "reply", maxSegments: 2 },
   f13_service_reminder: { flow: "F13", category: "marketing", maxSegments: 3 },

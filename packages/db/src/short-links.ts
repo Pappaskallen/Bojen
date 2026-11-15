@@ -25,6 +25,7 @@ import {
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { encryptAccess } from "./access";
 import { BookingError, changeBooking, type BookingResult } from "./booking";
+import { answerCampaign, recipientForVisit } from "./campaigns";
 import type { Database } from "./client";
 import { type VisitContext, visitContext } from "./flows";
 import type { SuggestRequest } from "./public-booking";
@@ -91,7 +92,14 @@ export async function useLinksOf(db: Db, tenantId: string, visitId: string, at: 
     );
 }
 
-const OPEN = new Set(["pending_approval", "tentative", "booked", "confirmed", "unconfirmed"]);
+const OPEN = new Set([
+  "pending_approval",
+  "tentative",
+  "reserved",
+  "booked",
+  "confirmed",
+  "unconfirmed",
+]);
 
 export type ManagePage =
   | { state: "missing" }
@@ -249,6 +257,33 @@ export async function cancelByLink(deps: LinkChangeDeps, code: string): Promise<
   );
   await useLinksOf(deps.db, link.tenantId, link.visitId, deps.now());
   return result;
+}
+
+/**
+ * JA to a campaign's held time from the e-mail's link (F11, step 5.6): booked as an sms JA
+ * would be, which sends F1. A time that is not held any more cannot be taken here.
+ */
+export async function acceptByLink(deps: LinkChangeDeps, code: string): Promise<void> {
+  const { link, visit } = await usableLink(deps, code);
+  if (visit.status !== "reserved") throw new BookingError("invalid_transition", "not reserved");
+  const target = await recipientForVisit(deps.db, link.tenantId, link.visitId);
+  if (target) {
+    if ((await answerCampaign(deps, link.tenantId, target, "yes")) !== "booked") {
+      throw new BookingError("invalid_transition", "already answered");
+    }
+  } else {
+    await changeBooking(
+      deps,
+      {
+        tenantId: link.tenantId,
+        actor: { type: "system", id: null },
+        idempotencyKey: `link:${link.id}:accept`,
+      },
+      link.visitId,
+      { event: "accept" },
+    );
+  }
+  await useLinksOf(deps.db, link.tenantId, link.visitId, deps.now());
 }
 
 export interface AccessForm {

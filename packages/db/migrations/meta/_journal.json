@@ -176,6 +176,13 @@
       "when": 1794738811975,
       "tag": "0024_service_report",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794744351628,
+      "tag": "0025_spring_campaign",
+      "breakpoints": true
     }
   ]
 }

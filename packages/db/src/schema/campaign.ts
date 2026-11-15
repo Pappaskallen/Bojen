@@ -52,6 +52,12 @@ export const campaignRecipient = pgTable(
     /** The reserved visit offered to the recipient. Released after 14 days without reply. */
     suggestedVisitId: uuid("suggested_visit_id"),
     status: campaignRecipientStatus("status").notNull().default("pending"),
+    /** `A` or `B` for the spring campaign (F11): which text the recipient gets. */
+    segment: text("segment"),
+    /** What the recipient answered: `yes`, `other` (ANNAN), `no` or `sold`. */
+    answer: text("answer"),
+    /** Why nothing was sent, for example `no_slot` when the week had no free time. */
+    problem: text("problem"),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     respondedAt: timestamp("responded_at", { withTimezone: true }),
   },
