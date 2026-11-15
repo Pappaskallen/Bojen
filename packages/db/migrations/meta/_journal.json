@@ -183,6 +183,13 @@
       "when": 1794744351628,
       "tag": "0025_spring_campaign",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794757228522,
+      "tag": "0026_call_identity",
+      "breakpoints": true
     }
   ]
 }

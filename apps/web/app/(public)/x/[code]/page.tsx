@@ -23,6 +23,7 @@ const DONE: Record<Done, string> = {
   avbokad: t.done.cancelled,
   atkomst: t.done.access,
   bokad: t.done.accepted,
+  bilder: t.done.pictures,
 };
 const PROBLEMS: Record<Problem, string> = t.errors;
 const pick = <K extends string>(map: Record<K, string>, value: unknown) =>
@@ -145,6 +146,26 @@ export default async function CustomerPage({ params, searchParams }: Props) {
       ) : (
         <p>{t.tooLate(page.cancelBy, phone)}</p>
       )}
+
+      <section className="group" aria-labelledby="pictures">
+        <h2 id="pictures">{t.pictures}</h2>
+        <form method="post" action={action("bilder")} encType="multipart/form-data">
+          <p>{t.picturesIntro}</p>
+          <label className="field">
+            <span>{t.picturesField}</span>
+            <input
+              name="photos"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic"
+              multiple
+              required
+            />
+          </label>
+          <div className="actions">
+            <button type="submit">{t.picturesSave}</button>
+          </div>
+        </form>
+      </section>
 
       <section className="group" aria-labelledby="access">
         <h2 id="access">{t.access}</h2>

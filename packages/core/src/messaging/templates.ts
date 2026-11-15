@@ -49,7 +49,9 @@ export type Flow =
   | "F12"
   | "F13"
   | "F14"
-  | "F15";
+  | "F15"
+  /** Links the receptionist sends during a call (step 6.1). */
+  | "voice";
 
 export interface SmsTemplateInfo {
   flow: Flow;
@@ -98,6 +100,9 @@ export const SMS_TEMPLATES = {
   f14_none_available: { flow: "F14", category: "reply", maxSegments: 3 },
   f14_moved: { flow: "F14", category: "notice", maxSegments: 3 },
   f15_type_plate: { flow: "F15", category: "reply", maxSegments: 3 },
+  voice_booking_link: { flow: "voice", category: "reply", maxSegments: 2 },
+  voice_access_link: { flow: "voice", category: "reply", maxSegments: 2 },
+  voice_pictures_link: { flow: "voice", category: "reply", maxSegments: 2 },
 } as const satisfies Record<SmsTemplateKey, SmsTemplateInfo>;
 
 /** When the quiet hours end for a template: 08:00, or earlier where the spec says so. */

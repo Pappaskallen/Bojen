@@ -40,7 +40,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 5.4 – Pipeline (1 dag)
 - [x] Steg 5.5 – Mekanikerns dagvy som PWA, offline (3 dagar)
 - [x] Steg 5.6 – Vårkampanj, enkel version (2 dagar)
-- [ ] Steg 6.1 – Verktygs-API för agenten (1,5 dagar)
+- [x] Steg 6.1 – Verktygs-API för agenten (1,5 dagar)
 - [ ] Steg 6.2 – Röstagenten (4 dagar)
 - [ ] Steg 6.3 – Efterbearbetning (1,5 dagar)
 - [ ] Steg 6.4 – Kopplingsregler och reservrutin (1,5 dagar)
@@ -354,6 +354,7 @@ ett alternativ i stället för att byta tyst.
   - Kortlivad token per samtal och firma.
   - Inget verktyg returnerar koder eller adresser.
   - Kontrollfrågan krävs före ombokning och avbokning.
+  - (Avstämt med Robert 2026-11-15: vid ett annat nummer än samtalets ges bara förnamnet tills kontrollfrågan är godkänd; kundens korta länk får uppladdning av bilder och typskylt för `skicka_lank`.)
 - **Klart när:** Kontraktstester finns för varje verktyg. Ett test visar att `hitta_kund` aldrig returnerar åtkomstinformation.
 
 #### Steg 6.2 – Röstagenten (4 dagar)

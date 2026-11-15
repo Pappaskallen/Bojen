@@ -21,6 +21,7 @@ import type {
   ReplyClassifier,
   SmsSender,
   StaffAuth,
+  VoiceToolName,
 } from "@bojen/core";
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
@@ -52,6 +53,24 @@ import {
   visitBoatPicture,
   visitDayFor,
   type DbConnection,
+  avbokaBokning,
+  avslutaSamtal,
+  bekraftaKund,
+  callContext,
+  foreslaTider,
+  hamtaBokningar,
+  hittaKund,
+  kopplaTillMekaniker,
+  ombokaBokning,
+  openCall,
+  sattVantelista,
+  skapaBokning,
+  skapaMeddelande,
+  skickaLank,
+  startCall,
+  stoppaInspelning,
+  type CallRow,
+  type VoiceDeps,
 } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createBoatAccessRoute } from "./boat-access";
@@ -62,6 +81,7 @@ import { createCodesRoute } from "./codes-route";
 import { createDayRoute } from "./day-route";
 import { createPasskeyRoutes } from "./passkey-routes";
 import { createPipelineRoute } from "./pipeline-route";
+import { createVoiceToolsRoute } from "./voice-tools-route";
 import { createReportRoute } from "./report-route";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
@@ -330,6 +350,7 @@ export const customerPage = createCustomerPage({
   kms,
   now: () => new Date(),
   linkKey,
+  storage,
 });
 
 export const publicRoutes = createPublicRoutes({
@@ -394,4 +415,58 @@ export const webhookRoutes = createWebhookRoutes({
   elksIps,
   classifier,
   optOutKey,
+});
+
+/** `VOICE_TOOLS_SECRET`: signs the calls' tokens and the times offered in them (step 6.1). */
+const voiceSecret = once(() => {
+  const secret = process.env.VOICE_TOOLS_SECRET;
+  if (secret && secret.length >= 32) return secret;
+  if (production) throw new Error("VOICE_TOOLS_SECRET must be at least 32 characters");
+  // Development only: a new secret per server start ends every call's token, which is fine.
+  return randomBytes(32).toString("base64url");
+});
+
+const voiceDeps = (): VoiceDeps => ({
+  db: db(),
+  now: () => new Date(),
+  optOutKey: optOutKey(),
+  maps: maps(),
+  geocoder: geocoder(),
+  storage: storage(),
+  linkKey: linkKey(),
+  secret: voiceSecret(),
+  appBase: appUrl() || "bojen.se",
+});
+
+const VOICE_TOOL_RUNNERS: Record<
+  VoiceToolName,
+  (deps: VoiceDeps, call: CallRow, input: unknown) => Promise<unknown>
+> = {
+  hitta_kund: hittaKund,
+  bekrafta_kund: bekraftaKund,
+  foresla_tider: foreslaTider,
+  skapa_bokning: skapaBokning,
+  hamta_bokningar: (deps, call) => hamtaBokningar(deps, call),
+  omboka_bokning: ombokaBokning,
+  avboka_bokning: avbokaBokning,
+  skicka_lank: skickaLank,
+  satt_vantelista: sattVantelista,
+  koppla_till_mekaniker: kopplaTillMekaniker,
+  skapa_meddelande: skapaMeddelande,
+  stoppa_inspelning: (deps, call) => stoppaInspelning(deps, call),
+  avsluta_samtal: avslutaSamtal,
+};
+
+/** The receptionist's tools (step 6.1), for the voice agent of step 6.2. */
+export const voiceToolsRoute = createVoiceToolsRoute({
+  serviceSecret: () => {
+    const secret = process.env.VOICE_SERVICE_SECRET;
+    return secret && secret.length >= 32 ? secret : null;
+  },
+  tokenSecret: voiceSecret,
+  now: () => new Date(),
+  start: (input) => startCall(db(), { ...input, now: new Date() }),
+  openCall: (tenantId, callId) => openCall(db(), tenantId, callId),
+  context: (call) => callContext(voiceDeps(), call),
+  run: (tool, call, input) => VOICE_TOOL_RUNNERS[tool](voiceDeps(), call, input),
 });

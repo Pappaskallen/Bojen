@@ -111,6 +111,8 @@ export interface CreateBookingInput {
   partsMissing: boolean;
   /** A campaign holds the time until the customer answers (F11, step 5.6). */
   reserved?: boolean;
+  /** How urgent the job is, as the receptionist heard it (step 6.1). Default planned. */
+  urgency?: "planned" | "soon" | "emergency";
   /** What the customer wrote, kept on the job. */
   description?: string | null;
 }
@@ -415,6 +417,7 @@ export async function bookInTransaction(
       serviceTypeId: input.serviceTypeId,
       channel: input.channel,
       description: input.description ?? null,
+      ...(input.urgency ? { urgency: input.urgency } : {}),
       pipelineStatus: pipelineFor(status),
     })
     .returning({ id: job.id });

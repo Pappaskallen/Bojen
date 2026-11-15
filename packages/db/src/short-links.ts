@@ -6,11 +6,13 @@
  * too. Rescheduling or cancelling uses up every link of the visit; a reschedule then sends a
  * new confirmation with a new link (the worker, F1).
  */
+import { randomUUID } from "node:crypto";
 import {
   bookingSettings,
   cancelBy,
   customerMayChange,
   stockholmDate,
+  type ObjectStorage,
   type PlacementMode,
 } from "@bojen/core";
 import type { Kms } from "@bojen/core/crypto";
@@ -29,7 +31,7 @@ import { answerCampaign, recipientForVisit } from "./campaigns";
 import type { Database } from "./client";
 import { type VisitContext, visitContext } from "./flows";
 import type { SuggestRequest } from "./public-booking";
-import { accessInfo, boatPlacement, job, shortLink } from "./schema";
+import { accessInfo, attachment, boatPlacement, job, shortLink } from "./schema";
 
 type Db = Pick<Database, "select" | "insert" | "update">;
 
@@ -325,4 +327,47 @@ export async function saveAccessByLink(
       ...(keyLocation === undefined ? {} : { keyLocation }),
     },
   );
+}
+
+export const LINK_PICTURE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"] as const;
+export const LINK_MAX_PICTURES = 5;
+export const LINK_MAX_PICTURE_BYTES = 8 * 1024 * 1024;
+
+/**
+ * Pictures the customer sends through the link (step 6.1, for skicka_lank `bilder` and
+ * `typskylt`): saved on the visit's job, where the boat card and the mechanic see them. Does
+ * not use up the link.
+ */
+export async function addPicturesByLink(
+  deps: LinkChangeDeps & { storage: ObjectStorage },
+  code: string,
+  pictures: { bytes: Uint8Array; contentType: string }[],
+): Promise<number> {
+  if (pictures.length === 0 || pictures.length > LINK_MAX_PICTURES) {
+    throw new BookingError("invalid_input", "pictures");
+  }
+  for (const p of pictures) {
+    if (
+      !LINK_PICTURE_TYPES.includes(p.contentType as (typeof LINK_PICTURE_TYPES)[number]) ||
+      p.bytes.byteLength === 0 ||
+      p.bytes.byteLength > LINK_MAX_PICTURE_BYTES
+    ) {
+      throw new BookingError("invalid_input", "picture");
+    }
+  }
+  const { link, visit } = await usableLink(deps, code);
+  for (const p of pictures) {
+    const ext = p.contentType.split("/")[1] ?? "bin";
+    const key = `${link.tenantId}/jobs/${visit.jobId}/${randomUUID()}.${ext}`;
+    await deps.storage.put(key, p.bytes, p.contentType);
+    await deps.db.insert(attachment).values({
+      tenantId: link.tenantId,
+      ownerType: "job",
+      ownerId: visit.jobId,
+      storageKey: key,
+      contentType: p.contentType,
+      sizeBytes: p.bytes.byteLength,
+    });
+  }
+  return pictures.length;
 }

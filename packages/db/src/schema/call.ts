@@ -40,6 +40,11 @@ export const call = pgTable(
     jobId: uuid("job_id"),
     /** What the call cost in the voice pipeline, in öre (KPI 25). */
     costOre: integer("cost_ore"),
+    /** A customer the caller said they are, by another number than the call's (step 6.1). */
+    claimedCustomerId: uuid("claimed_customer_id"),
+    /** The customer the caller proved to be with the control question (spec 8.3 point 4). */
+    verifiedCustomerId: uuid("verified_customer_id"),
+    controlAttempts: integer("control_attempts").notNull().default(0),
     /** The telephony provider's id for the call. */
     externalId: text("external_id"),
   },
@@ -48,6 +53,16 @@ export const call = pgTable(
     foreignKey({
       name: "call_customer_fk",
       columns: [t.tenantId, t.customerId],
+      foreignColumns: [customer.tenantId, customer.id],
+    }),
+    foreignKey({
+      name: "call_claimed_customer_fk",
+      columns: [t.tenantId, t.claimedCustomerId],
+      foreignColumns: [customer.tenantId, customer.id],
+    }),
+    foreignKey({
+      name: "call_verified_customer_fk",
+      columns: [t.tenantId, t.verifiedCustomerId],
       foreignColumns: [customer.tenantId, customer.id],
     }),
     foreignKey({
