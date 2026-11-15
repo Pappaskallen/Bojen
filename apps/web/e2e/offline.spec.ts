@@ -216,6 +216,10 @@ test("without coverage the mechanic finishes a visit with a picture, a note and 
     await expect(invoice).toContainText("Framkörning");
     await expect(invoice).toContainText("Totalt inkl. moms");
 
+    // The page fits the phone: nothing sticks out sideways.
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+    ).toBeLessThanOrEqual(0);
     await page.getByRole("button", { name: "Godkänn och skicka till kunden" }).click();
     await expect(page.getByRole("status")).toHaveText(
       "Rapporten är godkänd och skickas till kunden.",

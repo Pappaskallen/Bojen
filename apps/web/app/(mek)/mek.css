@@ -219,3 +219,22 @@
 .report-page .boat-picture img {
   border-radius: 8px;
 }
+
+/* The report page fits a phone: fields count their padding in their width, and a wide
+   invoice table scrolls inside its own box instead of widening the page. */
+.report-page textarea,
+.report-page input,
+.report-page select,
+.report-page button {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.report-page .table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.report-page {
+  overflow-wrap: anywhere;
+}

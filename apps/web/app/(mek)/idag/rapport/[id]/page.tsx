@@ -259,64 +259,66 @@ function InvoiceTable({
   if (report.lines.length === 0) return <p className="help">{t.noLines}</p>;
   return (
     <>
-      <table className="invoice-lines">
-        <thead>
-          <tr>
-            <th>{t.description}</th>
-            <th className="amount">{t.quantity}</th>
-            <th className="amount">{t.amount}</th>
-            {open ? <th aria-label={t.remove} /> : null}
-          </tr>
-        </thead>
-        <tbody>
-          {report.lines.map((l, i) => (
-            <tr key={l.id ?? `p${String(i)}`}>
-              <td>
-                {l.description}
-                <br />
-                <span className="help">{word(t.lineType, l.type)}</span>
-                {l.noPrice ? (
-                  <>
-                    <br />
-                    <span className="error">{t.noPrice}</span>
-                  </>
-                ) : null}
-              </td>
-              <td className="amount">{l.quantity.toLocaleString("sv-SE")}</td>
-              <td className="amount">{l.noPrice ? "–" : formatKronor(l.amountOre)}</td>
-              {open ? (
+      <div className="table-scroll">
+        <table className="invoice-lines">
+          <thead>
+            <tr>
+              <th>{t.description}</th>
+              <th className="amount">{t.quantity}</th>
+              <th className="amount">{t.amount}</th>
+              {open ? <th aria-label={t.remove} /> : null}
+            </tr>
+          </thead>
+          <tbody>
+            {report.lines.map((l, i) => (
+              <tr key={l.id ?? `p${String(i)}`}>
                 <td>
-                  {l.id ? (
-                    <button
-                      type="submit"
-                      name="do"
-                      value={`bort:${l.id}`}
-                      className="secondary"
-                      aria-label={`${t.remove}: ${l.description}`}
-                    >
-                      {t.remove}
-                    </button>
+                  {l.description}
+                  <br />
+                  <span className="help">{word(t.lineType, l.type)}</span>
+                  {l.noPrice ? (
+                    <>
+                      <br />
+                      <span className="error">{t.noPrice}</span>
+                    </>
                   ) : null}
                 </td>
-              ) : null}
+                <td className="amount">{l.quantity.toLocaleString("sv-SE")}</td>
+                <td className="amount">{l.noPrice ? "–" : formatKronor(l.amountOre)}</td>
+                {open ? (
+                  <td>
+                    {l.id ? (
+                      <button
+                        type="submit"
+                        name="do"
+                        value={`bort:${l.id}`}
+                        className="secondary"
+                        aria-label={`${t.remove}: ${l.description}`}
+                      >
+                        {t.remove}
+                      </button>
+                    ) : null}
+                  </td>
+                ) : null}
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={2}>{t.net}</td>
+              <td className="amount">{formatKronor(report.netOre)}</td>
             </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan={2}>{t.net}</td>
-            <td className="amount">{formatKronor(report.netOre)}</td>
-          </tr>
-          <tr>
-            <td colSpan={2}>{t.vat}</td>
-            <td className="amount">{formatKronor(report.vatOre)}</td>
-          </tr>
-          <tr>
-            <td colSpan={2}>{t.gross}</td>
-            <td className="amount">{formatKronor(report.grossOre)}</td>
-          </tr>
-        </tfoot>
-      </table>
+            <tr>
+              <td colSpan={2}>{t.vat}</td>
+              <td className="amount">{formatKronor(report.vatOre)}</td>
+            </tr>
+            <tr>
+              <td colSpan={2}>{t.gross}</td>
+              <td className="amount">{formatKronor(report.grossOre)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
       {report.lines.some((l) => l.type === "part") ? <p className="help">{t.partsHelp}</p> : null}
     </>
   );
