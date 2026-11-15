@@ -3,11 +3,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { addDays, formatPhone } from "@bojen/core";
 import { crm, sv } from "@bojen/core/i18n/sv";
-import { dayOf, dayRoute, dayVisits } from "@bojen/db";
+import { dayOf, dayRoute, dayVisits, passkeysOf } from "@bojen/db";
 import { db, maps, requireStaff } from "../../../lib/server";
 import { word } from "../../(admin)/kunder/format";
 import { AdminNav } from "../../(admin)/nav";
 import { SignOutButton } from "../../(admin)/sign-out";
+import { DayLock, VisitCodes } from "./lock";
 import { OfflineQueue } from "./offline";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +37,10 @@ export default async function TodayPage({ searchParams }: Props) {
   const visits = await dayVisits(db(), tenantId, staff.context.actor.id, day);
   const route = await dayRoute({ db: db(), maps: maps() }, tenantId, visits, now).catch(() => null);
   const ordered = route ? route.order.flatMap((id) => visits.filter((v) => v.id === id)) : visits;
+  const passkeys = (await passkeysOf(db(), tenantId, staff.context.actor.id)).map((p) => ({
+    id: p.credentialId,
+    prf: p.prf,
+  }));
   const done = first(query.klart);
   const problem = first(query.fel);
   const savedMinutes = route ? Math.round((route.bookedSeconds - route.suggestedSeconds) / 60) : 0;
@@ -72,192 +77,195 @@ export default async function TodayPage({ searchParams }: Props) {
                   : t.asBooked}
             </p>
           </section>
-          <ol className="day-list">
-            {ordered.map((v) => (
-              <li
-                key={v.id}
-                id={`besok-${v.id}`}
-                className="day-visit"
-                aria-label={v.customer.name}
-              >
-                <header>
-                  <span className="when">{v.promised}</span>
-                  <span className="badge">{word(crm.visitStatus, v.status)}</span>
-                </header>
-                <h2>
-                  <Link href={`/kunder/${v.customer.id}`}>{v.customer.name}</Link>
-                </h2>
-                <p className="meta">
-                  {[
-                    v.boat?.label,
-                    v.place
-                      ? `${v.place.name}${v.place.spotId ? ` ${v.place.spotId}` : ""}, ${word(crm.placementMode, v.place.mode)}`
-                      : null,
-                    v.service,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-                {v.description ? <p className="pre">{v.description}</p> : null}
-                <div className="actions">
-                  {v.customer.phone ? (
-                    <a className="button secondary" href={`tel:${v.customer.phone}`}>
-                      {t.call} {formatPhone(v.customer.phone)}
-                    </a>
-                  ) : null}
-                  {v.boat ? <Link href={`/batar/${v.boat.id}`}>{crm.boat.title}</Link> : null}
-                </div>
-                {START_FROM.includes(v.status) ? (
-                  <form
-                    method="post"
-                    action={action(v.id, "starta")}
-                    className="actions"
-                    data-offline={`${t.start}: ${v.customer.name}`}
-                  >
-                    <input type="hidden" name="key" value={randomUUID()} />
-                    <button type="submit">{t.start}</button>
-                  </form>
-                ) : null}
-                {v.status === "in_progress" ? (
-                  <form
-                    method="post"
-                    action={action(v.id, "klart")}
-                    className="actions"
-                    data-offline={`${t.done}: ${v.customer.name}`}
-                  >
-                    <input type="hidden" name="key" value={randomUUID()} />
-                    <button type="submit">{t.done}</button>
-                  </form>
-                ) : null}
-
-                {v.engines.length > 0 ? (
-                  <details>
-                    <summary>{t.hours}</summary>
-                    {v.engines.map((e) => (
-                      <form
-                        key={e.id}
-                        method="post"
-                        action={action(v.id, "timmar")}
-                        className="inline"
-                        data-offline={`${t.hours}: ${v.customer.name}`}
-                      >
-                        <input type="hidden" name="key" value={randomUUID()} />
-                        <input type="hidden" name="engineId" value={e.id} />
-                        <label className="field">
-                          <span>
-                            {e.label}
-                            {e.lastHours !== null ? ` (${t.lastHours(e.lastHours)})` : ""}
-                          </span>
-                          <input name="hours" inputMode="decimal" required autoComplete="off" />
-                        </label>
-                        <button type="submit">{t.save}</button>
-                      </form>
-                    ))}
-                  </details>
-                ) : null}
-
-                <details>
-                  <summary>
-                    {t.parts} ({v.parts.length})
-                  </summary>
-                  {v.parts.length === 0 ? <p className="help">{t.noParts}</p> : null}
-                  {v.parts.map((p) => (
+          <DayLock passkeys={passkeys}>
+            <ol className="day-list">
+              {ordered.map((v) => (
+                <li
+                  key={v.id}
+                  id={`besok-${v.id}`}
+                  className="day-visit"
+                  aria-label={v.customer.name}
+                >
+                  <header>
+                    <span className="when">{v.promised}</span>
+                    <span className="badge">{word(crm.visitStatus, v.status)}</span>
+                  </header>
+                  <h2>
+                    <Link href={`/kunder/${v.customer.id}`}>{v.customer.name}</Link>
+                  </h2>
+                  <p className="meta">
+                    {[
+                      v.boat?.label,
+                      v.place
+                        ? `${v.place.name}${v.place.spotId ? ` ${v.place.spotId}` : ""}, ${word(crm.placementMode, v.place.mode)}`
+                        : null,
+                      v.service,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                  {v.description ? <p className="pre">{v.description}</p> : null}
+                  <div className="actions">
+                    {v.customer.phone ? (
+                      <a className="button secondary" href={`tel:${v.customer.phone}`}>
+                        {t.call} {formatPhone(v.customer.phone)}
+                      </a>
+                    ) : null}
+                    {v.boat ? <Link href={`/batar/${v.boat.id}`}>{crm.boat.title}</Link> : null}
+                  </div>
+                  <VisitCodes visitId={v.id} done={v.status === "done"} />
+                  {START_FROM.includes(v.status) ? (
                     <form
-                      key={p.id}
                       method="post"
-                      action={action(v.id, "delstatus")}
-                      className="inline"
-                      data-offline={`${t.parts}: ${v.customer.name}`}
+                      action={action(v.id, "starta")}
+                      className="actions"
+                      data-offline={`${t.start}: ${v.customer.name}`}
                     >
                       <input type="hidden" name="key" value={randomUUID()} />
-                      <input type="hidden" name="jobPartId" value={p.id} />
-                      <label className="field">
-                        <span>
-                          {p.quantity} × {p.description} ({p.articleNumber})
-                        </span>
-                        <select name="status" defaultValue={p.status}>
-                          {Object.entries(t.partStatus).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <button type="submit" className="secondary">
-                        {t.save}
-                      </button>
+                      <button type="submit">{t.start}</button>
                     </form>
-                  ))}
-                  <form
-                    method="post"
-                    action={action(v.id, "del")}
-                    data-offline={`${t.addPart}: ${v.customer.name}`}
-                  >
-                    <input type="hidden" name="key" value={randomUUID()} />
-                    <label className="field">
-                      <span>{t.articleNumber}</span>
-                      <input name="articleNumber" required maxLength={60} autoComplete="off" />
-                    </label>
-                    <label className="field">
-                      <span>{t.partDescription}</span>
-                      <input name="description" maxLength={200} autoComplete="off" />
-                    </label>
-                    <label className="field">
-                      <span>{t.quantity}</span>
-                      <input name="quantity" inputMode="decimal" defaultValue="1" />
-                    </label>
-                    <button type="submit">{t.addPart}</button>
-                  </form>
-                </details>
+                  ) : null}
+                  {v.status === "in_progress" ? (
+                    <form
+                      method="post"
+                      action={action(v.id, "klart")}
+                      className="actions"
+                      data-offline={`${t.done}: ${v.customer.name}`}
+                    >
+                      <input type="hidden" name="key" value={randomUUID()} />
+                      <button type="submit">{t.done}</button>
+                    </form>
+                  ) : null}
 
-                <details>
-                  <summary>
-                    {t.photos} ({t.photoCount(v.photos)})
-                  </summary>
-                  <form
-                    method="post"
-                    action={action(v.id, "bild")}
-                    encType="multipart/form-data"
-                    data-offline={`${t.photos}: ${v.customer.name}`}
-                  >
-                    <input type="hidden" name="key" value={randomUUID()} />
-                    <label className="field">
-                      <span>{t.addPhoto}</span>
-                      <input
-                        name="photo"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/heic"
-                        capture="environment"
-                        required
-                      />
-                    </label>
-                    <button type="submit">{t.upload}</button>
-                  </form>
-                </details>
+                  {v.engines.length > 0 ? (
+                    <details>
+                      <summary>{t.hours}</summary>
+                      {v.engines.map((e) => (
+                        <form
+                          key={e.id}
+                          method="post"
+                          action={action(v.id, "timmar")}
+                          className="inline"
+                          data-offline={`${t.hours}: ${v.customer.name}`}
+                        >
+                          <input type="hidden" name="key" value={randomUUID()} />
+                          <input type="hidden" name="engineId" value={e.id} />
+                          <label className="field">
+                            <span>
+                              {e.label}
+                              {e.lastHours !== null ? ` (${t.lastHours(e.lastHours)})` : ""}
+                            </span>
+                            <input name="hours" inputMode="decimal" required autoComplete="off" />
+                          </label>
+                          <button type="submit">{t.save}</button>
+                        </form>
+                      ))}
+                    </details>
+                  ) : null}
 
-                <details open={Boolean(v.notes)}>
-                  <summary>{t.notes}</summary>
-                  <form
-                    method="post"
-                    action={action(v.id, "anteckning")}
-                    data-offline={`${t.notes}: ${v.customer.name}`}
-                  >
-                    <input type="hidden" name="key" value={randomUUID()} />
-                    <label className="field">
-                      <span>{t.notesHelp}</span>
-                      <textarea
-                        name="note"
-                        rows={4}
-                        maxLength={4000}
-                        defaultValue={v.notes ?? ""}
-                      />
-                    </label>
-                    <button type="submit">{t.saveNote}</button>
-                  </form>
-                </details>
-              </li>
-            ))}
-          </ol>
+                  <details>
+                    <summary>
+                      {t.parts} ({v.parts.length})
+                    </summary>
+                    {v.parts.length === 0 ? <p className="help">{t.noParts}</p> : null}
+                    {v.parts.map((p) => (
+                      <form
+                        key={p.id}
+                        method="post"
+                        action={action(v.id, "delstatus")}
+                        className="inline"
+                        data-offline={`${t.parts}: ${v.customer.name}`}
+                      >
+                        <input type="hidden" name="key" value={randomUUID()} />
+                        <input type="hidden" name="jobPartId" value={p.id} />
+                        <label className="field">
+                          <span>
+                            {p.quantity} × {p.description} ({p.articleNumber})
+                          </span>
+                          <select name="status" defaultValue={p.status}>
+                            {Object.entries(t.partStatus).map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <button type="submit" className="secondary">
+                          {t.save}
+                        </button>
+                      </form>
+                    ))}
+                    <form
+                      method="post"
+                      action={action(v.id, "del")}
+                      data-offline={`${t.addPart}: ${v.customer.name}`}
+                    >
+                      <input type="hidden" name="key" value={randomUUID()} />
+                      <label className="field">
+                        <span>{t.articleNumber}</span>
+                        <input name="articleNumber" required maxLength={60} autoComplete="off" />
+                      </label>
+                      <label className="field">
+                        <span>{t.partDescription}</span>
+                        <input name="description" maxLength={200} autoComplete="off" />
+                      </label>
+                      <label className="field">
+                        <span>{t.quantity}</span>
+                        <input name="quantity" inputMode="decimal" defaultValue="1" />
+                      </label>
+                      <button type="submit">{t.addPart}</button>
+                    </form>
+                  </details>
+
+                  <details>
+                    <summary>
+                      {t.photos} ({t.photoCount(v.photos)})
+                    </summary>
+                    <form
+                      method="post"
+                      action={action(v.id, "bild")}
+                      encType="multipart/form-data"
+                      data-offline={`${t.photos}: ${v.customer.name}`}
+                    >
+                      <input type="hidden" name="key" value={randomUUID()} />
+                      <label className="field">
+                        <span>{t.addPhoto}</span>
+                        <input
+                          name="photo"
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/heic"
+                          capture="environment"
+                          required
+                        />
+                      </label>
+                      <button type="submit">{t.upload}</button>
+                    </form>
+                  </details>
+
+                  <details open={Boolean(v.notes)}>
+                    <summary>{t.notes}</summary>
+                    <form
+                      method="post"
+                      action={action(v.id, "anteckning")}
+                      data-offline={`${t.notes}: ${v.customer.name}`}
+                    >
+                      <input type="hidden" name="key" value={randomUUID()} />
+                      <label className="field">
+                        <span>{t.notesHelp}</span>
+                        <textarea
+                          name="note"
+                          rows={4}
+                          maxLength={4000}
+                          defaultValue={v.notes ?? ""}
+                        />
+                      </label>
+                      <button type="submit">{t.saveNote}</button>
+                    </form>
+                  </details>
+                </li>
+              ))}
+            </ol>
+          </DayLock>
         </>
       )}
       <SignOutButton />

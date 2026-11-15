@@ -520,6 +520,27 @@ export const crm = {
       failed: "Det gick inte att hämta åtkomsten. Försök igen.",
     } as Record<string, string>,
   },
+  /** Passkeys for staff (step 5.5c). */
+  passkey: {
+    title: "Passkey",
+    intro:
+      "Med en passkey loggar du in med Face ID, fingeravtryck eller telefonens kod i stället för en kod. Den låser också dagvyn och skyddar koderna som sparas på telefonen.",
+    count: (n: number) =>
+      n === 0
+        ? "Du har ingen passkey än."
+        : n === 1
+          ? "Du har 1 passkey."
+          : `Du har ${String(n)} passkeys.`,
+    add: "Lägg till passkey på den här telefonen",
+    added: "Klart. Passkeyn är sparad och kan skydda koderna på telefonen.",
+    addedNoPrf:
+      "Klart. Passkeyn är sparad. Den här telefonen kan inte spara koder krypterat, så de visas bara med täckning.",
+    addFailed: "Det gick inte att lägga till passkeyn. Försök igen.",
+    unsupported: "Den här webbläsaren kan inte använda passkeys.",
+    signIn: "Logga in med passkey",
+    signInFailed: "Det gick inte att logga in med passkey. Använd en kod i stället.",
+    or: "eller med en kod:",
+  },
   /** The marina list and card (step 5.3). */
   place: {
     list: "Marinor och varv",
@@ -616,6 +637,21 @@ export const crm = {
     notes: "Anteckning",
     notesHelp: "Det du skriver här blir underlag för rapporten.",
     saveNote: "Spara anteckning",
+    lock: {
+      title: "Dagvyn är låst",
+      intro: "Lås upp med Face ID, fingeravtryck eller telefonens kod.",
+      unlock: "Lås upp",
+      failed: "Det gick inte att låsa upp. Försök igen.",
+      noPasskey:
+        "Lägg till en passkey under Säkerhet, så låses dagvyn och koderna kan sparas krypterat på telefonen.",
+      codes: "Koder och nyckel",
+      show: "Visa kod och nyckel",
+      stored: "Koderna finns krypterade på telefonen, även utan täckning.",
+      notStored: "Koderna hämtas till telefonen 12 timmar före besöket.",
+      onlineOnly: "Den här passkeyn kan inte spara koder på telefonen; de visas bara med täckning.",
+      notYet: "Koderna kan hämtas från 12 timmar före besöket.",
+      offlineOnly: "Koderna kan bara visas med täckning på den här telefonen.",
+    },
     offline: {
       waiting: (n: number) =>
         n === 1 ? "1 ändring väntar på täckning." : `${String(n)} ändringar väntar på täckning.`,

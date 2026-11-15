@@ -67,6 +67,7 @@ describe("which paths refresh the session", () => {
       "/pipeline/:path*",
       "/idag/:path*",
       "/api/idag/:path*",
+      "/api/passkey/:path*",
       "/api/pipeline/:path*",
       "/api/bookings/:path*",
       "/api/staff/:path*",

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { sv } from "@bojen/core/i18n/sv";
-import { listStaff } from "@bojen/db";
+import { listStaff, passkeysOf } from "@bojen/db";
 import { db, requireStaff, staffAuth } from "../../../lib/server";
 import { AdminNav } from "../nav";
 import { SignOutButton } from "../sign-out";
+import { PasskeySetup } from "./passkey-setup";
 import { StaffTable, type StaffRow } from "./staff-table";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,9 @@ export default async function SecurityPage() {
       <h1>{sv.security.title}</h1>
       <p>{sv.security.intro}</p>
       <SignOutButton />
+      <PasskeySetup
+        count={(await passkeysOf(db(), session.context.tenantId, session.context.actor.id)).length}
+      />
       <StaffTable rows={rows} isOwner={session.role === "owner"} />
     </main>
   );

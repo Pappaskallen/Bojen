@@ -73,6 +73,10 @@ export function createFakeAuth(): FakeAuth {
       codes.delete(key);
       return Promise.resolve(issue(userId, "aal1"));
     },
+    sessionFor(email) {
+      const userId = users.get(email.toLowerCase());
+      return Promise.resolve(userId ? issue(userId, "aal1") : null);
+    },
     setPhone(authUserId, phone) {
       phones.set(phone, authUserId);
       return Promise.resolve();

@@ -90,3 +90,23 @@
   border: 1px solid var(--line);
   border-radius: 6px;
 }
+
+.day-lock {
+  padding: 24px 16px;
+  border: 2px solid var(--brand);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.day-lock button {
+  min-height: 56px;
+  min-width: 200px;
+}
+
+.visit-codes {
+  margin-top: 8px;
+}
+
+.passkey-sign-in {
+  margin-bottom: 16px;
+}

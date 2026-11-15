@@ -2,6 +2,7 @@
 
 import { crm } from "@bojen/core/i18n/sv";
 import { useCallback, useEffect, useState } from "react";
+import { codeStore } from "./codes-store";
 import { fieldsOf, flushQueue, formDataOf, indexedDbStore, type QueuedForm } from "./queue";
 
 const t = crm.day.offline;
@@ -83,6 +84,10 @@ export function OfflineQueue() {
         createdAt: Date.now(),
         label: form.dataset.offline,
       };
+      // Done: the visit's codes leave the phone at once, also without coverage (step 5.5c).
+      if (item.url.endsWith("/klart")) {
+        void codeStore.remove(item.url.split("/").at(-2) ?? "").catch(() => undefined);
+      }
       const queue = async () => {
         await indexedDbStore.put(item);
         await count();

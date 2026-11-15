@@ -41,7 +41,7 @@ export async function emailCode(page: Page, email: string, path = "/forfragninga
   await page.getByRole("button", { name: "Skicka kod" }).click();
   await expect(page.getByText(/Om adressen finns hos oss/)).toBeVisible();
   await page.getByLabel("Kod från e-post").fill(await codeFromMail(page, email, since));
-  await page.getByRole("button", { name: "Logga in" }).click();
+  await page.getByRole("button", { name: "Logga in", exact: true }).click();
 }
 
 /** The authenticator-app secret of each owner, once added; the tests' stand-in for a phone. */

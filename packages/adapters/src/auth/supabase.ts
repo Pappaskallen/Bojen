@@ -119,6 +119,30 @@ export function createSupabaseAuth(options: SupabaseAuthOptions): StaffAuth {
       return session((await response.json()) as TokenResponse);
     },
 
+    async sessionFor(email) {
+      // A one-time code made with the service key, turned into a session at once; it never
+      // leaves the server.
+      const link = await send(`${base}/admin/generate_link`, {
+        method: "POST",
+        headers: { ...admin, ...json },
+        body: JSON.stringify({ type: "magiclink", email }),
+      });
+      if (!link.ok) return null;
+      const body = (await link.json()) as {
+        email_otp?: string;
+        properties?: { email_otp?: string };
+      };
+      const otp = body.email_otp ?? body.properties?.email_otp;
+      if (!otp) return null;
+      const response = await send(`${base}/verify`, {
+        method: "POST",
+        headers: { ...anon, ...json },
+        body: JSON.stringify({ type: "email", email, token: otp }),
+      });
+      if (!response.ok) return null;
+      return session((await response.json()) as TokenResponse);
+    },
+
     async setPhone(authUserId, phone) {
       const response = await send(`${base}/admin/users/${encodeURIComponent(authUserId)}`, {
         method: "PUT",

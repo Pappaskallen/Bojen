@@ -22,15 +22,22 @@ import type {
   SmsSender,
   StaffAuth,
 } from "@bojen/core";
+import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   addPart,
+  addPasskey,
   addVisitPhoto,
+  appUser,
+  codesForPhone,
   changeBooking,
   connect,
   moveCard,
   onceOnly,
+  passkeyOwner,
+  passkeysOf,
+  passkeyUsed,
   recordHours,
   revealBoatAccess,
   saveNote,
@@ -41,7 +48,9 @@ import {
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createBoatAccessRoute } from "./boat-access";
 import { createCustomerPage } from "./customer-page";
+import { createCodesRoute } from "./codes-route";
 import { createDayRoute } from "./day-route";
+import { createPasskeyRoutes } from "./passkey-routes";
 import { createPipelineRoute } from "./pipeline-route";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
@@ -238,6 +247,33 @@ export const dayRoute = createDayRoute({
       saveNote(tx, actor, visitId, note),
     );
   },
+});
+
+/** Passkeys for staff (step 5.5c): sign-in without a code, and the phone's key for codes. */
+export const passkeyRoutes = createPasskeyRoutes({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  person: async (tenantId, appUserId) => {
+    const [row] = await db()
+      .select({ name: appUser.name, email: appUser.email })
+      .from(appUser)
+      .where(and(eq(appUser.tenantId, tenantId), eq(appUser.id, appUserId)));
+    return { name: row?.name ?? "", email: row?.email ?? null };
+  },
+  passkeysOf: (tenantId, appUserId) => passkeysOf(db(), tenantId, appUserId),
+  addPasskey: (owner, passkey) => addPasskey(db(), owner, passkey),
+  passkeyOwner: (credentialId) => passkeyOwner(db(), credentialId),
+  passkeyUsed: (passkeyId, counter) => passkeyUsed(db(), passkeyId, counter, new Date()),
+  sessionFor: (email) => staffAuth().sessionFor(email),
+  secret: sessionSecret,
+  now: () => new Date(),
+  secure: process.env.NODE_ENV === "production" && !process.env.BOJEN_FAKE_SERVICES,
+});
+
+/** The codes the phone keeps for a visit (step 5.5c), through the access rule. */
+export const codesRoute = createCodesRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  codes: (userId, visitId) =>
+    codesForPhone({ db: db(), kms: kms(), now: () => new Date() }, userId, visitId),
 });
 
 /** Moving cards on the pipeline (step 5.4). */

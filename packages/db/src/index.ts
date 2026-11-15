@@ -18,3 +18,4 @@ export * from "./boats";
 export * from "./places";
 export * from "./pipeline";
 export * from "./day";
+export * from "./passkeys";

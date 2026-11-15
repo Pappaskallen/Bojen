@@ -64,6 +64,33 @@ describe("Supabase auth", () => {
     expect(await auth.refresh("old")).toBeNull();
   });
 
+  it("makes a session for a user identified by passkey, with a code that never leaves the server", async () => {
+    const { fetch, calls } = recordingFetch((url) =>
+      url.endsWith("/admin/generate_link")
+        ? Response.json({ email_otp: "987654", hashed_token: "h" })
+        : Response.json({ access_token: "a", refresh_token: "r", expires_in: 3600 }),
+    );
+    const auth = createSupabaseAuth({ ...options, fetch });
+    const s = await auth.sessionFor("elin@firma.test");
+    expect(s).toMatchObject({ accessToken: "a", refreshToken: "r" });
+    expect(calls[0]?.url).toBe("http://supabase.test/auth/v1/admin/generate_link");
+    expect((calls[0]?.init.headers as Record<string, string>).Authorization).toBe("Bearer service");
+    expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
+      type: "magiclink",
+      email: "elin@firma.test",
+    });
+    expect(JSON.parse(String(calls[1]?.init.body))).toEqual({
+      type: "email",
+      email: "elin@firma.test",
+      token: "987654",
+    });
+  });
+
+  it("makes no session when Supabase gives no code", async () => {
+    const { fetch } = recordingFetch(() => Response.json({}, { status: 404 }));
+    expect(await createSupabaseAuth({ ...options, fetch }).sessionFor("x@firma.test")).toBeNull();
+  });
+
   it("creates users with the service key, and finds them when they exist already", async () => {
     const { fetch, calls } = recordingFetch((url, init) => {
       if (url.endsWith("/admin/users") && init.method === "POST") {

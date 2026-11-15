@@ -41,6 +41,7 @@ import {
   travelCache,
   shortLink,
   smsOptOut,
+  staffPasskey,
   verificationCode,
   workSchedule,
 } from "../src/schema";
@@ -308,6 +309,12 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     purpose: "manage",
     codeHash: "link-" + tenantId,
     expiresAt: new Date("2027-04-20T06:00:00Z"),
+  });
+  await tx.insert(staffPasskey).values({
+    tenantId,
+    appUserId: mechanic.id,
+    credentialId: `cred-${tenantId}`,
+    publicKey: Buffer.from("not-a-real-public-key"),
   });
   await tx.insert(verificationCode).values({
     tenantId,

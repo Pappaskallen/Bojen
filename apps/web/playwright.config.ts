@@ -27,7 +27,8 @@ export default defineConfig({
     command: `pnpm exec next build && pnpm exec next start -p ${String(PORT)}`,
     // The home page: the booking page needs the demo data, which the global setup loads later.
     url: `http://127.0.0.1:${String(PORT)}/`,
-    timeout: 300_000,
+    // A production build takes several minutes on a loaded laptop.
+    timeout: 600_000,
     reuseExistingServer: !process.env.CI,
     env: {
       // Fake maps and address search. Auth and Storage are the local Supabase; these

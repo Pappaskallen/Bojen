@@ -35,6 +35,7 @@ import {
   visit,
 } from "./schema";
 import { timeRange } from "./schema/_types";
+import { type AccessDeps, decryptAccess } from "./access";
 import { travelTimes } from "./travel";
 
 type Db = Pick<Database, "select" | "insert" | "update" | "execute">;
@@ -543,6 +544,42 @@ export async function onceOnly(
     await work(tx as unknown as Db);
     return "done";
   });
+}
+
+export interface PhoneCodes {
+  code: string | null;
+  keyLocation: string | null;
+  gateCode: string | null;
+  keyBox: string | null;
+  /** When the phone must have deleted them. */
+  deleteBy: Date;
+}
+
+/**
+ * The visit's codes for the phone to keep (step 5.5c). Only through `decryptAccess`: the
+ * visit's own mechanic within 12 hours of the start, or the owner, and every download is
+ * logged. The phone keeps them encrypted until the job is done, or 12 hours after the start,
+ * and never longer than 24 hours.
+ */
+export async function codesForPhone(
+  deps: AccessDeps,
+  userId: string,
+  visitId: string,
+): Promise<PhoneCodes> {
+  const shown = await decryptAccess(deps, userId, visitId);
+  const [row] = await deps.db
+    .select({ start: sql<Date>`lower(${visit.timeWindow})`.mapWith((v: string) => new Date(v)) })
+    .from(visit)
+    .where(eq(visit.id, visitId));
+  const now = deps.now().getTime();
+  const end = Math.min((row?.start.getTime() ?? now) + 12 * 3_600_000, now + 24 * 3_600_000);
+  return {
+    code: shown.code?.reveal() ?? null,
+    keyLocation: shown.keyLocation?.reveal() ?? null,
+    gateCode: shown.gateCode?.reveal() ?? null,
+    keyBox: shown.keyBox?.reveal() ?? null,
+    deleteBy: new Date(end),
+  };
 }
 
 /** The day to show: `YYYY-MM-DD` from the address, else today in Stockholm. */

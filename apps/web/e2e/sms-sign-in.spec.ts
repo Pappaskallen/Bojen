@@ -35,7 +35,7 @@ test("a mechanic signs in with a code by sms (step 3.1)", async ({ page }) => {
     .toBe(6);
 
   await page.getByLabel("Kod från sms").fill(code);
-  await page.getByRole("button", { name: "Logga in" }).click();
+  await page.getByRole("button", { name: "Logga in", exact: true }).click();
   await expect(page).toHaveURL(/\/forfragningar$/);
   await expect(page.getByRole("heading", { name: "Förfrågningar" })).toBeVisible();
 

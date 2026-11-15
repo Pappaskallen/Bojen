@@ -96,6 +96,11 @@ export interface StaffAuth {
   sendCode(email: string): Promise<void>;
   /** A session, or null when the code is wrong or expired. */
   verifyCode(email: string, code: string): Promise<AuthSession | null>;
+  /**
+   * A session for a user we have already identified another way, with the service key: after
+   * a verified passkey (step 5.5c). Never call it without that proof.
+   */
+  sessionFor(email: string): Promise<AuthSession | null>;
   /** Gives the auth user this mobile number (E.164), with the service key (step 3.1). */
   setPhone(authUserId: string, phone: string): Promise<void>;
   /** A code by sms; Supabase Auth hands it to our sms hook, which sends it with 46elks. */
