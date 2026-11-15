@@ -22,6 +22,7 @@ const DONE: Record<Done, string> = {
   ombokad: t.done.rescheduled,
   avbokad: t.done.cancelled,
   atkomst: t.done.access,
+  bokad: t.done.accepted,
 };
 const PROBLEMS: Record<Problem, string> = t.errors;
 const pick = <K extends string>(map: Record<K, string>, value: unknown) =>
@@ -90,6 +91,14 @@ export default async function CustomerPage({ params, searchParams }: Props) {
         ) : null}
       </dl>
       {visit.status === "pending_approval" ? <p>{t.pending}</p> : null}
+      {visit.status === "reserved" ? (
+        <section className="group" aria-labelledby="accept">
+          <h2 id="accept">{t.reserved}</h2>
+          <form method="post" action={action("boka")}>
+            <button type="submit">{t.accept}</button>
+          </form>
+        </section>
+      ) : null}
 
       {page.mayChange ? (
         <>

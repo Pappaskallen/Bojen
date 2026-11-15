@@ -13,6 +13,9 @@ export default tseslint.config(
       "**/coverage/**",
       "**/.turbo/**",
       "**/next-env.d.ts",
+      // Built by Serwist from app/sw.ts.
+      "apps/web/public/sw.js",
+      "apps/web/public/swe-worker-*.js",
     ],
   },
   js.configs.recommended,

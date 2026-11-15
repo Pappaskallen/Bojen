@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { sv } from "@bojen/core/i18n/sv";
 import { safeNext } from "../_next";
+import { PasskeySignIn } from "./passkey-sign-in";
 import { SignInForm } from "./sign-in-form";
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default async function SignInPage({ searchParams }: Props) {
     <main className="booking">
       <h1>{sv.signIn.title}</h1>
       <p>{sv.signIn.intro}</p>
+      <PasskeySignIn next={next} />
       <SignInForm next={next} />
     </main>
   );

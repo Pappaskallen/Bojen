@@ -1,8 +1,13 @@
-import { createFakeEmail, createFakeSms } from "@bojen/adapters";
+import {
+  createFakeEmail,
+  createFakeReportWriter,
+  createFakeSms,
+  createFakeStorage,
+} from "@bojen/adapters";
 import type { Database } from "@bojen/db";
 import type { JobHelpers } from "graphile-worker";
 import { describe, expect, it } from "vitest";
-import { taskList } from "./tasks";
+import { reportTasks, taskList } from "./tasks";
 
 describe("worker tasks", () => {
   const tasks = taskList({
@@ -14,9 +19,10 @@ describe("worker tasks", () => {
     link: () => "bojen.se/boka/test",
   });
 
-  it("has the tasks of steps 3.1, 3.3, 4.1, 4.2 and 4.3", () => {
+  it("has the tasks of steps 3.1, 3.3, 4.1, 4.2, 4.3 and 5.6", () => {
     expect(Object.keys(tasks).sort()).toEqual(
       [
+        "campaign_release",
         "domain_event",
         "send_message",
         "visit_check",
@@ -27,6 +33,27 @@ describe("worker tasks", () => {
         "waitlist_round",
       ].sort(),
     );
+  });
+
+  it("has the report draft of step 5.5d when it has a writer, also on its own", () => {
+    const reports = {
+      storage: createFakeStorage(),
+      writer: createFakeReportWriter(),
+      transcriber: null,
+    };
+    const all = taskList({
+      db: {} as Database,
+      sms: createFakeSms(),
+      now: () => new Date(),
+      optOutKey: "k",
+      email: createFakeEmail(),
+      link: () => "bojen.se/boka/test",
+      reports,
+    });
+    expect(Object.keys(all)).toContain("report_draft");
+    expect(
+      Object.keys(reportTasks({ db: {} as Database, now: () => new Date(), ...reports })),
+    ).toEqual(["report_draft"]);
   });
 
   it("refuses a payload without a message id", async () => {

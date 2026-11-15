@@ -31,6 +31,7 @@ import {
   jobLine,
   location,
   locationAccessRule,
+  locationContact,
   serviceType,
   tenant,
   visit,
@@ -287,7 +288,12 @@ export async function seedDemoData(db: Writer, seed = 2026) {
     name: "Jonas Båtservice",
     slug: "jonas-batservice",
     settings: {
-      booking: { marinaDayDiscount: { kind: "waive_callout" }, calloutPriceOre: 69_500 },
+      booking: {
+        marinaDayDiscount: { kind: "waive_callout" },
+        calloutPriceOre: 69_500,
+        hourlyRateOre: 95_000,
+        emergencySurchargeOre: 180_000,
+      },
     },
     orgNumber: "556000-0000",
     phone: "+46846500400", // PTS range for fiction, 08-46 50 04 00
@@ -432,6 +438,31 @@ export async function seedDemoData(db: Writer, seed = 2026) {
     ])
     .returning();
   if (!bullando || !djuro || !saltsjobaden || !sandhamn) throw new Error("marinas not created");
+
+  await db.insert(locationContact).values([
+    {
+      tenantId,
+      locationId: bullando.id,
+      name: "Lena Strand",
+      role: "Hamnkapten",
+      phone: "+46705550101",
+      email: "hamn@bullando.test",
+    },
+    {
+      tenantId,
+      locationId: bullando.id,
+      name: "Marinakontoret",
+      role: "Reception",
+      phone: "+4686500400",
+    },
+    {
+      tenantId,
+      locationId: djuro.id,
+      name: "Per Varvsson",
+      role: "Varvschef",
+      phone: "+46705550102",
+    },
+  ]);
 
   await db.insert(locationAccessRule).values([
     {

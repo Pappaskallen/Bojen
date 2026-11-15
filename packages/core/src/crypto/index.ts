@@ -9,9 +9,12 @@ export {
 export {
   ACCESS_WINDOW_MS,
   decideAccess,
+  decideBoatAccess,
   type AccessDecision,
   type AccessRequest,
   type AccessRole,
+  type BoatAccessDecision,
+  type BoatVisit,
 } from "./access-rule";
 export type { Kms } from "./kms";
 export { Secret } from "./secret";

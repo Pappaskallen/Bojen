@@ -29,3 +29,43 @@ export function decideAccess({ userId, role, visit, now }: AccessRequest): Acces
   if (Math.abs(offset) > ACCESS_WINDOW_MS) return { allowed: false, reason: "outside_window" };
   return { allowed: true, reason: "assigned_mechanic" };
 }
+
+export interface BoatVisit {
+  id: string;
+  mechanicId: string | null;
+  start: Date;
+}
+
+export type BoatAccessDecision =
+  | { allowed: true; reason: "owner"; visitId: null }
+  | { allowed: true; reason: "assigned_mechanic"; visitId: string }
+  | { allowed: false; reason: "not_assigned" | "outside_window" | "role_not_allowed" };
+
+/**
+ * The same rule from the boat card (step 5.2), where there is no single visit: the owner at
+ * any time, and a mechanic through one of their own visits to the boat that starts within 12
+ * hours, the nearest one. A mechanic with visits to the boat that are all further off hears
+ * that it is outside the window; one without any visit, that the boat is not theirs.
+ */
+export function decideBoatAccess(input: {
+  userId: string;
+  role: AccessRole;
+  visits: readonly BoatVisit[];
+  now: Date;
+}): BoatAccessDecision {
+  const { userId, role, visits, now } = input;
+  if (role === "owner") return { allowed: true, reason: "owner", visitId: null };
+  if (role !== "mechanic") return { allowed: false, reason: "role_not_allowed" };
+  const own = visits
+    .filter((v) => v.mechanicId === userId)
+    .sort(
+      (a, b) =>
+        Math.abs(a.start.getTime() - now.getTime()) - Math.abs(b.start.getTime() - now.getTime()),
+    );
+  const nearest = own[0];
+  if (!nearest) return { allowed: false, reason: "not_assigned" };
+  const decision = decideAccess({ userId, role, visit: nearest, now });
+  return decision.allowed
+    ? { allowed: true, reason: "assigned_mechanic", visitId: nearest.id }
+    : { allowed: false, reason: decision.reason };
+}

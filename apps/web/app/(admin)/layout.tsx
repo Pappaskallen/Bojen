@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import "../(public)/boka/booking.css";
+import "./admin.css";
 
 /** Pages for the firm's staff. Same plain styles as the booking page for now. */
 export default function AdminLayout({ children }: { children: ReactNode }) {

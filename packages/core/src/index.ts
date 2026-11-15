@@ -69,13 +69,15 @@ export {
   type BookingSettings,
 } from "./booking/settings";
 export { checkSlot, type SlotCheck, type SlotProblem } from "./scheduling/slot";
-export { isSwedishMobile, toE164 } from "./contact/phone";
+export { formatPhone, isSwedishMobile, toE164 } from "./contact/phone";
 export type {
   AuthSession,
   EmailSender,
   OutgoingEmail,
   OutgoingSms,
   ReplyClassifier,
+  ReportWriter,
+  Transcriber,
   GeocodeResult,
   Geocoder,
   ObjectStorage,
@@ -146,3 +148,80 @@ export {
   type FreedSlot,
   type Ranked,
 } from "./waitlist/match";
+export {
+  MAX_QUERY_LENGTH,
+  MAX_TERMS,
+  containsPattern,
+  parseSearch,
+  phoneDigits,
+  type ParsedSearch,
+  type SearchTerm,
+} from "./search/query";
+export {
+  PIPELINE_COLUMNS,
+  isPipelineStatus,
+  mayMoveCard,
+  statusAfterInvoice,
+  statusAfterVisitDone,
+  type PipelineColumn,
+  type PipelineStatus,
+} from "./pipeline/pipeline";
+export {
+  MAX_EXHAUSTIVE_STOPS,
+  suggestOrder,
+  type RouteStop,
+  type RouteSuggestion,
+  type TravelLookup,
+} from "./route/order";
+export {
+  MAX_POINT_LENGTH,
+  MAX_RECOMMENDATIONS,
+  MAX_WORK_POINTS,
+  RECOMMENDATION_PRIORITIES,
+  normaliseDraft,
+  reportPrompt,
+  workDonePoints,
+  workDoneText,
+  type Recommendation,
+  type RecommendationPriority,
+  type ReportDraft,
+  type ReportFacts,
+} from "./reports/draft";
+export {
+  VAT_RATE,
+  formatKronor,
+  invoiceTotals,
+  parseKronor,
+  proposedLines,
+  type InvoiceLine,
+  type InvoiceLineType,
+  type InvoiceTotals,
+  type ProposedLine,
+} from "./reports/invoice";
+export { reportContent, type ReportContent } from "./reports/content";
+export {
+  autumnBefore,
+  looksLikeLayUp,
+  looksLikeSpringService,
+  springOf,
+  springSegment,
+  type Exclusion,
+  type SegmentResult,
+  type SpringCandidate,
+  type SpringSegment,
+} from "./campaigns/segment";
+export {
+  DEFAULT_BATCH_SIZE,
+  DEFAULT_TARGET_WEEK,
+  HOLD_DAYS,
+  SEND_TIME,
+  SEND_WEEKDAYS,
+  chooseSlot,
+  dayOfIsoWeek,
+  isoWeekOf,
+  nextRound,
+  nextSendAt,
+  targetWeek,
+  type SlotOption,
+  type TargetWeek,
+} from "./campaigns/proposeSlot";

@@ -14,6 +14,10 @@ export interface BookingSettings {
   customerChangeCutoffHours: number;
   /** Price of the call-out in öre, shown as the saving on marina days. Empty when unknown. */
   calloutPriceOre: number | null;
+  /** The hourly rate in öre excluding VAT, for extra hours on the invoice basis (step 5.5d). */
+  hourlyRateOre: number | null;
+  /** The emergency surcharge in öre excluding VAT, a line of its own on emergency jobs. */
+  emergencySurchargeOre: number | null;
 }
 
 export const DEFAULT_BOOKING_SETTINGS: BookingSettings = {
@@ -27,6 +31,8 @@ export const DEFAULT_BOOKING_SETTINGS: BookingSettings = {
   marinaDayDiscount: null,
   customerChangeCutoffHours: 48,
   calloutPriceOre: null,
+  hourlyRateOre: null,
+  emergencySurchargeOre: null,
 };
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -66,6 +72,11 @@ function discount(value: unknown): MarinaDayDiscount | null | undefined {
   return undefined;
 }
 
+/** A price in whole öre above zero, or the fallback. */
+function price(value: unknown, fallback: number | null): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : fallback;
+}
+
 /** Reads the booking part of `tenant.settings`. */
 export function bookingSettings(tenantSettings: unknown): BookingSettings {
   const raw =
@@ -81,11 +92,8 @@ export function bookingSettings(tenantSettings: unknown): BookingSettings {
       d.customerChangeCutoffHours,
       720,
     ),
-    calloutPriceOre:
-      typeof raw.calloutPriceOre === "number" &&
-      Number.isInteger(raw.calloutPriceOre) &&
-      raw.calloutPriceOre > 0
-        ? raw.calloutPriceOre
-        : d.calloutPriceOre,
+    calloutPriceOre: price(raw.calloutPriceOre, d.calloutPriceOre),
+    hourlyRateOre: price(raw.hourlyRateOre, d.hourlyRateOre),
+    emergencySurchargeOre: price(raw.emergencySurchargeOre, d.emergencySurchargeOre),
   };
 }

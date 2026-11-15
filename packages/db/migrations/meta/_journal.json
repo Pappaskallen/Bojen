@@ -141,6 +141,48 @@
       "when": 1794519985163,
       "tag": "0019_waitlist_channel",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794549528678,
+      "tag": "0020_customer_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794566439748,
+      "tag": "0021_location_contact",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794577511386,
+      "tag": "0022_visit_notes",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794580933986,
+      "tag": "0023_staff_passkey",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794738811975,
+      "tag": "0024_service_report",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794744351628,
+      "tag": "0025_spring_campaign",
+      "breakpoints": true
     }
   ]
 }

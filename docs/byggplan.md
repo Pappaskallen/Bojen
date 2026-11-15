@@ -34,12 +34,12 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 4.1 – Schemaläggning av kontrollen (1 dag)
 - [x] Steg 4.2 – Tillståndsmaskin för svaren (1,5 dagar)
 - [x] Steg 4.3 – Väntelista och återfyllnad (1,5 dagar)
-- [ ] Steg 5.1 – Kundlista, sökning och kundkort (2 dagar)
-- [ ] Steg 5.2 – Båtkort med tidslinje (2 dagar)
-- [ ] Steg 5.3 – Marinakort (1 dag)
-- [ ] Steg 5.4 – Pipeline (1 dag)
-- [ ] Steg 5.5 – Mekanikerns dagvy som PWA, offline (3 dagar)
-- [ ] Steg 5.6 – Vårkampanj, enkel version (2 dagar)
+- [x] Steg 5.1 – Kundlista, sökning och kundkort (2 dagar)
+- [x] Steg 5.2 – Båtkort med tidslinje (2 dagar)
+- [x] Steg 5.3 – Marinakort (1 dag)
+- [x] Steg 5.4 – Pipeline (1 dag)
+- [x] Steg 5.5 – Mekanikerns dagvy som PWA, offline (3 dagar)
+- [x] Steg 5.6 – Vårkampanj, enkel version (2 dagar)
 - [ ] Steg 6.1 – Verktygs-API för agenten (1,5 dagar)
 - [ ] Steg 6.2 – Röstagenten (4 dagar)
 - [ ] Steg 6.3 – Efterbearbetning (1,5 dagar)
@@ -298,6 +298,7 @@ ett alternativ i stället för att byta tyst.
 
 #### Steg 5.1 – Kundlista, sökning och kundkort (2 dagar)
 - **Berör:** `apps/web/app/(admin)/kunder/*`, sökindex (`pg_trgm`).
+  - (Sökindexet är tabellen `customer_search`, en text per kund med trigramindex, som triggers uppdaterar när kunden, en båt, en motor, ett drev, en placering eller en marinas namn ändras. Index på varje kolumn för sig höll inte för en sökning över tolv kolumner i fem tabeller. Ändrat med Robert 2026-11-13.)
 - **Klart när:** En sökning på telefon, namn, båtmodell, serienummer eller marina tar under 300 ms med 5 000 kunder i testdata. Kundkortet visar båtar, besök och en tidslinje med meddelanden.
 
 #### Steg 5.2 – Båtkort med tidslinje (2 dagar)
@@ -321,9 +322,11 @@ ett alternativ i stället för att byta tyst.
   - Starta och Klart, gångtimmar, delar, bilder och röstanteckning (transkriberas av Azure när täckning finns).
   - Utkast till rapport från Claude Sonnet 5.5, som mekanikern godkänner.
   - Fakturaunderlag.
+  - Bild på båten överst på varje besök, så mekanikern ser vilken båt det gäller, även utan täckning. (Tillagt med Robert 2026-11-15.)
   - Inloggning med passkey (WebAuthn), som alternativ till engångskod (spec 10.7).
   - Appen låses och låses upp biometriskt med Face ID eller fingeravtryck via WebAuthn med användarverifiering (spec 10.7).
   - Grindkod och nyckelplats visas bara efter biometrisk upplåsning och döljs igen efter 60 sekunder (spec 10.4). Offline sparas de krypterat på telefonen från kvällen innan och raderas när jobbet är klart eller efter 24 timmar. En PWA kommer inte åt iOS Keychain eller Android Keystore; skillnaden mot specifikationen beskrivs och stäms av innan steget börjar.
+  - (Avstämt med Robert 2026-11-13: koderna krypteras på telefonen med en nyckel ur mekanikerns passkey via WebAuthn PRF, så de bara går att läsa efter Face ID eller fingeravtryck; på telefoner utan PRF visas de bara med täckning. Röstanteckningen byggs med en fejkadapter tills Azure-kontot finns. Steget görs i fyra delar som committas var för sig: a) dagvy, rutt, Starta och Klart, gångtimmar, delar och bilder; b) offline med service worker och kö i IndexedDB; c) passkey, biometriskt lås och koder; d) rapportutkast, röstanteckning och fakturaunderlag.)
 - **Klart när:**
   - Ett Playwright-test i offline-läge går igenom: mekanikern markerar ett jobb klart med bild och anteckning, och när nätet kommer tillbaka synkas allt och rapportutkastet skapas.
   - Ett test visar att koden inte visas utan upplåsning, att den döljs efter 60 sekunder och att den raderas från telefonen när jobbet är klart.
@@ -339,6 +342,7 @@ ett alternativ i stället för att byta tyst.
   - Utskick i omgångar.
   - Svaret JA blir en bokning, ANNAN ger en länk och NEJ ger frågan om båten är såld.
   - Reservationen släpps efter 14 dagar.
+  - (Avstämt med Robert 2026-11-15: segment C väntar på ServicePlan; den reserverade tiden får ett eget läge, Reserverad.)
 - **Klart när:** Med testdatan (förra året) skapar en kampanj reservationer i rätt vecka, och svaret JA ger ett bokat besök och sms enligt F1.
 
 ### Fas 6: Receptionisten

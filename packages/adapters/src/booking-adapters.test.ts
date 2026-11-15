@@ -126,10 +126,73 @@ describe("Supabase storage", () => {
     );
   });
 
+  it("signs a link for a private file, for a limited time", async () => {
+    const { fetch, calls } = recordingFetch(() =>
+      Response.json({ signedURL: "/object/sign/attachments/t1/boats/b1/b%C3%A5t.jpg?token=abc" }),
+    );
+    const storage = createSupabaseStorage({
+      url: "http://supabase.test/",
+      serviceRoleKey: "service-key",
+      bucket: "attachments",
+      fetch,
+    });
+    expect(await storage.signedUrl("t1/boats/b1/båt.jpg", 300)).toBe(
+      "http://supabase.test/storage/v1/object/sign/attachments/t1/boats/b1/b%C3%A5t.jpg?token=abc",
+    );
+    expect(calls[0]?.url).toBe(
+      "http://supabase.test/storage/v1/object/sign/attachments/t1/boats/b1/b%C3%A5t.jpg",
+    );
+    expect(JSON.parse(String(calls[0]?.init.body))).toEqual({ expiresIn: 300 });
+  });
+
+  it("fails to sign without the key in the message", async () => {
+    const { fetch } = recordingFetch(() => new Response("no", { status: 400 }));
+    const storage = createSupabaseStorage({
+      url: "http://supabase.test",
+      serviceRoleKey: "secret-service-key",
+      bucket: "b",
+      fetch,
+    });
+    await expect(storage.signedUrl("t/x.jpg", 60)).rejects.toThrow(
+      /^Supabase Storage refused to sign a link: 400$/,
+    );
+  });
+
+  it("reads a private file back with the service key, and fails without the key in the message", async () => {
+    const { fetch, calls } = recordingFetch(() => new Response(new Uint8Array([7, 8, 9])));
+    const storage = createSupabaseStorage({
+      url: "http://supabase.test",
+      serviceRoleKey: "secret-service-key",
+      bucket: "attachments",
+      fetch,
+    });
+    expect([...(await storage.get("t1/visits/v1/röst.webm"))]).toEqual([7, 8, 9]);
+    expect(calls[0]?.url).toBe(
+      "http://supabase.test/storage/v1/object/authenticated/attachments/t1/visits/v1/r%C3%B6st.webm",
+    );
+    expect(new Headers(calls[0]?.init.headers).get("authorization")).toBe(
+      "Bearer secret-service-key",
+    );
+
+    const refused = createSupabaseStorage({
+      url: "http://supabase.test",
+      serviceRoleKey: "secret-service-key",
+      bucket: "b",
+      fetch: recordingFetch(() => new Response("no", { status: 404 })).fetch,
+    });
+    await expect(refused.get("t/x.webm")).rejects.toThrow(
+      /^Supabase Storage refused to give the file: 404$/,
+    );
+  });
+
   it("has a fake that refuses to overwrite", async () => {
     const storage = createFakeStorage();
     await storage.put("t/a.jpg", new Uint8Array([1]), "image/jpeg");
     await expect(storage.put("t/a.jpg", new Uint8Array([2]), "image/jpeg")).rejects.toThrow();
     expect(storage.objects.get("t/a.jpg")?.contentType).toBe("image/jpeg");
+    expect(await storage.signedUrl("t/a.jpg", 60)).toBe("data:image/jpeg;base64,AQ==");
+    await expect(storage.signedUrl("t/none.jpg", 60)).rejects.toThrow();
+    expect([...(await storage.get("t/a.jpg"))]).toEqual([1]);
+    await expect(storage.get("t/none.jpg")).rejects.toThrow();
   });
 });

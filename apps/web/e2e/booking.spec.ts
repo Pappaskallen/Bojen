@@ -103,7 +103,7 @@ test("a wrong sms code is refused", async ({ page }) => {
   await expect(page.getByText(/Vi har skickat en kod/)).toBeVisible();
   // The code goes to the fake sms on the server; a made-up one must not work.
   await page.getByLabel("Kod från sms").fill("000000");
-  await page.getByRole("button", { name: "Logga in" }).click();
+  await page.getByRole("button", { name: "Logga in", exact: true }).click();
   await expect(page.getByText("Koden stämmer inte. Försök igen.")).toBeVisible();
 });
 

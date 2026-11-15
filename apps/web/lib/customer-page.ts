@@ -5,6 +5,8 @@
  *   POST /api/x/{code}/ombokning        slot=mechanicId|start   → 303 /x/{code}?klart=ombokad
  *   POST /api/x/{code}/avbokning                                → 303 /x/{code}?klart=avbokad
  *   POST /api/x/{code}/atkomst          code, keyLocation       → 303 /x/{code}?klart=atkomst
+ *   POST /api/x/{code}/boka                                     → 303 /x/{code}?klart=bokad
+ *     (a campaign's held time, from the spring campaign's e-mail, step 5.6)
  *
  * Plain forms that post and redirect, so the page works without JavaScript. The code in the
  * address is the only key, so it is never logged, and the access fields are only written,
@@ -14,6 +16,7 @@ import type { MapsProvider } from "@bojen/core";
 import type { Kms } from "@bojen/core/crypto";
 import {
   BookingError,
+  acceptByLink,
   cancelByLink,
   managePage,
   publicSuggestions,
@@ -32,7 +35,7 @@ export interface CustomerPageDeps {
   linkKey: () => string;
 }
 
-export type Done = "ombokad" | "avbokad" | "atkomst";
+export type Done = "ombokad" | "avbokad" | "atkomst" | "bokad";
 export type Problem = "missing" | "expired" | "used" | "closed" | "taken" | "invalid" | "failed";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -75,12 +78,11 @@ export const slotValue = (s: Pick<PublicSuggestion, "mechanicId" | "start">) =>
 export function createCustomerPage(deps: CustomerPageDeps) {
   const linkDeps = () => ({ db: deps.db(), now: deps.now, linkKey: deps.linkKey() });
 
-  const back = (request: Request, code: string, query: string) =>
+  // A relative address, so the browser stays on the host it came from (see day-route.ts).
+  const back = (_request: Request, code: string, query: string) =>
     new Response(null, {
       status: 303,
-      headers: {
-        location: new URL(`/x/${encodeURIComponent(code)}?${query}`, request.url).toString(),
-      },
+      headers: { location: `/x/${encodeURIComponent(code)}?${query}` },
     });
 
   async function form(request: Request): Promise<FormData | null> {
@@ -119,6 +121,12 @@ export function createCustomerPage(deps: CustomerPageDeps) {
         if (!slot) throw new BookingError("invalid_input", "slot");
         await rescheduleByLink({ ...linkDeps(), db: deps.db() }, code, slot);
         return "ombokad";
+      }),
+
+    accept: async (request: Request, code: string) =>
+      act(request, code, async () => {
+        await acceptByLink({ ...linkDeps(), db: deps.db() }, code);
+        return "bokad";
       }),
 
     cancel: async (request: Request, code: string) =>

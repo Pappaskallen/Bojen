@@ -22,17 +22,54 @@ import type {
   SmsSender,
   StaffAuth,
 } from "@bojen/core";
+import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { connect, type DbConnection } from "@bojen/db";
+import {
+  addInvoiceLine,
+  addPart,
+  addPasskey,
+  approveReport,
+  addVisitPhoto,
+  addVoiceNote,
+  appUser,
+  codesForPhone,
+  changeBooking,
+  connect,
+  createSpringCampaign,
+  moveCard,
+  onceOnly,
+  passkeyOwner,
+  passkeysOf,
+  passkeyUsed,
+  recordHours,
+  removeInvoiceLine,
+  revealBoatAccess,
+  saveNote,
+  saveReport,
+  setPartStatus,
+  startCampaign,
+  visitBoatPicture,
+  visitDayFor,
+  type DbConnection,
+} from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
+import { createBoatAccessRoute } from "./boat-access";
+import { createCampaignRoutes } from "./campaign-routes";
+import { createBoatPictureRoute } from "./boat-picture-route";
 import { createCustomerPage } from "./customer-page";
+import { createCodesRoute } from "./codes-route";
+import { createDayRoute } from "./day-route";
+import { createPasskeyRoutes } from "./passkey-routes";
+import { createPipelineRoute } from "./pipeline-route";
+import { createReportRoute } from "./report-route";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
 import { ELKS_IPS, createWebhookRoutes } from "./webhooks";
 import {
   ACCESS_COOKIE,
   createStaffAuthRoutes,
+  sessionFromRequest,
   staffFromRequest,
   staffSession,
   type StaffSession,
@@ -130,7 +167,7 @@ const sms = once<SmsSender>(() => {
   };
 });
 
-const maps = once<MapsProvider>(() =>
+export const maps = once<MapsProvider>(() =>
   process.env.OSRM_URL ? createOsrmMaps({ baseUrl: process.env.OSRM_URL }) : createFakeMaps(),
 );
 
@@ -140,7 +177,7 @@ const geocoder = once<Geocoder>(() =>
     : createFakeGeocoder(),
 );
 
-const storage = once<ObjectStorage>(() => {
+export const storage = once<ObjectStorage>(() => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (url && key) return createSupabaseStorage({ url, serviceRoleKey: key, bucket: "attachments" });
@@ -166,6 +203,126 @@ const linkKey = once(() => {
 
 /** AWS KMS in production, the local KMS otherwise (step 1.6). */
 const kms = once<Kms>(() => kmsFromEnv(process.env, production));
+
+/** The mechanic's day view (step 5.5): start, done, hours, parts and pictures. */
+export const dayRoute = createDayRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  visitDay: (actor, visitId) => visitDayFor(db(), actor, visitId),
+  start: async (actor, visitId, key) => {
+    await changeBooking(
+      { db: db(), now: () => new Date() },
+      {
+        tenantId: actor.tenantId,
+        actor: { type: "staff", id: actor.userId },
+        idempotencyKey: `idag:${key}`,
+      },
+      visitId,
+      { event: "start" },
+    );
+  },
+  complete: async (actor, visitId, key) => {
+    await changeBooking(
+      { db: db(), now: () => new Date() },
+      {
+        tenantId: actor.tenantId,
+        actor: { type: "staff", id: actor.userId },
+        idempotencyKey: `idag:${key}`,
+      },
+      visitId,
+      { event: "complete" },
+    );
+  },
+  // Each once per key, so a form the offline queue sends again is not done twice (step 5.5b).
+  hours: async (actor, visitId, key, engineId, hours) => {
+    await onceOnly(db(), actor.tenantId, key, `timmar:${visitId}`, (tx) =>
+      recordHours(tx, actor, visitId, engineId, hours, new Date()),
+    );
+  },
+  addPart: async (actor, visitId, key, input) => {
+    await onceOnly(db(), actor.tenantId, key, `del:${visitId}`, async (tx) => {
+      await addPart(tx, actor, visitId, input);
+    });
+  },
+  partStatus: async (actor, visitId, key, jobPartId, status) => {
+    await onceOnly(db(), actor.tenantId, key, `delstatus:${visitId}`, (tx) =>
+      setPartStatus(tx, actor, visitId, jobPartId, status),
+    );
+  },
+  photo: async (actor, visitId, key, photo) => {
+    await onceOnly(db(), actor.tenantId, key, `bild:${visitId}`, async (tx) => {
+      await addVisitPhoto({ db: tx, storage: storage() }, actor, visitId, photo);
+    });
+  },
+  note: async (actor, visitId, key, note) => {
+    await onceOnly(db(), actor.tenantId, key, `anteckning:${visitId}`, (tx) =>
+      saveNote(tx, actor, visitId, note),
+    );
+  },
+  voice: async (actor, visitId, key, audio) => {
+    await onceOnly(db(), actor.tenantId, key, `rost:${visitId}`, async (tx) => {
+      await addVoiceNote({ db: tx, storage: storage() }, actor, visitId, audio);
+    });
+  },
+});
+
+/** Passkeys for staff (step 5.5c): sign-in without a code, and the phone's key for codes. */
+export const passkeyRoutes = createPasskeyRoutes({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  person: async (tenantId, appUserId) => {
+    const [row] = await db()
+      .select({ name: appUser.name, email: appUser.email })
+      .from(appUser)
+      .where(and(eq(appUser.tenantId, tenantId), eq(appUser.id, appUserId)));
+    return { name: row?.name ?? "", email: row?.email ?? null };
+  },
+  passkeysOf: (tenantId, appUserId) => passkeysOf(db(), tenantId, appUserId),
+  addPasskey: (owner, passkey) => addPasskey(db(), owner, passkey),
+  passkeyOwner: (credentialId) => passkeyOwner(db(), credentialId),
+  passkeyUsed: (passkeyId, counter) => passkeyUsed(db(), passkeyId, counter, new Date()),
+  sessionFor: (email) => staffAuth().sessionFor(email),
+  secret: sessionSecret,
+  now: () => new Date(),
+  secure: process.env.NODE_ENV === "production" && !process.env.BOJEN_FAKE_SERVICES,
+});
+
+/** The codes the phone keeps for a visit (step 5.5c), through the access rule. */
+export const codesRoute = createCodesRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  codes: (userId, visitId) =>
+    codesForPhone({ db: db(), kms: kms(), now: () => new Date() }, userId, visitId),
+});
+
+/** The picture of the boat on the day view (step 5.5d). */
+export const boatPictureRoute = createBoatPictureRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  picture: (actor, visitId) => visitBoatPicture({ db: db(), storage: storage() }, actor, visitId),
+});
+
+/** The service report and the invoice basis (step 5.5d). */
+export const reportRoute = createReportRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  save: (actor, visitId, input) => saveReport(db(), actor, visitId, input),
+  approve: (actor, visitId, input) =>
+    approveReport({ db: db(), now: () => new Date() }, actor, visitId, input),
+  addLine: (actor, visitId, line) => addInvoiceLine(db(), actor, visitId, line),
+  removeLine: (actor, visitId, lineId) => removeInvoiceLine(db(), actor, visitId, lineId),
+});
+
+/** Moving cards on the pipeline (step 5.4). */
+export const pipelineRoute = createPipelineRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  move: (mover, jobId, to) => moveCard(db(), mover, jobId, to),
+});
+
+/** The public address of the app, without a trailing slash, for links staff share. */
+export const appUrl = () => (process.env.APP_URL ?? "").replace(/\/+$/, "");
+
+/** The code from the boat card (step 5.2): the rule and the log are in `revealBoatAccess`. */
+export const boatAccessRoute = createBoatAccessRoute({
+  authorize: (request) => staffFromRequest(staffAuth(), request),
+  reveal: (userId, boatId) =>
+    revealBoatAccess({ db: db(), kms: kms(), now: () => new Date() }, userId, boatId),
+});
 
 export const customerPage = createCustomerPage({
   db,
@@ -212,6 +369,21 @@ const optOutKey = once(() => {
   if (production) throw new Error("SMS_OPT_OUT_KEY must be at least 32 characters");
   return "development-only-opt-out-key-not-secret";
 });
+
+/** The campaigns (step 5.6): drafts and starting them; the sending is the worker's. */
+export const campaignRoutes = createCampaignRoutes({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  create: (tenantId, input) => createSpringCampaign(db(), tenantId, input),
+  start: (tenantId, campaignId) =>
+    startCampaign(
+      { db: db(), now: () => new Date(), optOutKey: optOutKey() },
+      tenantId,
+      campaignId,
+    ),
+});
+
+/** The spring campaign's recipients before it starts, for the draft's page. */
+export const campaignOptOutKey = () => optOutKey();
 
 export const webhookRoutes = createWebhookRoutes({
   db,

@@ -1,4 +1,10 @@
-import { createFakeClassifier, createFakeEmail, createFakeSms } from "@bojen/adapters";
+import {
+  createFakeClassifier,
+  createFakeEmail,
+  createFakeReportWriter,
+  createFakeSms,
+  createFakeStorage,
+} from "@bojen/adapters";
 import {
   appUser,
   boat,
@@ -28,6 +34,13 @@ import {
 import { runMigrations } from "@bojen/db/migrate";
 import { and, eq, sql } from "drizzle-orm";
 import type { JobHelpers, TaskList } from "graphile-worker";
+
+/** The report draft with fakes (step 5.5d): a visit done now also queues it. */
+const fakeReports = () => ({
+  storage: createFakeStorage(),
+  writer: createFakeReportWriter(),
+  transcriber: null,
+});
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { customerLinks } from "./flows/deps";
 import { taskList } from "./tasks";
@@ -195,6 +208,7 @@ describe("short links in F1 (step 3.4)", () => {
         email: createFakeEmail(),
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
+        reports: fakeReports(),
         link: customerLinks(db, linkKey, "https://bojen.se"),
       };
       const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
@@ -281,6 +295,7 @@ describe("the availability check F3 (step 4.1)", () => {
         email: createFakeEmail(),
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
+        reports: fakeReports(),
         link: () => "bojen.se/x/Kp3d9AbC",
       };
       const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
@@ -361,6 +376,7 @@ describe("the availability check F3 (step 4.1)", () => {
         email: createFakeEmail(),
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
+        reports: fakeReports(),
         link: () => "bojen.se/x/Kp3d9AbC",
       };
       const tasks = taskList(deps);
@@ -437,6 +453,7 @@ describe("answers to the availability check (step 4.2)", () => {
         email: createFakeEmail(),
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
+        reports: fakeReports(),
         link: customerLinks(db, "flow-test-short-link-key-0123456789abcdef", "https://bojen.se"),
       };
       const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
@@ -719,6 +736,7 @@ describe("the waitlist fills a cancelled time (F4, step 4.3)", () => {
         email: createFakeEmail(),
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
+        reports: fakeReports(),
         link: () => "bojen.se/boka/flodesfirman",
       };
       const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
@@ -1026,6 +1044,75 @@ describe("the waitlist fills a cancelled time (F4, step 4.3)", () => {
   }, 60_000);
 });
 
+describe("the pipeline moves on its own (step 5.4)", () => {
+  it("a job is done when its visit is, and invoiced when Fortnox says an invoice is made", async () => {
+    await inRollback(async (db) => {
+      let clock = at("2026-11-16T14:00:00");
+      const deps = {
+        db,
+        sms: createFakeSms(),
+        email: createFakeEmail(),
+        now: () => clock,
+        optOutKey: "flow-test-opt-out-key",
+        reports: fakeReports(),
+        link: () => "bojen.se/x/Kp3d9AbC",
+      };
+      const { runDue } = await jobRunner(db, taskList(deps), () => clock);
+      const f = await setup(db);
+      const staff = { tenantId: f.tenantId, actor: { type: "staff" as const, id: f.mechanicId } };
+      const booked = await createBooking(
+        { db, now: () => clock },
+        { ...staff, idempotencyKey: "pipeline-book" },
+        {
+          customerId: f.customerId,
+          boatId: f.boatId,
+          serviceTypeId: f.serviceTypeId,
+          mechanicId: f.mechanicId,
+          start: at("2026-11-18T10:00:00"),
+          channel: "phone",
+          needsApproval: false,
+          partsMissing: false,
+        },
+      );
+      const jobId = booked.visit.jobId;
+      const statusOf = async () =>
+        (await db.select({ s: job.pipelineStatus }).from(job).where(eq(job.id, jobId)))[0]?.s;
+      expect(await statusOf()).toBe("booked");
+
+      clock = at("2026-11-18T10:05:00");
+      await changeBooking(
+        { db, now: () => clock },
+        { ...staff, idempotencyKey: "pipeline-start" },
+        booked.visit.id,
+        {
+          event: "start",
+        },
+      );
+      await changeBooking(
+        { db, now: () => clock },
+        { ...staff, idempotencyKey: "pipeline-done" },
+        booked.visit.id,
+        {
+          event: "complete",
+        },
+      );
+      expect(await statusOf()).toBe("done");
+
+      // Fortnox (step 8) will send this when the invoice is made.
+      await db.insert(domainEvent).values({
+        tenantId: f.tenantId,
+        aggregateType: "job",
+        aggregateId: jobId,
+        type: "invoice.created",
+        payload: { jobId, invoiceNumber: "1001" },
+        actorType: "system",
+      });
+      await runDue();
+      expect(await statusOf()).toBe("invoiced");
+    });
+  }, 60_000);
+});
+
 describe("flows F1, F5, F7 and F9", () => {
   it("a booking is confirmed at once, F5 goes at 07:00, F9 18 h after done", async () => {
     try {
@@ -1040,6 +1127,7 @@ describe("flows F1, F5, F7 and F9", () => {
           email,
           now: () => clock,
           optOutKey: "flow-test-opt-out-key",
+          reports: fakeReports(),
           link: () => "bojen.se/x/Kp3d9",
         };
         const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
@@ -1141,7 +1229,13 @@ describe("flows F1, F5, F7 and F9", () => {
           visitId,
           { event: "complete" },
         );
-        expect(await runDue()).toEqual(["domain_event", "domain_event"]);
+        // Start, complete, the job's card moving to done (step 5.4) and the report draft (5.5d).
+        expect(await runDue()).toEqual([
+          "domain_event",
+          "domain_event",
+          "domain_event",
+          "report_draft",
+        ]);
         expect(await pending("visit_survey")).toEqual([at("2026-11-19T10:45:00")]);
         clock = at("2026-11-19T10:44:00");
         expect(await runDue()).toEqual([]);

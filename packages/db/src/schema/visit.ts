@@ -1,5 +1,14 @@
 import { sql } from "drizzle-orm";
-import { check, foreignKey, index, integer, pgTable, unique, uuid } from "drizzle-orm/pg-core";
+import {
+  check,
+  foreignKey,
+  index,
+  integer,
+  pgTable,
+  unique,
+  uuid,
+  text,
+} from "drizzle-orm/pg-core";
 import { baseColumns, tenantIsolationPolicy } from "./_shared";
 import { timestampRange } from "./_types";
 import { availabilityStatus, visitStatus } from "./enums";
@@ -28,6 +37,8 @@ export const visit = pgTable(
     plannedMinutes: integer("planned_minutes").notNull(),
     status: visitStatus("status").notNull().default("tentative"),
     availabilityStatus: availabilityStatus("availability_status").notNull().default("not_sent"),
+    /** What the mechanic wrote on site, for the report draft (step 5.5). */
+    notes: text("notes"),
   },
   (t) => [
     foreignKey({ columns: [t.tenantId], foreignColumns: [tenant.id] }),

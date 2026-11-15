@@ -27,6 +27,8 @@ export const attachment = pgTable(
     storageKey: text("storage_key").notNull(),
     contentType: text("content_type").notNull(),
     sizeBytes: integer("size_bytes").notNull(),
+    /** What a voice note says, once transcribed (step 5.5d). Null for pictures. */
+    transcript: text("transcript"),
   },
   (t) => [
     foreignKey({ columns: [t.tenantId], foreignColumns: [tenant.id] }),

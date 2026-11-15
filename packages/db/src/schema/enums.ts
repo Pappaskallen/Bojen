@@ -61,6 +61,7 @@ export const jobChannel = pgEnum("job_channel", [
 
 export const visitStatus = pgEnum("visit_status", [
   "tentative",
+  "reserved",
   "pending_approval",
   "booked",
   "confirmed",

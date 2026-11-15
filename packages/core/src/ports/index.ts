@@ -1,6 +1,7 @@
 import type { ReplyIntent } from "../messaging/intent";
 import type { QuestionKind } from "../messaging/routeInbound";
 import type { GeoPoint } from "../scheduling/travel";
+import type { ReportFacts } from "../reports/draft";
 
 /**
  * Reads a free-text reply by sms that the rules could not (step 3.2). Claude Sonnet 5.5 in
@@ -56,6 +57,25 @@ export interface Geocoder {
 /** Files such as pictures of the drive. Supabase Storage in production. */
 export interface ObjectStorage {
   put(key: string, body: Uint8Array, contentType: string): Promise<void>;
+  /** A link that shows the file for `seconds`, for an `<img>` on a staff page. The bucket is private. */
+  signedUrl(key: string, seconds: number): Promise<string>;
+  /** The file itself, for the worker (a voice note to transcribe). */
+  get(key: string): Promise<Uint8Array>;
+}
+
+/**
+ * Writes the draft of the service report from what the visit recorded (step 5.5d): Claude
+ * Sonnet 5.5, or a fake in tests. The answer is checked with `normaliseDraft` before use.
+ */
+export interface ReportWriter {
+  /** Who writes, stored on the report: the model id, or `fake`. */
+  readonly name: string;
+  draft(facts: ReportFacts): Promise<unknown>;
+}
+
+/** Speech to text in Swedish (step 5.5d): Azure sv-SE later, a fake until the account exists. */
+export interface Transcriber {
+  transcribe(audio: { bytes: Uint8Array; contentType: string }): Promise<string>;
 }
 
 /** A signed-in session from the auth provider. */
@@ -94,6 +114,11 @@ export interface StaffAuth {
   sendCode(email: string): Promise<void>;
   /** A session, or null when the code is wrong or expired. */
   verifyCode(email: string, code: string): Promise<AuthSession | null>;
+  /**
+   * A session for a user we have already identified another way, with the service key: after
+   * a verified passkey (step 5.5c). Never call it without that proof.
+   */
+  sessionFor(email: string): Promise<AuthSession | null>;
   /** Gives the auth user this mobile number (E.164), with the service key (step 3.1). */
   setPhone(authUserId: string, phone: string): Promise<void>;
   /** A code by sms; Supabase Auth hands it to our sms hook, which sends it with 46elks. */

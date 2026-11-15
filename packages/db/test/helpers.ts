@@ -26,6 +26,7 @@ import {
   kpiSnapshot,
   location,
   locationAccessRule,
+  locationContact,
   mfaRecoveryCode,
   message,
   part,
@@ -40,6 +41,8 @@ import {
   travelCache,
   shortLink,
   smsOptOut,
+  serviceReport,
+  staffPasskey,
   verificationCode,
   workSchedule,
 } from "../src/schema";
@@ -171,6 +174,9 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     provider: "fake",
   });
   await tx.insert(locationAccessRule).values({ tenantId, locationId: l.id, parking: "Grusplanen" });
+  await tx
+    .insert(locationContact)
+    .values({ tenantId, locationId: l.id, name: "Hamnkaptenen", role: "Hamnkapten", phone });
   await tx.insert(boatPlacement).values({
     tenantId,
     boatId: b.id,
@@ -305,6 +311,13 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     codeHash: "link-" + tenantId,
     expiresAt: new Date("2027-04-20T06:00:00Z"),
   });
+  await tx.insert(staffPasskey).values({
+    tenantId,
+    appUserId: mechanic.id,
+    credentialId: `cred-${tenantId}`,
+    publicKey: Buffer.from("not-a-real-public-key"),
+  });
+  await tx.insert(serviceReport).values({ tenantId, visitId: v.id });
   await tx.insert(verificationCode).values({
     tenantId,
     phone,

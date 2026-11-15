@@ -1,0 +1,240 @@
+/* The mechanic's day view (step 5.5): big targets for a phone with cold fingers. */
+.day-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.day-visit {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  scroll-margin-top: 16px;
+}
+
+.day-visit:target {
+  border-color: var(--brand);
+}
+
+.day-visit header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.day-visit .when {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.day-visit h2 {
+  margin: 4px 0;
+  font-size: 1.1rem;
+}
+
+.day-visit .meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.day-visit details {
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.day-visit summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.day-visit form {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.day-visit .inline {
+  grid-template-columns: 1fr auto;
+  align-items: end;
+}
+
+.day-visit .actions button {
+  min-height: 48px;
+  min-width: 120px;
+}
+
+.day-pager {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0 16px;
+}
+
+.offline-queue .queued {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #fff4d6;
+  border: 1px solid #e0b84a;
+}
+
+.day-visit textarea {
+  width: 100%;
+  font: inherit;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.day-lock {
+  padding: 24px 16px;
+  border: 2px solid var(--brand);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.day-lock button {
+  min-height: 56px;
+  min-width: 200px;
+}
+
+.visit-codes {
+  margin-top: 8px;
+}
+
+.passkey-sign-in {
+  margin-bottom: 16px;
+}
+
+/* Voice notes and the service report (step 5.5d). */
+.voice-recorder .big {
+  min-height: 56px;
+  width: 100%;
+  font-size: 1.1rem;
+}
+
+.report-status {
+  margin: 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-status a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.report-page textarea,
+.report-page input,
+.report-page select {
+  width: 100%;
+  font: inherit;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.report-page section {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.report-page form {
+  display: grid;
+  gap: 8px;
+}
+
+.report-page .rec-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.invoice-lines {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.invoice-lines th,
+.invoice-lines td {
+  text-align: left;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.invoice-lines td.amount,
+.invoice-lines th.amount {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.invoice-lines tfoot td {
+  font-weight: 600;
+}
+
+.report-page .approve {
+  min-height: 56px;
+  width: 100%;
+}
+
+.report-page .add-line {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+/* The boat at the top of the visit (step 5.5d): large enough to tell boats apart. */
+.boat-picture {
+  margin: -12px -12px 8px;
+}
+
+.boat-picture img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+}
+
+.report-page .boat-picture {
+  margin: 8px 0;
+}
+
+.report-page .boat-picture img {
+  border-radius: 8px;
+}
+
+/* The report page fits a phone: fields count their padding in their width, and a wide
+   invoice table scrolls inside its own box instead of widening the page. */
+.report-page textarea,
+.report-page input,
+.report-page select,
+.report-page button {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.report-page .table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.report-page {
+  overflow-wrap: anywhere;
+}

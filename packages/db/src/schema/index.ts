@@ -32,3 +32,7 @@ export * from "./attachment";
 export * from "./tenant_settings";
 export * from "./sms_opt_out";
 export * from "./short_link";
+export * from "./customer_search";
+export * from "./location_contact";
+export * from "./staff_passkey";
+export * from "./service_report";
