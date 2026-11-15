@@ -169,6 +169,13 @@
       "when": 1794580933986,
       "tag": "0023_staff_passkey",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794738811975,
+      "tag": "0024_service_report",
+      "breakpoints": true
     }
   ]
 }

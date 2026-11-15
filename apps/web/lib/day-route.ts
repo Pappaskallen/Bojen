@@ -8,6 +8,7 @@
  *   POST /api/idag/{visitId}/delstatus   key, jobPartId, status
  *   POST /api/idag/{visitId}/bild        key, photo (file)
  *   POST /api/idag/{visitId}/anteckning  key, note
+ *   POST /api/idag/{visitId}/rost        key, voice (file), a voice note (step 5.5d)
  *
  * Every form carries a key, so the same form sent twice, as the offline queue may after an
  * answer that never arrived, is done once (step 5.5b). Without JavaScript the answer is 303
@@ -50,10 +51,17 @@ export interface DayRouteDeps {
     photo: { bytes: Uint8Array; contentType: string },
   ) => Promise<void>;
   note: (actor: DayActor, visitId: string, key: string, note: string) => Promise<void>;
+  voice: (
+    actor: DayActor,
+    visitId: string,
+    key: string,
+    audio: { bytes: Uint8Array; contentType: string },
+  ) => Promise<void>;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-export type DayAction = "starta" | "klart" | "timmar" | "del" | "delstatus" | "bild" | "anteckning";
+export type DayAction =
+  "starta" | "klart" | "timmar" | "del" | "delstatus" | "bild" | "anteckning" | "rost";
 const ACTIONS: readonly DayAction[] = [
   "starta",
   "klart",
@@ -62,6 +70,7 @@ const ACTIONS: readonly DayAction[] = [
   "delstatus",
   "bild",
   "anteckning",
+  "rost",
 ];
 
 /** Which message the page shows for a refusal. */
@@ -126,6 +135,14 @@ async function run(
     }
     case "anteckning":
       return deps.note(actor, visitId, key, text(form, "note"));
+    case "rost": {
+      const file = form.get("voice");
+      if (!(file instanceof File) || file.size === 0) throw new BadForm();
+      return deps.voice(actor, visitId, key, {
+        bytes: new Uint8Array(await file.arrayBuffer()),
+        contentType: file.type,
+      });
+    }
   }
 }
 

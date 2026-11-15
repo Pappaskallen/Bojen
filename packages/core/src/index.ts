@@ -76,6 +76,8 @@ export type {
   OutgoingEmail,
   OutgoingSms,
   ReplyClassifier,
+  ReportWriter,
+  Transcriber,
   GeocodeResult,
   Geocoder,
   ObjectStorage,
@@ -171,3 +173,29 @@ export {
   type RouteSuggestion,
   type TravelLookup,
 } from "./route/order";
+export {
+  MAX_POINT_LENGTH,
+  MAX_RECOMMENDATIONS,
+  MAX_WORK_POINTS,
+  RECOMMENDATION_PRIORITIES,
+  normaliseDraft,
+  reportPrompt,
+  workDonePoints,
+  workDoneText,
+  type Recommendation,
+  type RecommendationPriority,
+  type ReportDraft,
+  type ReportFacts,
+} from "./reports/draft";
+export {
+  VAT_RATE,
+  formatKronor,
+  invoiceTotals,
+  parseKronor,
+  proposedLines,
+  type InvoiceLine,
+  type InvoiceLineType,
+  type InvoiceTotals,
+  type ProposedLine,
+} from "./reports/invoice";
+export { reportContent, type ReportContent } from "./reports/content";

@@ -69,5 +69,16 @@ export function createSupabaseStorage(options: SupabaseStorageOptions): ObjectSt
       // The answer is relative to /storage/v1.
       return `${base}${signedURL.startsWith("/") ? "" : "/"}${signedURL}`;
     },
+
+    async get(key) {
+      const path = key.split("/").map(encodeURIComponent).join("/");
+      const response = await send(`${base}/object/authenticated/${options.bucket}/${path}`, {
+        headers: auth,
+      });
+      if (!response.ok) {
+        throw new Error(`Supabase Storage refused to give the file: ${String(response.status)}`);
+      }
+      return new Uint8Array(await response.arrayBuffer());
+    },
   };
 }

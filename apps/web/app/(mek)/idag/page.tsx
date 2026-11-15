@@ -10,6 +10,8 @@ import { AdminNav } from "../../(admin)/nav";
 import { SignOutButton } from "../../(admin)/sign-out";
 import { DayLock, VisitCodes } from "./lock";
 import { OfflineQueue } from "./offline";
+import { VoiceRecorder } from "./voice";
+import { BoatPicture } from "./boat-picture";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -24,9 +26,10 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 const START_FROM = ["tentative", "booked", "confirmed", "unconfirmed"];
 
 /**
- * The mechanic's day (byggplan step 5.5, part a): the day's visits in the suggested driving
- * order, with start and done, running hours, parts and pictures. Plain forms, so it works
- * without JavaScript; the offline queue comes in part b.
+ * The mechanic's day (byggplan step 5.5): the day's visits in the suggested driving order,
+ * with start and done, running hours, parts, pictures, voice notes and notes, and the report
+ * once a visit is done. Plain forms, so it works without JavaScript; `offline.tsx` queues
+ * them without coverage, and `lock.tsx` keeps the day and the codes behind the passkey.
  */
 export default async function TodayPage({ searchParams }: Props) {
   const staff = await requireStaff("/idag");
@@ -86,6 +89,13 @@ export default async function TodayPage({ searchParams }: Props) {
                   className="day-visit"
                   aria-label={v.customer.name}
                 >
+                  {v.boatPicture ? (
+                    <BoatPicture
+                      visitId={v.id}
+                      boatId={v.boat?.id ?? null}
+                      label={v.boat?.label ?? v.customer.name}
+                    />
+                  ) : null}
                   <header>
                     <span className="when">{v.promised}</span>
                     <span className="badge">{word(crm.visitStatus, v.status)}</span>
@@ -114,6 +124,12 @@ export default async function TodayPage({ searchParams }: Props) {
                     {v.boat ? <Link href={`/batar/${v.boat.id}`}>{crm.boat.title}</Link> : null}
                   </div>
                   <VisitCodes visitId={v.id} done={v.status === "done"} />
+                  {v.report ? (
+                    <p className="report-status" role="group" aria-label={t.report}>
+                      <span className="badge">{t.reportStatus[v.report]}</span>{" "}
+                      <Link href={`/idag/rapport/${v.id}`}>{t.openReport}</Link>
+                    </p>
+                  ) : null}
                   {START_FROM.includes(v.status) ? (
                     <form
                       method="post"
@@ -239,6 +255,34 @@ export default async function TodayPage({ searchParams }: Props) {
                         />
                       </label>
                       <button type="submit">{t.upload}</button>
+                    </form>
+                  </details>
+
+                  <details>
+                    <summary>
+                      {t.voice} ({t.voiceCount(v.voiceNotes)})
+                    </summary>
+                    <form
+                      method="post"
+                      action={action(v.id, "rost")}
+                      encType="multipart/form-data"
+                      data-offline={`${t.voice}: ${v.customer.name}`}
+                    >
+                      <input type="hidden" name="key" value={randomUUID()} />
+                      <p className="help">{t.voiceHelp}</p>
+                      <VoiceRecorder inputId={`rost-${v.id}`} />
+                      <label className="field">
+                        <span>{t.voiceFile}</span>
+                        <input
+                          id={`rost-${v.id}`}
+                          name="voice"
+                          type="file"
+                          accept="audio/*"
+                          capture="user"
+                          required
+                        />
+                      </label>
+                      <button type="submit">{t.saveVoice}</button>
                     </form>
                   </details>
 

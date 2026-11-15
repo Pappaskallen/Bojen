@@ -6,13 +6,17 @@ import {
   boatOwnership,
   connect,
   customer,
+  domainEvent,
   job,
+  serviceReport,
   serviceType,
   visit,
 } from "@bojen/db";
 import { DEMO_TENANT_ID } from "@bojen/db/seed";
 import { expect, test } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
+import { createSupabaseStorage } from "@bojen/adapters";
+import { E2E_TRANSCRIPT, LOCAL_SUPABASE_SERVICE_ROLE_KEY, LOCAL_SUPABASE_URL } from "./keys";
 import { emailCode } from "./staff-login";
 
 const UNO = "uno@jonas-batservice.test"; // a mechanic of their own, with one visit today
@@ -40,6 +44,21 @@ async function seed() {
     const [b] = await db.insert(boat).values({ tenantId, name: "Skärbåten" }).returning();
     if (!uno || !service || !kund || !b) throw new Error("The test data was not created");
     await db.insert(boatOwnership).values({ tenantId, boatId: b.id, customerId: kund.id });
+    // A picture of the boat, so the mechanic sees which boat it is (step 5.5d).
+    const key = `${tenantId}/boats/${b.id}/skarbaten.png`;
+    await createSupabaseStorage({
+      url: LOCAL_SUPABASE_URL,
+      serviceRoleKey: LOCAL_SUPABASE_SERVICE_ROLE_KEY,
+      bucket: "attachments",
+    }).put(key, PNG, "image/png");
+    await db.insert(attachment).values({
+      tenantId,
+      ownerType: "boat",
+      ownerId: b.id,
+      storageKey: key,
+      contentType: "image/png",
+      sizeBytes: PNG.byteLength,
+    });
     const [j] = await db
       .insert(job)
       .values({
@@ -73,7 +92,7 @@ async function seed() {
   }
 }
 
-test("without coverage the mechanic finishes a visit with a picture and a note, and it all goes when the network is back (step 5.5b)", async ({
+test("without coverage the mechanic finishes a visit with a picture, a note and a voice note; it all goes when the network is back, and the report draft is written (steps 5.5b and 5.5d)", async ({
   page,
   context,
 }) => {
@@ -93,6 +112,12 @@ test("without coverage the mechanic finishes a visit with a picture and a note, 
   await page.reload();
   const card = page.getByRole("listitem", { name: "Offline Kund" });
   await expect(card).toContainText("Skärbåten");
+  // The boat's picture is at the top, kept on the phone with the day view.
+  const boatPicture = card.getByRole("img", { name: "Bild på Skärbåten" });
+  await expect(boatPicture).toBeVisible();
+  await expect
+    .poll(() => boatPicture.evaluate((img) => (img as HTMLImageElement).naturalWidth))
+    .toBeGreaterThan(0);
 
   // A picture, a note and done, all without coverage.
   await card.getByText(/^Bilder/).click();
@@ -111,8 +136,18 @@ test("without coverage the mechanic finishes a visit with a picture and a note, 
   await card.getByRole("button", { name: "Spara anteckning" }).click();
   await expect(page.getByText("2 ändringar väntar på täckning.")).toBeVisible();
 
-  await card.getByRole("button", { name: "Klart" }).click();
+  // A voice note, from the phone's recorder app (the microphone button does the same).
+  await card.getByText(/^Röstanteckning/).click();
+  await card.getByLabel("Spela in eller välj ljudfil").setInputFiles({
+    name: "rost.webm",
+    mimeType: "audio/webm",
+    buffer: Buffer.from("not really opus, but the fake speech to text does not mind"),
+  });
+  await card.getByRole("button", { name: "Spara röstanteckning" }).click();
   await expect(page.getByText("3 ändringar väntar på täckning.")).toBeVisible();
+
+  await card.getByRole("button", { name: "Klart" }).click();
+  await expect(page.getByText("4 ändringar väntar på täckning.")).toBeVisible();
 
   // Nothing has reached the server yet.
   const { db, close } = connect();
@@ -136,11 +171,56 @@ test("without coverage the mechanic finishes a visit with a picture and a note, 
     await expect(page.getByRole("listitem", { name: "Offline Kund" })).toContainText("Utfört");
 
     expect(await status()).toEqual({ s: "done", n: "Bytt drevolja. Bälgen ser sliten ut." });
-    const pictures = await db
-      .select()
+    const files = await db
+      .select({ type: attachment.contentType })
       .from(attachment)
       .where(and(eq(attachment.ownerType, "visit"), eq(attachment.ownerId, visitId)));
-    expect(pictures).toHaveLength(1);
+    expect(files.map((f) => f.type).sort()).toEqual(["audio/webm", "image/png"]);
+
+    // --- The report draft is written from the note and the voice note (step 5.5d). ---
+    const synced = page.getByRole("listitem", { name: "Offline Kund" });
+    await expect(async () => {
+      await page.reload();
+      await expect(synced.getByText("Rapportutkast klart")).toBeVisible({ timeout: 1_000 });
+    }).toPass({ timeout: 30_000 });
+    await synced.getByRole("link", { name: "Granska rapporten" }).click();
+    await expect(page.getByRole("heading", { name: "Servicerapport", level: 1 })).toBeVisible();
+    const workDone = page.getByLabel("En punkt per rad.");
+    await expect(workDone).toHaveValue(/Bytt drevolja/);
+    await expect(workDone).toHaveValue(/Bälgen ser sliten ut/);
+    await expect(workDone).toHaveValue(new RegExp(E2E_TRANSCRIPT.replace(/\.$/, "")));
+    await expect(page.getByText(E2E_TRANSCRIPT)).toBeVisible();
+
+    // The mechanic adds a recommendation, and the invoice basis has the price list's lines.
+    await page.getByLabel("Rekommendation 1").fill("Byt bälgen före sjösättningen");
+    await page.getByLabel("Prioritet").first().selectOption({ label: "Åtgärda nu" });
+    const invoice = page.getByRole("region", { name: "Fakturaunderlag" });
+    await expect(invoice).toContainText("Felsökning");
+    await expect(invoice).toContainText("Framkörning");
+    await expect(invoice).toContainText("Totalt inkl. moms");
+
+    await page.getByRole("button", { name: "Godkänn och skicka till kunden" }).click();
+    await expect(page.getByRole("status")).toHaveText(
+      "Rapporten är godkänd och skickas till kunden.",
+    );
+    await expect(page.getByLabel("En punkt per rad.")).toHaveAttribute("readonly", "");
+
+    // Approved: the event that sends it to the customer (F7), with the recommendation.
+    const [approved] = await db
+      .select({ payload: domainEvent.payload })
+      .from(domainEvent)
+      .where(and(eq(domainEvent.aggregateId, visitId), eq(domainEvent.type, "report.approved")));
+    expect(approved?.payload).toMatchObject({
+      visitId,
+      recommendations: "- Åtgärda nu: Byt bälgen före sjösättningen",
+    });
+    const [report] = await db
+      .select({ status: serviceReport.status, invoice: serviceReport.invoice })
+      .from(serviceReport)
+      .where(eq(serviceReport.visitId, visitId));
+    expect(report?.status).toBe("approved");
+    expect(report?.invoice?.grossOre).toBeGreaterThan(0);
+    await page.goto("/idag");
   } finally {
     await close();
   }

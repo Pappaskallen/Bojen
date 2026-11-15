@@ -1,6 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it } from "vitest";
-import { REPLY_MODEL, createClaudeClassifier, createFakeClassifier } from "..";
+import type { ReportFacts } from "@bojen/core";
+import {
+  REPLY_MODEL,
+  REPORT_MODEL,
+  createClaudeClassifier,
+  createClaudeReportWriter,
+  createFakeClassifier,
+  createFakeReportWriter,
+  createFakeTranscriber,
+} from "..";
 
 /** A Claude client whose HTTP calls go to `answer` instead of the network. */
 function offlineClient(answer: { text: string; stopReason?: string }) {
@@ -80,5 +89,90 @@ describe("fake classifier", () => {
       confidence: 0,
     });
     expect(fake.calls).toHaveLength(2);
+  });
+});
+
+const facts: ReportFacts = {
+  service: "Vinterkonservering",
+  description: null,
+  boat: "Nimbus 3000",
+  engines: [{ label: "Volvo Penta D3-220", hours: 412, previousHours: 380 }],
+  parts: [{ articleNumber: "21951346", description: "Impeller", quantity: 1, status: "installed" }],
+  notes: "Bytt olja. Bälgen sliten.",
+  voiceNotes: ["Impellern hade två skadade vingar."],
+  photos: 1,
+};
+
+describe("Claude report writer", () => {
+  it("asks Sonnet 5.5 for a structured draft from the facts of the work only", async () => {
+    const draft = {
+      workDone: ["Bytt motorolja", "Bytt impeller"],
+      recommendations: [{ text: "Byt bälgen", priority: "next_season" }],
+      nextService: null,
+    };
+    const { requests, client } = offlineClient({ text: JSON.stringify(draft) });
+    const writer = createClaudeReportWriter({ client });
+    expect(writer.name).toBe(REPORT_MODEL);
+    expect(await writer.draft(facts)).toEqual(draft);
+
+    const request = requests[0];
+    expect(request?.body).toMatchObject({
+      model: "claude-sonnet-5-5",
+      fallbacks: "default",
+      output_config: { effort: "medium", format: { type: "json_schema" } },
+    });
+    const sent = JSON.stringify(request?.body.messages);
+    expect(sent).toContain("Bälgen sliten");
+    expect(sent).toContain("Impellern hade två skadade vingar");
+    expect(sent).not.toMatch(/\+46|07\d/);
+  });
+
+  it("gives an empty draft on a refusal, and lets an API error through for a new try", async () => {
+    const refused = offlineClient({ text: "", stopReason: "refusal" });
+    expect(await createClaudeReportWriter({ client: refused.client }).draft(facts)).toEqual({
+      workDone: [],
+      recommendations: [],
+      nextService: null,
+    });
+    const failing = new Anthropic({
+      apiKey: "test-key-not-real",
+      maxRetries: 0,
+      fetch: (() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ type: "error", error: { type: "overloaded_error" } }), {
+            status: 529,
+            headers: { "content-type": "application/json" },
+          }),
+        )) as unknown as typeof globalThis.fetch,
+    });
+    await expect(createClaudeReportWriter({ client: failing }).draft(facts)).rejects.toBeInstanceOf(
+      Anthropic.APIError,
+    );
+  });
+});
+
+describe("fake report writer and transcriber", () => {
+  it("make a draft of the service, installed parts and every sentence, without a model", async () => {
+    const writer = createFakeReportWriter();
+    expect(await writer.draft(facts)).toEqual({
+      workDone: [
+        "Utfört: Vinterkonservering",
+        "Monterat impeller",
+        "Bytt olja",
+        "Bälgen sliten",
+        "Impellern hade två skadade vingar",
+      ],
+      recommendations: [],
+      nextService: null,
+    });
+    writer.failNext(1);
+    await expect(writer.draft(facts)).rejects.toThrow();
+    expect(writer.calls).toHaveLength(2);
+
+    const transcriber = createFakeTranscriber("Hej");
+    expect(
+      await transcriber.transcribe({ bytes: new Uint8Array([1]), contentType: "audio/webm" }),
+    ).toBe("Hej");
+    expect(transcriber.calls).toHaveLength(1);
   });
 });

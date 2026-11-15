@@ -26,9 +26,12 @@ import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
+  addInvoiceLine,
   addPart,
   addPasskey,
+  approveReport,
   addVisitPhoto,
+  addVoiceNote,
   appUser,
   codesForPhone,
   changeBooking,
@@ -39,19 +42,24 @@ import {
   passkeysOf,
   passkeyUsed,
   recordHours,
+  removeInvoiceLine,
   revealBoatAccess,
   saveNote,
+  saveReport,
   setPartStatus,
+  visitBoatPicture,
   visitDayFor,
   type DbConnection,
 } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createBoatAccessRoute } from "./boat-access";
+import { createBoatPictureRoute } from "./boat-picture-route";
 import { createCustomerPage } from "./customer-page";
 import { createCodesRoute } from "./codes-route";
 import { createDayRoute } from "./day-route";
 import { createPasskeyRoutes } from "./passkey-routes";
 import { createPipelineRoute } from "./pipeline-route";
+import { createReportRoute } from "./report-route";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
 import { ELKS_IPS, createWebhookRoutes } from "./webhooks";
@@ -247,6 +255,11 @@ export const dayRoute = createDayRoute({
       saveNote(tx, actor, visitId, note),
     );
   },
+  voice: async (actor, visitId, key, audio) => {
+    await onceOnly(db(), actor.tenantId, key, `rost:${visitId}`, async (tx) => {
+      await addVoiceNote({ db: tx, storage: storage() }, actor, visitId, audio);
+    });
+  },
 });
 
 /** Passkeys for staff (step 5.5c): sign-in without a code, and the phone's key for codes. */
@@ -274,6 +287,22 @@ export const codesRoute = createCodesRoute({
   session: (request) => sessionFromRequest(staffAuth(), request),
   codes: (userId, visitId) =>
     codesForPhone({ db: db(), kms: kms(), now: () => new Date() }, userId, visitId),
+});
+
+/** The picture of the boat on the day view (step 5.5d). */
+export const boatPictureRoute = createBoatPictureRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  picture: (actor, visitId) => visitBoatPicture({ db: db(), storage: storage() }, actor, visitId),
+});
+
+/** The service report and the invoice basis (step 5.5d). */
+export const reportRoute = createReportRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  save: (actor, visitId, input) => saveReport(db(), actor, visitId, input),
+  approve: (actor, visitId, input) =>
+    approveReport({ db: db(), now: () => new Date() }, actor, visitId, input),
+  addLine: (actor, visitId, line) => addInvoiceLine(db(), actor, visitId, line),
+  removeLine: (actor, visitId, lineId) => removeInvoiceLine(db(), actor, visitId, lineId),
 });
 
 /** Moving cards on the pipeline (step 5.4). */

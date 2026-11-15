@@ -9,6 +9,7 @@ import type { EmailSender, SmsSender } from "@bojen/core";
 import { connect, databaseUrl } from "@bojen/db";
 import { run } from "graphile-worker";
 import { customerLinks } from "./flows/deps";
+import { reportDeps } from "./report-deps";
 import { taskList } from "./tasks";
 
 /**
@@ -82,6 +83,7 @@ async function main() {
       now: () => systemClock.now(),
       optOutKey: optOutKey(),
       link: customerLinks(db, linkKey(), process.env.APP_URL ?? "bojen.se"),
+      reports: reportDeps(production),
     }),
   });
   console.info(`[worker] ${systemClock.now().toISOString()} started`);

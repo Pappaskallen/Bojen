@@ -1,3 +1,8 @@
+import {
+  createFakeReportWriter,
+  createFakeTranscriber,
+  createSupabaseStorage,
+} from "@bojen/adapters";
 import { addDays, isoWeekday, stockholmInstant } from "@bojen/core";
 import {
   BookingError,
@@ -10,12 +15,16 @@ import {
   customer,
   databaseUrl,
   location,
+  REPORT_TASK,
   serviceType,
+  writeReportDraft,
 } from "@bojen/db";
 import { runMigrations } from "@bojen/db/migrate";
 import { DEMO_TENANT_ID, seedDemoData, seedOtherTenant, truncateAll } from "@bojen/db/seed";
 import { and, eq, sql } from "drizzle-orm";
+import { run, type Runner } from "graphile-worker";
 import { startFakeElks } from "./fake-elks";
+import { E2E_TRANSCRIPT, LOCAL_SUPABASE_SERVICE_ROLE_KEY, LOCAL_SUPABASE_URL } from "./keys";
 
 export const NEIGHBOUR_PHONE = "+46701740685";
 export const REQUEST_PHONE = "+46701740687";
@@ -138,5 +147,47 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   } finally {
     await close();
   }
-  return () => new Promise((resolve) => elks.close(() => resolve()));
+  const reports = await startReportWorker(url);
+  return async () => {
+    await reports.stop();
+    await new Promise<void>((resolve) => elks.close(() => resolve()));
+  };
+}
+
+/**
+ * The worker's report draft (step 5.5d), here in the test process with a fake writer and fake
+ * speech to text, and the voice notes read from the local Storage. Only this task runs: the
+ * whole worker would also send the demo data's sms, which other tests count.
+ */
+async function startReportWorker(url: string): Promise<{ stop: () => Promise<void> }> {
+  const connection = connect(url);
+  const deps = {
+    db: connection.db,
+    storage: createSupabaseStorage({
+      url: LOCAL_SUPABASE_URL,
+      serviceRoleKey: LOCAL_SUPABASE_SERVICE_ROLE_KEY,
+      bucket: "attachments",
+    }),
+    writer: createFakeReportWriter(),
+    transcriber: createFakeTranscriber(E2E_TRANSCRIPT),
+    now: () => new Date(),
+  };
+  const runner: Runner = await run({
+    connectionString: url,
+    concurrency: 1,
+    pollInterval: 500,
+    noHandleSignals: true,
+    taskList: {
+      [REPORT_TASK]: async (payload) => {
+        const { tenantId, visitId } = payload as { tenantId: string; visitId: string };
+        await writeReportDraft(deps, tenantId, visitId);
+      },
+    },
+  });
+  return {
+    stop: async () => {
+      await runner.stop();
+      await connection.close();
+    },
+  };
 }

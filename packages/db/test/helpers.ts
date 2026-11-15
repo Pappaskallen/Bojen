@@ -41,6 +41,7 @@ import {
   travelCache,
   shortLink,
   smsOptOut,
+  serviceReport,
   staffPasskey,
   verificationCode,
   workSchedule,
@@ -316,6 +317,7 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     credentialId: `cred-${tenantId}`,
     publicKey: Buffer.from("not-a-real-public-key"),
   });
+  await tx.insert(serviceReport).values({ tenantId, visitId: v.id });
   await tx.insert(verificationCode).values({
     tenantId,
     phone,

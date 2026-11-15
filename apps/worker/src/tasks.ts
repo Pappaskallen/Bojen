@@ -1,5 +1,5 @@
 import type { EmailSender, SmsSender } from "@bojen/core";
-import { SEND_MESSAGE_TASK } from "@bojen/db";
+import { REPORT_TASK, SEND_MESSAGE_TASK, type DraftDeps, writeReportDraft } from "@bojen/db";
 import type { Task, TaskList } from "graphile-worker";
 import { CHECK_TASK, sendAvailabilityCheck } from "./flows/availabilityCheck";
 import { ESCALATION_TASK, REMINDER_TASK, handleCheckEvent } from "./flows/availabilityFollowup";
@@ -13,6 +13,8 @@ import { sendMessageTask } from "./tasks/sendMessage";
 export interface WorkerDeps extends FlowDeps {
   sms: SmsSender;
   email: EmailSender;
+  /** The report draft (step 5.5d): storage for the voice notes, the writer, speech to text. */
+  reports?: Pick<DraftDeps, "storage" | "writer" | "transcriber">;
 }
 
 function field(payload: unknown, name: string): string {
@@ -52,5 +54,16 @@ export function taskList(deps: WorkerDeps): TaskList {
     },
     [ETA_TASK]: visitTask((tenantId, visitId) => sendMorningEta(deps, tenantId, visitId)),
     [SURVEY_TASK]: visitTask((tenantId, visitId) => sendSurvey(deps, tenantId, visitId)),
+    ...(deps.reports ? reportTasks({ db: deps.db, now: deps.now, ...deps.reports }) : {}),
+  };
+}
+
+/**
+ * The report draft (step 5.5d), on its own so the end-to-end tests can run just this task:
+ * there the worker must not send the demo data's sms.
+ */
+export function reportTasks(deps: DraftDeps): TaskList {
+  return {
+    [REPORT_TASK]: visitTask((tenantId, visitId) => writeReportDraft(deps, tenantId, visitId)),
   };
 }

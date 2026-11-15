@@ -23,3 +23,14 @@ export { createFakeEmail, type FakeEmail } from "./mailgun/fake";
 export { elksFromEnv } from "./elks/env";
 export { REPLY_MODEL, createClaudeClassifier, type ClaudeClassifierOptions } from "./llm/claude";
 export { createFakeClassifier, type FakeClassifier } from "./llm/fake";
+export {
+  REPORT_MODEL,
+  createClaudeReportWriter,
+  type ClaudeReportWriterOptions,
+} from "./llm/report";
+export {
+  createFakeReportWriter,
+  createFakeTranscriber,
+  type FakeReportWriter,
+  type FakeTranscriber,
+} from "./llm/fake-report";

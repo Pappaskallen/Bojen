@@ -1,6 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 import { FAKE_ELKS_PASSWORD, FAKE_ELKS_URL, FAKE_ELKS_USER } from "./e2e/fake-elks";
-import { E2E_LOCAL_KMS_MASTER_KEY, E2E_SHORT_LINK_KEY } from "./e2e/keys";
+import {
+  E2E_LOCAL_KMS_MASTER_KEY,
+  E2E_SHORT_LINK_KEY,
+  LOCAL_SUPABASE_ANON_KEY,
+  LOCAL_SUPABASE_SERVICE_ROLE_KEY,
+  LOCAL_SUPABASE_URL,
+} from "./e2e/keys";
 
 const PORT = 3100;
 
@@ -35,11 +41,9 @@ export default defineConfig({
       // are the fixed demo keys that every `supabase start` prints, not secrets.
       OSRM_URL: "",
       PHOTON_URL: "",
-      NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
-      NEXT_PUBLIC_SUPABASE_ANON_KEY:
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0",
-      SUPABASE_SERVICE_ROLE_KEY:
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU",
+      NEXT_PUBLIC_SUPABASE_URL: LOCAL_SUPABASE_URL,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: LOCAL_SUPABASE_ANON_KEY,
+      SUPABASE_SERVICE_ROLE_KEY: LOCAL_SUPABASE_SERVICE_ROLE_KEY,
       BOJEN_FAKE_SERVICES: "1",
       BOOKING_SESSION_SECRET: "e2e-only-secret-that-is-long-enough-1234",
       // Sms through the real 46elks adapter to the fake 46elks in e2e/fake-elks.ts.

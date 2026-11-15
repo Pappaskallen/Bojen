@@ -110,3 +110,112 @@
 .passkey-sign-in {
   margin-bottom: 16px;
 }
+
+/* Voice notes and the service report (step 5.5d). */
+.voice-recorder .big {
+  min-height: 56px;
+  width: 100%;
+  font-size: 1.1rem;
+}
+
+.report-status {
+  margin: 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-status a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.report-page textarea,
+.report-page input,
+.report-page select {
+  width: 100%;
+  font: inherit;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.report-page section {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.report-page form {
+  display: grid;
+  gap: 8px;
+}
+
+.report-page .rec-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.invoice-lines {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.invoice-lines th,
+.invoice-lines td {
+  text-align: left;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.invoice-lines td.amount,
+.invoice-lines th.amount {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.invoice-lines tfoot td {
+  font-weight: 600;
+}
+
+.report-page .approve {
+  min-height: 56px;
+  width: 100%;
+}
+
+.report-page .add-line {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+/* The boat at the top of the visit (step 5.5d): large enough to tell boats apart. */
+.boat-picture {
+  margin: -12px -12px 8px;
+}
+
+.boat-picture img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+}
+
+.report-page .boat-picture {
+  margin: 8px 0;
+}
+
+.report-page .boat-picture img {
+  border-radius: 8px;
+}

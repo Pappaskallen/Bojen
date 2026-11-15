@@ -38,7 +38,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 5.2 – Båtkort med tidslinje (2 dagar)
 - [x] Steg 5.3 – Marinakort (1 dag)
 - [x] Steg 5.4 – Pipeline (1 dag)
-- [ ] Steg 5.5 – Mekanikerns dagvy som PWA, offline (3 dagar)
+- [x] Steg 5.5 – Mekanikerns dagvy som PWA, offline (3 dagar)
 - [ ] Steg 5.6 – Vårkampanj, enkel version (2 dagar)
 - [ ] Steg 6.1 – Verktygs-API för agenten (1,5 dagar)
 - [ ] Steg 6.2 – Röstagenten (4 dagar)
@@ -322,6 +322,7 @@ ett alternativ i stället för att byta tyst.
   - Starta och Klart, gångtimmar, delar, bilder och röstanteckning (transkriberas av Azure när täckning finns).
   - Utkast till rapport från Claude Sonnet 5.5, som mekanikern godkänner.
   - Fakturaunderlag.
+  - Bild på båten överst på varje besök, så mekanikern ser vilken båt det gäller, även utan täckning. (Tillagt med Robert 2026-11-15.)
   - Inloggning med passkey (WebAuthn), som alternativ till engångskod (spec 10.7).
   - Appen låses och låses upp biometriskt med Face ID eller fingeravtryck via WebAuthn med användarverifiering (spec 10.7).
   - Grindkod och nyckelplats visas bara efter biometrisk upplåsning och döljs igen efter 60 sekunder (spec 10.4). Offline sparas de krypterat på telefonen från kvällen innan och raderas när jobbet är klart eller efter 24 timmar. En PWA kommer inte åt iOS Keychain eller Android Keystore; skillnaden mot specifikationen beskrivs och stäms av innan steget börjar.

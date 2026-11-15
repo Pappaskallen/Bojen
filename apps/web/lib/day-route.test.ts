@@ -28,6 +28,7 @@ function deps(over: Partial<DayRouteDeps> = {}): DayRouteDeps {
     partStatus: vi.fn(ok),
     photo: vi.fn(ok),
     note: vi.fn(ok),
+    voice: vi.fn(ok),
     ...over,
   };
 }
@@ -99,6 +100,26 @@ describe("the day view's forms", () => {
     const d = deps();
     await createDayRoute(d)(post({ key: KEY, note: " Bälgen sprucken. " }), VISIT, "anteckning");
     expect(d.note).toHaveBeenCalledWith(expect.anything(), VISIT, KEY, "Bälgen sprucken.");
+  });
+
+  it("saves a voice note as the recording it is, and refuses a form without one", async () => {
+    const d = deps();
+    const form = new FormData();
+    form.set("key", KEY);
+    form.set("voice", new File([new Uint8Array([1, 2])], "rost.webm", { type: "audio/webm" }));
+    const request = new Request(`http://127.0.0.1:3100/api/idag/${VISIT}/rost`, {
+      method: "POST",
+      body: form,
+    });
+    const response = await createDayRoute(d)(request, VISIT, "rost");
+    expect(response.headers.get("location")).toContain("klart=rost");
+    expect(d.voice).toHaveBeenCalledWith(expect.anything(), VISIT, KEY, {
+      bytes: new Uint8Array([1, 2]),
+      contentType: "audio/webm",
+    });
+    const empty = await createDayRoute(d)(post({ key: KEY }), VISIT, "rost");
+    expect(empty.headers.get("location")).toContain("fel=invalid_input");
+    expect(d.voice).toHaveBeenCalledTimes(1);
   });
 
   it("answers the offline queue with JSON: done, refused for good, or try again", async () => {

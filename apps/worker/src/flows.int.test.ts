@@ -1,4 +1,10 @@
-import { createFakeClassifier, createFakeEmail, createFakeSms } from "@bojen/adapters";
+import {
+  createFakeClassifier,
+  createFakeEmail,
+  createFakeReportWriter,
+  createFakeSms,
+  createFakeStorage,
+} from "@bojen/adapters";
 import {
   appUser,
   boat,
@@ -28,6 +34,13 @@ import {
 import { runMigrations } from "@bojen/db/migrate";
 import { and, eq, sql } from "drizzle-orm";
 import type { JobHelpers, TaskList } from "graphile-worker";
+
+/** The report draft with fakes (step 5.5d): a visit done now also queues it. */
+const fakeReports = () => ({
+  storage: createFakeStorage(),
+  writer: createFakeReportWriter(),
+  transcriber: null,
+});
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { customerLinks } from "./flows/deps";
 import { taskList } from "./tasks";
@@ -195,6 +208,7 @@ describe("short links in F1 (step 3.4)", () => {
         email: createFakeEmail(),
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
+        reports: fakeReports(),
         link: customerLinks(db, linkKey, "https://bojen.se"),
       };
       const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
@@ -281,6 +295,7 @@ describe("the availability check F3 (step 4.1)", () => {
         email: createFakeEmail(),
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
+        reports: fakeReports(),
         link: () => "bojen.se/x/Kp3d9AbC",
       };
       const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
@@ -361,6 +376,7 @@ describe("the availability check F3 (step 4.1)", () => {
         email: createFakeEmail(),
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
+        reports: fakeReports(),
         link: () => "bojen.se/x/Kp3d9AbC",
       };
       const tasks = taskList(deps);
@@ -437,6 +453,7 @@ describe("answers to the availability check (step 4.2)", () => {
         email: createFakeEmail(),
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
+        reports: fakeReports(),
         link: customerLinks(db, "flow-test-short-link-key-0123456789abcdef", "https://bojen.se"),
       };
       const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
@@ -719,6 +736,7 @@ describe("the waitlist fills a cancelled time (F4, step 4.3)", () => {
         email: createFakeEmail(),
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
+        reports: fakeReports(),
         link: () => "bojen.se/boka/flodesfirman",
       };
       const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
@@ -1036,6 +1054,7 @@ describe("the pipeline moves on its own (step 5.4)", () => {
         email: createFakeEmail(),
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
+        reports: fakeReports(),
         link: () => "bojen.se/x/Kp3d9AbC",
       };
       const { runDue } = await jobRunner(db, taskList(deps), () => clock);
@@ -1108,6 +1127,7 @@ describe("flows F1, F5, F7 and F9", () => {
           email,
           now: () => clock,
           optOutKey: "flow-test-opt-out-key",
+          reports: fakeReports(),
           link: () => "bojen.se/x/Kp3d9",
         };
         const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
@@ -1209,8 +1229,13 @@ describe("flows F1, F5, F7 and F9", () => {
           visitId,
           { event: "complete" },
         );
-        // Start, complete, and the job's card moving to done (step 5.4).
-        expect(await runDue()).toEqual(["domain_event", "domain_event", "domain_event"]);
+        // Start, complete, the job's card moving to done (step 5.4) and the report draft (5.5d).
+        expect(await runDue()).toEqual([
+          "domain_event",
+          "domain_event",
+          "domain_event",
+          "report_draft",
+        ]);
         expect(await pending("visit_survey")).toEqual([at("2026-11-19T10:45:00")]);
         clock = at("2026-11-19T10:44:00");
         expect(await runDue()).toEqual([]);

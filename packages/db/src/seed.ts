@@ -288,7 +288,12 @@ export async function seedDemoData(db: Writer, seed = 2026) {
     name: "Jonas Båtservice",
     slug: "jonas-batservice",
     settings: {
-      booking: { marinaDayDiscount: { kind: "waive_callout" }, calloutPriceOre: 69_500 },
+      booking: {
+        marinaDayDiscount: { kind: "waive_callout" },
+        calloutPriceOre: 69_500,
+        hourlyRateOre: 95_000,
+        emergencySurchargeOre: 180_000,
+      },
     },
     orgNumber: "556000-0000",
     phone: "+46846500400", // PTS range for fiction, 08-46 50 04 00

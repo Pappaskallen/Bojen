@@ -16,7 +16,7 @@ import {
   type ObjectStorage,
   type RouteSuggestion,
 } from "@bojen/core";
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { Database } from "./client";
 import {
   attachment,
@@ -30,6 +30,7 @@ import {
   jobPart,
   location,
   part,
+  serviceReport,
   serviceType,
   tenant,
   visit,
@@ -72,8 +73,13 @@ export interface DayVisit {
   engines: DayEngine[];
   parts: DayPart[];
   photos: number;
+  voiceNotes: number;
   /** What the mechanic has written on site. */
   notes: string | null;
+  /** The service report's status (`drafting`, `draft`, `approved`), once the visit is done. */
+  report: string | null;
+  /** There is a picture of the boat (see `visitBoatPicture`). */
+  boatPicture: boolean;
 }
 
 const OPEN = [
@@ -213,8 +219,12 @@ export async function dayVisits(
     )
     .orderBy(asc(jobPart.createdAt));
 
-  const photos = await db
-    .select({ ownerId: attachment.ownerId, n: sql<number>`count(*)::int` })
+  const files = await db
+    .select({
+      ownerId: attachment.ownerId,
+      photos: sql<number>`count(*) filter (where ${attachment.contentType} like 'image/%')::int`,
+      voice: sql<number>`count(*) filter (where ${attachment.contentType} like 'audio/%')::int`,
+    })
     .from(attachment)
     .where(
       and(
@@ -225,6 +235,23 @@ export async function dayVisits(
       ),
     )
     .groupBy(attachment.ownerId);
+
+  const reports = await db
+    .select({ visitId: serviceReport.visitId, status: serviceReport.status })
+    .from(serviceReport)
+    .where(
+      and(
+        eq(serviceReport.tenantId, tenantId),
+        inArray(serviceReport.visitId, visitIds),
+        isNull(serviceReport.deletedAt),
+      ),
+    );
+
+  const pictures = await boatPictures(
+    db,
+    tenantId,
+    rows.map((r) => ({ boatId: r.boatId, jobId: r.jobId })),
+  );
 
   return rows.map((r) => {
     const time = stockholmTime(r.start);
@@ -265,8 +292,11 @@ export async function dayVisits(
           quantity: Number(p.quantity),
           status: p.status,
         })),
-      photos: photos.find((p) => p.ownerId === r.id)?.n ?? 0,
+      photos: files.find((p) => p.ownerId === r.id)?.photos ?? 0,
+      voiceNotes: files.find((p) => p.ownerId === r.id)?.voice ?? 0,
       notes: r.notes,
+      report: reports.find((p) => p.visitId === r.id)?.status ?? null,
+      boatPicture: pictureFor(pictures, r) !== null,
     };
   });
 }
@@ -300,7 +330,13 @@ export async function dayRoute(
 
 export class DayError extends Error {
   constructor(
-    readonly code: "not_found" | "forbidden" | "invalid_input" | "hours_below_last" | "bad_picture",
+    readonly code:
+      | "not_found"
+      | "forbidden"
+      | "invalid_input"
+      | "hours_below_last"
+      | "bad_picture"
+      | "bad_audio",
   ) {
     super(code);
     this.name = "DayError";
@@ -314,7 +350,7 @@ export interface DayActor {
 }
 
 /** The visit, if the person may record on it: its own mechanic, the owner or an administrator. */
-async function ownVisit(db: Db, actor: DayActor, visitId: string) {
+export async function ownVisit(db: Db, actor: DayActor, visitId: string) {
   const [row] = await db
     .select({
       jobId: visit.jobId,
@@ -502,6 +538,56 @@ export async function addVisitPhoto(
   return row.id;
 }
 
+/** The recordings phones make (MediaRecorder) and the files a person may pick instead. */
+export const AUDIO_TYPES: Record<string, string> = {
+  "audio/webm": "webm",
+  "audio/ogg": "ogg",
+  "audio/mp4": "m4a",
+  "audio/x-m4a": "m4a",
+  "audio/aac": "aac",
+  "audio/mpeg": "mp3",
+  "audio/wav": "wav",
+  "audio/x-wav": "wav",
+};
+export const MAX_AUDIO_BYTES = 12 * 1024 * 1024;
+
+/** The base type of a recording: "audio/webm;codecs=opus" is audio/webm. */
+export const audioType = (contentType: string) =>
+  contentType.split(";")[0]?.trim().toLowerCase() ?? "";
+
+/**
+ * A voice note from the visit (step 5.5d), saved like a picture. The worker writes it out as
+ * text for the report when the visit is done.
+ */
+export async function addVoiceNote(
+  deps: { db: Db; storage: ObjectStorage },
+  actor: DayActor,
+  visitId: string,
+  audio: { bytes: Uint8Array; contentType: string },
+): Promise<string> {
+  const type = audioType(audio.contentType);
+  const ext = AUDIO_TYPES[type];
+  if (!ext || audio.bytes.byteLength === 0 || audio.bytes.byteLength > MAX_AUDIO_BYTES) {
+    throw new DayError("bad_audio");
+  }
+  await ownVisit(deps.db, actor, visitId);
+  const key = `${actor.tenantId}/visits/${visitId}/${randomUUID()}.${ext}`;
+  await deps.storage.put(key, audio.bytes, type);
+  const [row] = await deps.db
+    .insert(attachment)
+    .values({
+      tenantId: actor.tenantId,
+      ownerType: "visit",
+      ownerId: visitId,
+      storageKey: key,
+      contentType: type,
+      sizeBytes: audio.bytes.byteLength,
+    })
+    .returning({ id: attachment.id });
+  if (!row) throw new Error("attachment not created");
+  return row.id;
+}
+
 export const MAX_NOTE_LENGTH = 4000;
 
 /** What the mechanic writes on site; the latest text replaces the earlier. */
@@ -587,4 +673,74 @@ export function dayOf(value: unknown, now: Date): string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
     ? value
     : stockholmDate(now);
+}
+
+/**
+ * The picture that shows which boat it is (step 5.5d): the boat's own latest picture, else
+ * the latest from the job, such as the one the customer added when booking. Pictures from
+ * the visits are left out; they are of the work, not of the boat.
+ */
+async function boatPictures(
+  db: Db,
+  tenantId: string,
+  visits: readonly { boatId: string | null; jobId: string }[],
+): Promise<{ ownerType: string; ownerId: string; key: string; contentType: string }[]> {
+  const boatIds = visits.flatMap((v) => (v.boatId ? [v.boatId] : []));
+  const jobIds = visits.map((v) => v.jobId);
+  if (jobIds.length === 0) return [];
+  return db
+    .select({
+      ownerType: attachment.ownerType,
+      ownerId: attachment.ownerId,
+      key: attachment.storageKey,
+      contentType: attachment.contentType,
+    })
+    .from(attachment)
+    .where(
+      and(
+        eq(attachment.tenantId, tenantId),
+        isNull(attachment.deletedAt),
+        sql`${attachment.contentType} like 'image/%'`,
+        or(
+          boatIds.length > 0
+            ? and(eq(attachment.ownerType, "boat"), inArray(attachment.ownerId, boatIds))
+            : undefined,
+          and(eq(attachment.ownerType, "job"), inArray(attachment.ownerId, jobIds)),
+        ),
+      ),
+    )
+    .orderBy(desc(attachment.createdAt));
+}
+
+/** The visit's boat picture, chosen as `boatPictures` says. */
+function pictureFor(
+  pictures: Awaited<ReturnType<typeof boatPictures>>,
+  v: { boatId: string | null; jobId: string },
+) {
+  return (
+    pictures.find((p) => p.ownerType === "boat" && p.ownerId === v.boatId) ??
+    pictures.find((p) => p.ownerType === "job" && p.ownerId === v.jobId) ??
+    null
+  );
+}
+
+/** Whether the boat of a visit has a picture to show, for the report page. */
+export async function hasBoatPicture(
+  db: Db,
+  tenantId: string,
+  v: { boatId: string | null; jobId: string },
+): Promise<boolean> {
+  return pictureFor(await boatPictures(db, tenantId, [v]), v) !== null;
+}
+
+/** The picture of the visit's boat, for the day view, if the person may work on the visit. */
+export async function visitBoatPicture(
+  deps: { db: Db; storage: ObjectStorage },
+  actor: DayActor,
+  visitId: string,
+): Promise<{ bytes: Uint8Array; contentType: string } | null> {
+  const v = await ownVisit(deps.db, actor, visitId);
+  const picture = pictureFor(await boatPictures(deps.db, actor.tenantId, [v]), v);
+  if (!picture) return null;
+  return { bytes: await deps.storage.get(picture.key), contentType: picture.contentType };
 }

@@ -38,6 +38,7 @@ import {
   workSchedule,
 } from "./schema";
 import { jobAfterVisitDone } from "./pipeline";
+import { startReport } from "./reports";
 import { timeRange } from "./schema/_types";
 
 export type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -552,7 +553,11 @@ export async function changeBooking(
       deps.now(),
     );
     // The last visit done moves the job's card to done (step 5.4).
-    if (status === "done") await jobAfterVisitDone(tx, ctx.tenantId, before.jobId, deps.now());
+    if (status === "done") {
+      await jobAfterVisitDone(tx, ctx.tenantId, before.jobId, deps.now());
+      // The service report waits for its draft, and the invoice basis gets its lines (5.5d).
+      await startReport(tx, ctx.tenantId, visitId, deps.now());
+    }
     return after;
   });
 }
