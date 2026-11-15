@@ -14,7 +14,7 @@ import {
 } from "@bojen/db";
 import { DEMO_TENANT_ID } from "@bojen/db/seed";
 import { expect, test } from "@playwright/test";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { createSupabaseStorage } from "@bojen/adapters";
 import { E2E_TRANSCRIPT, LOCAL_SUPABASE_SERVICE_ROLE_KEY, LOCAL_SUPABASE_URL } from "./keys";
 import { emailCode } from "./staff-login";
@@ -96,6 +96,9 @@ test("without coverage the mechanic finishes a visit with a picture, a note and 
   page,
   context,
 }) => {
+  // Sign-in, four changes without coverage, the sync, the draft from the worker and the
+  // approval: more than the default minute on a slow runner.
+  test.setTimeout(150_000);
   const { visitId } = await seed();
   await emailCode(page, UNO, "/idag");
   await expect(page).toHaveURL(/\/idag$/);
@@ -178,11 +181,25 @@ test("without coverage the mechanic finishes a visit with a picture, a note and 
     expect(files.map((f) => f.type).sort()).toEqual(["audio/webm", "image/png"]);
 
     // --- The report draft is written from the note and the voice note (step 5.5d). ---
+    // The worker writes it: wait in the database, and say what the job ran into if it does not.
+    const draftState = async () => {
+      const [r] = await db
+        .select({ status: serviceReport.status })
+        .from(serviceReport)
+        .where(eq(serviceReport.visitId, visitId));
+      const jobs = await db.execute<{ attempts: number; last_error: string | null }>(
+        sql`select attempts, last_error from graphile_worker._private_jobs
+            where key = ${`report:${visitId}`}`,
+      );
+      const job = [...jobs][0];
+      return job
+        ? `${r?.status ?? "none"} (job: ${String(job.attempts)} attempts, ${job.last_error ?? "no error"})`
+        : (r?.status ?? "none");
+    };
+    await expect.poll(draftState, { timeout: 45_000, intervals: [500] }).toBe("draft");
+    await page.reload();
     const synced = page.getByRole("listitem", { name: "Offline Kund" });
-    await expect(async () => {
-      await page.reload();
-      await expect(synced.getByText("Rapportutkast klart")).toBeVisible({ timeout: 1_000 });
-    }).toPass({ timeout: 30_000 });
+    await expect(synced.getByText("Rapportutkast klart")).toBeVisible();
     await synced.getByRole("link", { name: "Granska rapporten" }).click();
     await expect(page.getByRole("heading", { name: "Servicerapport", level: 1 })).toBeVisible();
     const workDone = page.getByLabel("En punkt per rad.");
