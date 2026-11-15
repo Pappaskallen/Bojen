@@ -21,6 +21,7 @@ import {
   kopplaTillMekaniker,
   ombokaBokning,
   openCall,
+  receptionistFacts,
   sattVantelista,
   skapaBokning,
   skapaMeddelande,
@@ -509,6 +510,39 @@ describe("the pictures link", () => {
         await expect(addPicturesByLink(deps, code, bad)).rejects.toThrow(BookingError);
       }
       await expect(addPicturesByLink(deps, "fel-kod", [png])).rejects.toThrow(BookingError);
+    });
+  });
+});
+
+describe("the firm's facts for the prompt", () => {
+  it("are the services, places, prices and settings, without any address", async () => {
+    await withRollback(async (tx) => {
+      const f = await setUp(tx, "Faktafirman", "+46701119613");
+      await tx
+        .update(tenant)
+        .set({
+          settings: {
+            sms: { from: FIRM },
+            booking: { hourlyRateOre: 95_000, emergencySurchargeOre: 180_000 },
+            receptionist: { assistantName: "Saga", notServed: ["Arholma"] },
+          },
+        })
+        .where(eq(tenant.id, f.tenantId));
+      const facts = await receptionistFacts(tx, f.tenantId);
+      expect(facts).toMatchObject({
+        firma: "Faktafirman",
+        assistentNamn: "Saga",
+        mekaniker: "Faktafirman",
+        ejServiceomraden: ["Arholma"],
+        timpris: 950,
+        akuttillagg: 1800,
+        tjanster: [{ id: f.serviceTypeId, namn: "Vårservice", minuter: 120 }],
+        platser: expect.arrayContaining([
+          { id: f.locationId, namn: "Faktafirman marina", typ: "marina" },
+        ]),
+      });
+      neverSecret(facts);
+      expect(await receptionistFacts(tx, "00000000-0000-4000-8000-000000000000")).toBeNull();
     });
   });
 });

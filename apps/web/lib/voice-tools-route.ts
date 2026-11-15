@@ -2,7 +2,7 @@
  * The receptionist's tool API (byggplan step 6.1, spec 8.2), for the voice agent (step 6.2).
  *
  *   POST /api/voice-tools/samtal   Authorization: Bearer {VOICE_SERVICE_SECRET}
- *        { to, from, externalId }  → 201 { token, expiresAt, kontext, verktyg }
+ *        { to, from, externalId }  → 201 { token, expiresAt, firma, kontext, verktyg }
  *   POST /api/voice-tools/{tool}   Authorization: Bearer {the call's token}
  *        { ...the tool's input }   → 200 { ...the tool's answer }
  *
@@ -18,7 +18,7 @@ import {
   sealCallToken,
   type VoiceToolName,
 } from "@bojen/core";
-import type { AgentContext, CallRow } from "@bojen/db";
+import type { AgentContext, CallRow, ReceptionistFacts } from "@bojen/db";
 
 export interface VoiceToolsDeps {
   /** `VOICE_SERVICE_SECRET`: only the voice agent may start calls. */
@@ -33,6 +33,8 @@ export interface VoiceToolsDeps {
   }) => Promise<{ callId: string; tenantId: string; expiresAt: number } | null>;
   openCall: (tenantId: string, callId: string) => Promise<CallRow | null>;
   context: (call: CallRow) => Promise<AgentContext>;
+  /** The firm, for the system prompt: services, places, prices and its settings. */
+  facts: (tenantId: string) => Promise<ReceptionistFacts | null>;
   run: (tool: VoiceToolName, call: CallRow, input: unknown) => Promise<unknown>;
 }
 
@@ -78,6 +80,7 @@ export function createVoiceToolsRoute(deps: VoiceToolsDeps) {
         {
           token: sealCallToken(deps.tokenSecret(), started),
           expiresAt: new Date(started.expiresAt).toISOString(),
+          firma: await deps.facts(started.tenantId),
           kontext: await deps.context(call),
           verktyg: VOICE_TOOLS,
         },

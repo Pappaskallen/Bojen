@@ -18,6 +18,23 @@ function route(over: Partial<VoiceToolsDeps> = {}) {
     ),
     openCall: vi.fn(() => Promise.resolve(CALL)),
     context: vi.fn(() => Promise.resolve({ kand: true, kund: { id: "k1", fornamn: "Per" } })),
+    facts: vi.fn(() =>
+      Promise.resolve({
+        firma: "Jonas Båtservice",
+        assistentNamn: "Bojen",
+        halsning: null,
+        mekaniker: "Jonas",
+        serviceomrade: "Värmdö",
+        ejServiceomraden: [],
+        oppettider: "vardagar 07–17",
+        jourtider: "ingen jour",
+        svarslofte: "inom en dag",
+        timpris: 950,
+        akuttillagg: 1800,
+        tjanster: [],
+        platser: [],
+      }),
+    ),
     run: vi.fn(() => Promise.resolve({ ok: true })),
     ...over,
   };
@@ -47,6 +64,7 @@ describe("starting a call", () => {
     const body = (await response.json()) as {
       token: string;
       kontext: unknown;
+      firma: unknown;
       verktyg: { name: string }[];
     };
     expect(openCallToken(TOKEN_SECRET, body.token, NOW)).toMatchObject({
@@ -54,6 +72,7 @@ describe("starting a call", () => {
       tenantId: "t1",
     });
     expect(body.kontext).toEqual({ kand: true, kund: { id: "k1", fornamn: "Per" } });
+    expect(body.firma).toMatchObject({ firma: "Jonas Båtservice", mekaniker: "Jonas" });
     expect(body.verktyg.map((t) => t.name)).toEqual([...VOICE_TOOL_NAMES]);
     expect(deps.start).toHaveBeenCalledWith({
       to: "+46766860011",

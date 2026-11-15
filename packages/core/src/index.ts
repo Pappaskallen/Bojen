@@ -241,3 +241,21 @@ export {
   type OfferedTime,
   type VoiceToolName,
 } from "./voice/tools";
+export {
+  p90,
+  splitSentences,
+  type CallAudio,
+  type ConversationBlock,
+  type ConversationMessage,
+  type ConversationModel,
+  type ConversationTool,
+  type ModelTurn,
+  type SpeechToText,
+  type TextToSpeech,
+  type Transcript,
+} from "./voice/conversation";
+export {
+  DEFAULT_RECEPTIONIST,
+  receptionistSettings,
+  type ReceptionistSettings,
+} from "./voice/settings";

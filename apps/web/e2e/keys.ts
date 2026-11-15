@@ -15,3 +15,6 @@ export const LOCAL_SUPABASE_SERVICE_ROLE_KEY =
 
 /** What the fake speech to text makes of every voice note in the tests (step 5.5d). */
 export const E2E_TRANSCRIPT = "Impellern hade två skadade vingar.";
+
+/** What the voice agent sends to start a call in the tests (step 6.2). Not a secret. */
+export const E2E_VOICE_SERVICE_SECRET = "e2e-only-voice-service-secret-long-enough";

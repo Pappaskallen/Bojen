@@ -364,6 +364,7 @@ ett alternativ i stället för att byta tyst.
   - Pipeline: Azure STT sv-SE med ordlista, Claude Haiku 5.5 med effort `low` och cachad prompt, Azure TTS och brusreducering.
   - Kundkontexten läggs in före första repliken.
   - Avbrott när kunden börjar prata (barge-in).
+  - (Avstämt med Robert 2026-11-15: steget byggs först mot fejkar, del a. LiveKit, Azure Speech, 46elks SIP och Claude med riktig nyckel kopplas in när kontona finns, del b, och då görs testsamtalen i Klart när.)
 - **Klart när:** Ett manuellt testsamtal till ett testnummer bokar en tid, och bokningen syns i administrationen. Svarstiden p90 är under 1,2 s, mätt i loggarna under 20 testsamtal.
 
 #### Steg 6.3 – Efterbearbetning (1,5 dagar)

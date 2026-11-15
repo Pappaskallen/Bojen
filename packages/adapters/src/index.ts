@@ -34,3 +34,17 @@ export {
   type FakeReportWriter,
   type FakeTranscriber,
 } from "./llm/fake-report";
+export {
+  VOICE_MODEL,
+  createClaudeConversation,
+  type ClaudeConversationOptions,
+} from "./voice/claude";
+export {
+  createFakeCallAudio,
+  createFakeConversation,
+  createFakeSpeechToText,
+  createFakeTextToSpeech,
+  type FakeCallAudio,
+  type FakeConversation,
+  type FakeTextToSpeech,
+} from "./voice/fake";

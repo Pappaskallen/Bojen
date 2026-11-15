@@ -279,14 +279,24 @@ async function insertOne<T>(rows: Promise<T[]>): Promise<T> {
 }
 
 /** Inserts the demo firm, its customers, boats and last season. Runs as the owner. */
-export async function seedDemoData(db: Writer, seed = 2026) {
+/**
+ * `copy` makes the same firm under another id and slug, for a test that needs last year's
+ * history without emptying the database other tests use at the same time. Staff e-mails
+ * and mobiles are unique across firms, so the copy's staff get their own e-mails and none.
+ */
+export async function seedDemoData(
+  db: Writer,
+  seed = 2026,
+  copy?: { tenantId: string; slug: string },
+) {
   const rnd = random(seed);
-  const tenantId = DEMO_TENANT_ID;
+  const tenantId = copy?.tenantId ?? DEMO_TENANT_ID;
+  const slug = copy?.slug ?? "jonas-batservice";
 
   await db.insert(tenant).values({
     id: tenantId,
     name: "Jonas Båtservice",
-    slug: "jonas-batservice",
+    slug,
     settings: {
       booking: {
         marinaDayDiscount: { kind: "waive_callout" },
@@ -305,15 +315,15 @@ export async function seedDemoData(db: Writer, seed = 2026) {
         tenantId,
         name: "Jonas Ek",
         role: "owner",
-        mobile: fictionalMobile(90),
-        email: "jonas@jonas-batservice.test",
+        mobile: copy ? null : fictionalMobile(90),
+        email: `jonas@${slug}.test`,
       },
       {
         tenantId,
         name: "Elin Berg",
         role: "mechanic",
-        mobile: fictionalMobile(91),
-        email: "elin@jonas-batservice.test",
+        mobile: copy ? null : fictionalMobile(91),
+        email: `elin@${slug}.test`,
       },
     ])
     .returning();

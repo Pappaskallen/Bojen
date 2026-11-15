@@ -200,6 +200,19 @@ importers:
         specifier: 5.1.0
         version: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15))
 
+  apps/voice:
+    dependencies:
+      '@bojen/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
+      '@bojen/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+    devDependencies:
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
+
   apps/web:
     dependencies:
       '@bojen/adapters':

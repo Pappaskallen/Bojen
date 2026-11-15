@@ -22,6 +22,7 @@ import {
   isSwedishMobile,
   openOffer,
   promisedWindow,
+  receptionistSettings,
   sealOffer,
   stockholmDate,
   toE164,
@@ -39,6 +40,7 @@ import { createTask } from "./flows";
 import { queueSms, type MessagingDeps } from "./messaging";
 import { publicSuggestions, submitPublicBooking } from "./public-booking";
 import {
+  appUser,
   boat,
   call,
   customer,
@@ -856,4 +858,99 @@ export async function avslutaSamtal(deps: VoiceDeps, c: CallRow, input: unknown)
     })
     .where(and(eq(call.tenantId, c.tenantId), eq(call.id, c.id)));
   return { ok: true };
+}
+
+/** What the system prompt says about the firm (spec 8.2 "Information om firman"). No addresses. */
+export interface ReceptionistFacts {
+  firma: string;
+  assistentNamn: string;
+  halsning: string | null;
+  mekaniker: string;
+  serviceomrade: string;
+  ejServiceomraden: string[];
+  oppettider: string;
+  jourtider: string;
+  svarslofte: string;
+  /** Kronor excluding VAT, or null when the firm has not set it. */
+  timpris: number | null;
+  akuttillagg: number | null;
+  tjanster: {
+    id: string;
+    namn: string;
+    minuter: number;
+    krav: string | null;
+    pris: number | null;
+  }[];
+  platser: { id: string; namn: string; typ: string }[];
+}
+
+const kronor = (ore: number | null) => (ore === null ? null : Math.round(ore / 100));
+
+/** The firm's facts for the receptionist's prompt, the same for every call to the firm. */
+export async function receptionistFacts(
+  db: Db,
+  tenantId: string,
+): Promise<ReceptionistFacts | null> {
+  const [firm] = await db
+    .select({ name: tenant.name, settings: tenant.settings })
+    .from(tenant)
+    .where(eq(tenant.id, tenantId));
+  if (!firm) return null;
+  const r = receptionistSettings(firm.settings);
+  const booking = bookingSettings(firm.settings);
+  const [mechanic] = await db
+    .select({ name: appUser.name })
+    .from(appUser)
+    .where(
+      and(
+        eq(appUser.tenantId, tenantId),
+        isNull(appUser.deletedAt),
+        inArray(appUser.role, ["owner", "mechanic"]),
+      ),
+    )
+    .orderBy(sql`${appUser.role} = 'owner' desc`, asc(appUser.createdAt))
+    .limit(1);
+  const services = await db
+    .select({
+      id: serviceType.id,
+      name: serviceType.name,
+      minutes: serviceType.defaultDurationMinutes,
+      mode: serviceType.requiredMode,
+      price: serviceType.priceOre,
+    })
+    .from(serviceType)
+    .where(and(eq(serviceType.tenantId, tenantId), isNull(serviceType.deletedAt)))
+    .orderBy(asc(serviceType.name));
+  const places = await db
+    .select({ id: location.id, name: location.name, type: location.type })
+    .from(location)
+    .where(
+      and(
+        eq(location.tenantId, tenantId),
+        isNull(location.deletedAt),
+        inArray(location.type, ["marina", "club", "yard"]),
+      ),
+    )
+    .orderBy(asc(location.name));
+  return {
+    firma: firm.name,
+    assistentNamn: r.assistantName,
+    halsning: r.greeting,
+    mekaniker: mechanic ? firstName(mechanic.name) : firm.name,
+    serviceomrade: r.serviceArea,
+    ejServiceomraden: r.notServed,
+    oppettider: r.openingHours,
+    jourtider: r.onCallHours,
+    svarslofte: r.answerPromise,
+    timpris: kronor(booking.hourlyRateOre),
+    akuttillagg: kronor(booking.emergencySurchargeOre),
+    tjanster: services.map((s) => ({
+      id: s.id,
+      namn: s.name,
+      minuter: s.minutes,
+      krav: s.mode,
+      pris: kronor(s.price),
+    })),
+    platser: places.map((p) => ({ id: p.id, namn: p.name, typ: p.type })),
+  };
 }

@@ -63,6 +63,7 @@ import {
   kopplaTillMekaniker,
   ombokaBokning,
   openCall,
+  receptionistFacts,
   sattVantelista,
   skapaBokning,
   skapaMeddelande,
@@ -468,5 +469,6 @@ export const voiceToolsRoute = createVoiceToolsRoute({
   start: (input) => startCall(db(), { ...input, now: new Date() }),
   openCall: (tenantId, callId) => openCall(db(), tenantId, callId),
   context: (call) => callContext(voiceDeps(), call),
+  facts: (tenantId) => receptionistFacts(db(), tenantId),
   run: (tool, call, input) => VOICE_TOOL_RUNNERS[tool](voiceDeps(), call, input),
 });

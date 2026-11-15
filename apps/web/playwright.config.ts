@@ -3,6 +3,7 @@ import { FAKE_ELKS_PASSWORD, FAKE_ELKS_URL, FAKE_ELKS_USER } from "./e2e/fake-el
 import {
   E2E_LOCAL_KMS_MASTER_KEY,
   E2E_SHORT_LINK_KEY,
+  E2E_VOICE_SERVICE_SECRET,
   LOCAL_SUPABASE_ANON_KEY,
   LOCAL_SUPABASE_SERVICE_ROLE_KEY,
   LOCAL_SUPABASE_URL,
@@ -59,6 +60,9 @@ export default defineConfig({
       SHORT_LINK_KEY: E2E_SHORT_LINK_KEY,
       KMS_KEY_ID: "",
       LOCAL_KMS_MASTER_KEY: E2E_LOCAL_KMS_MASTER_KEY,
+      // The receptionist's tool API (step 6.1): the voice agent's secret and the token key.
+      VOICE_SERVICE_SECRET: E2E_VOICE_SERVICE_SECRET,
+      VOICE_TOOLS_SECRET: "e2e-only-voice-tools-secret-long-enough-12",
     },
   },
 });

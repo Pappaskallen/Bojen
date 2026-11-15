@@ -22,7 +22,7 @@ import {
   type Database,
 } from "@bojen/db";
 import { runMigrations } from "@bojen/db/migrate";
-import { DEMO_TENANT_ID, seedDemoData, truncateAll } from "@bojen/db/seed";
+import { seedDemoData } from "@bojen/db/seed";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { JobHelpers } from "graphile-worker";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -42,7 +42,8 @@ beforeAll(() => runMigrations(url), 60_000);
 
 class Rollback extends Error {}
 const FIRM_NUMBER = "+46766860009";
-const tenantId = DEMO_TENANT_ID;
+/** A copy of the demo firm of its own: no other test sees it, and nothing is emptied. */
+const tenantId = "00000000-0000-4000-8000-0000000000c5";
 const helpers = { logger: { info: () => undefined } } as unknown as JobHelpers;
 
 async function inRollback(fn: (db: Database) => Promise<void>) {
@@ -89,8 +90,7 @@ async function runner(db: Database, clock: () => Date) {
 describe("the spring campaign (step 5.6)", () => {
   it("holds times in last year's week, and JA books the visit and sends F1", async () => {
     await inRollback(async (db) => {
-      await truncateAll(db);
-      await seedDemoData(db);
+      await seedDemoData(db, 2026, { tenantId, slug: "kampanjtestfirman" });
       await db
         .update(tenant)
         .set({
@@ -232,8 +232,7 @@ describe("the spring campaign (step 5.6)", () => {
 
   it("ANNAN sends the booking page, NEJ asks about a sale and SÅLD marks it, silence releases the time", async () => {
     await inRollback(async (db) => {
-      await truncateAll(db);
-      await seedDemoData(db);
+      await seedDemoData(db, 2026, { tenantId, slug: "kampanjtestfirman" });
       await db
         .update(tenant)
         .set({
