@@ -4,14 +4,22 @@ import type {
   MapsProvider,
   NameplateReader,
   ObjectStorage,
+  PushSender,
   SmsSender,
+  Transcriber,
 } from "@bojen/core";
 import {
+  ALERT_TASK,
+  FOLLOW_UP_TASK,
   NAMEPLATE_TASK,
   POST_CALL_TASK,
   REPORT_TASK,
   SEND_MESSAGE_TASK,
+  VOICEMAIL_TASK,
   readNameplate,
+  runFollowUp,
+  runVoicemail,
+  sendAlert,
   runPostCall,
   writeReportDraft,
   type DraftDeps,
@@ -41,7 +49,20 @@ export interface WorkerDeps extends FlowDeps {
   maps?: MapsProvider;
   /** After a call and for pictures of type plates (step 6.3). */
   postCall?: { summarizer: CallSummarizer; reader: NameplateReader; storage: ObjectStorage };
+  /** Alerts to staff, the follow-up and the voicemail (step 6.4). */
+  escalation?: EscalationDeps;
 }
+
+export interface EscalationDeps {
+  push: PushSender;
+  recordings: { fetch(wav: string): Promise<{ bytes: Uint8Array; contentType: string }> };
+  /** Null until Azure Speech is set up (step 6.2b). */
+  transcriber: Transcriber | null;
+  /** The app, for the links to staff and the booking page: `https://bojen.se`. */
+  appBase: string;
+}
+
+const list = (payload: unknown, name: string) => field(payload, name).split(",").filter(Boolean);
 
 function field(payload: unknown, name: string): string {
   const value = (payload as Record<string, unknown> | null)?.[name];
@@ -101,6 +122,7 @@ export function taskList(deps: WorkerDeps): TaskList {
         }
       : {}),
     ...(deps.postCall ? postCallTasks({ db: deps.db, ...deps.postCall }) : {}),
+    ...(deps.escalation ? escalationTasks(deps, deps.escalation) : {}),
     ...(deps.reports ? reportTasks({ db: deps.db, now: deps.now, ...deps.reports }) : {}),
   };
 }
@@ -132,6 +154,50 @@ export function postCallTasks(deps: {
       const attachmentId = field(payload, "attachmentId");
       const outcome = await readNameplate(deps, field(payload, "tenantId"), attachmentId);
       helpers.logger.info(`picture ${attachmentId}: ${outcome}`);
+    },
+  };
+}
+
+/** The receptionist's rules for reaching a person (step 6.4). */
+export function escalationTasks(
+  deps: Pick<WorkerDeps, "db" | "now" | "optOutKey" | "sms">,
+  e: EscalationDeps,
+): TaskList {
+  return {
+    [ALERT_TASK]: async (payload, helpers) => {
+      const taskId = field(payload, "taskId");
+      const sent = await sendAlert(
+        { db: deps.db, push: e.push, sms: deps.sms, now: deps.now, appBase: e.appBase },
+        {
+          tenantId: field(payload, "tenantId"),
+          taskId,
+          userIds: list(payload, "users"),
+          channels: list(payload, "channels"),
+        },
+      );
+      helpers.logger.info(`alert for task ${taskId}: ${String(sent.pushed)} push, ${String(sent.texted)} sms`);
+    },
+    [FOLLOW_UP_TASK]: async (payload, helpers) => {
+      const taskId = field(payload, "taskId");
+      const next = await runFollowUp(
+        { db: deps.db, now: deps.now, optOutKey: deps.optOutKey, appBase: e.appBase },
+        { tenantId: field(payload, "tenantId"), taskId, alerted: list(payload, "alerted") },
+      );
+      helpers.logger.info(`follow-up of task ${taskId}: ${next.do}`);
+    },
+    [VOICEMAIL_TASK]: async (payload, helpers) => {
+      const callId = field(payload, "callId");
+      const made = await runVoicemail(
+        {
+          db: deps.db,
+          now: deps.now,
+          optOutKey: deps.optOutKey,
+          recordings: e.recordings,
+          transcriber: e.transcriber,
+        },
+        { tenantId: field(payload, "tenantId"), callId, wav: field(payload, "wav") },
+      );
+      helpers.logger.info(`voicemail ${callId}: ${made ? "message" : "no call"}`);
     },
   };
 }

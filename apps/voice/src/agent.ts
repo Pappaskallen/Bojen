@@ -4,6 +4,7 @@
  * agent runs against fakes in tests and the simulator, and against Claude, Azure and LiveKit
  * in a real call.
  */
+import { callNudge, type CallDialer } from "@bojen/core";
 import type {
   ConversationBlock,
   ConversationMessage,
@@ -11,6 +12,7 @@ import type {
   ConversationTool,
 } from "@bojen/core";
 import type { ToolsClient } from "./tools-client";
+import { TRANSFER_TOOL, transferCall, transferOrder } from "./transfer";
 
 /** Tool rounds in one turn before the agent gives up and offers a message (spec 8.4 K7). */
 export const MAX_TOOL_ROUNDS = 6;
@@ -39,7 +41,16 @@ export function createCallAgent(input: {
   system: { stable: string; context: string };
   /** The first line the system already said, kept so the model knows the call has begun. */
   firstLine: string;
+  /** Rings the mechanic for koppla_till_mekaniker (step 6.4); null: no one answers. */
+  dialer?: CallDialer | null;
+  /** Milliseconds, for how long the call has gone on (K7). */
+  now?: () => number;
 }): CallAgent {
+  const now = input.now ?? (() => Date.now());
+  const startedAt = now();
+  // K7: two fallbacks in a row, or eight minutes, and the model is reminded to offer a message.
+  let failedInRow = 0;
+  let nudged = false;
   const messages: ConversationMessage[] = [];
   let ended = false;
   // The model's turns must start with a user turn; the first line is the assistant's own.
@@ -49,8 +60,18 @@ export function createCallAgent(input: {
     text: string,
     options: { signal?: AbortSignal; onText?: (delta: string) => void } = {},
   ): Promise<string> {
-    const said = text.trim();
-    if (!said || ended) return "";
+    // Only the system writes notes to the model: a caller cannot say one.
+    const heard = text.replace(/\(\s*systemnotis[^)]*\)?/gi, "").trim();
+    if (!heard || ended) return "";
+    const nudge = callNudge({
+      minutes: (now() - startedAt) / 60_000,
+      failedInRow,
+      alreadyNudged: nudged,
+    });
+    if (nudge) nudged = true;
+    const said = nudge ? `${heard}
+
+${nudge}` : heard;
     // What the turn adds stays apart until it is whole: a turn cut short leaves no half.
     const turn: ConversationMessage[] = pendingOpening
       ? [
@@ -102,17 +123,30 @@ export function createCallAgent(input: {
         // Never run tools from a turn that was cut off or refused.
         turn.push({ role: "assistant", content: FALLBACK_LINE });
         commit(turn);
+        failedInRow++;
         return FALLBACK_LINE;
       }
       turn.push({ role: "assistant", content: result.content });
       if (uses.length === 0) {
         commit(turn);
+        failedInRow = 0;
         return spoken.join(" ");
       }
 
       const results: ConversationBlock[] = [];
       for (const use of uses) {
-        const answer = await input.tools.run(input.token, use.name, use.input);
+        let answer = await input.tools.run(input.token, use.name, use.input);
+        if (use.name === TRANSFER_TOOL && hasTransfer(answer)) {
+          // The mechanics' numbers never reach the model, whatever the answer looked like.
+          const order = transferOrder(answer);
+          answer = order
+            ? await transferCall({
+                order,
+                dialer: input.dialer ?? null,
+                report: (result) => input.tools.run(input.token, "kopplingsutfall", result),
+              })
+            : { status: "ej_svar" };
+        }
         if (use.name === "avsluta_samtal") ended = true;
         results.push({
           type: "tool_result",
@@ -130,6 +164,7 @@ export function createCallAgent(input: {
     }
     turn.push({ role: "assistant", content: FALLBACK_LINE });
     commit(turn);
+    failedInRow++;
     return FALLBACK_LINE;
   }
 
@@ -148,6 +183,9 @@ export function createCallAgent(input: {
     },
   };
 }
+
+const hasTransfer = (answer: unknown) =>
+  typeof answer === "object" && answer !== null && "koppling" in answer;
 
 const isRefusal = (answer: unknown) =>
   typeof answer === "object" && answer !== null && "fel" in answer;

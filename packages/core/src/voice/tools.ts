@@ -138,26 +138,31 @@ export const VOICE_TOOLS: { name: VoiceToolName; description: string; input_sche
   {
     name: "koppla_till_mekaniker",
     description:
-      "Try to connect the call to the mechanic (spec 8.4). Returns 'kopplad' or 'ej_svar'; on 'ej_svar' take a message.",
+      "Put the call through to the mechanic on call, who first hears your summary (spec 8.4). anledning: 'akut' (urgent, no danger), 'manniska' (the caller asks for a person), 'reklamation' (a complaint). Returns 'kopplad' (the mechanic has the call; say nothing more and end it), 'ej_svar' or 'ta_meddelande' (not on call: take a message with skapa_meddelande).",
     input_schema: obj(
       {
-        skal: str("Why, in a sentence"),
-        prioritet: { type: "string", enum: ["normal", "hog"] },
+        anledning: { type: "string", enum: ["akut", "manniska", "reklamation"] },
+        skal: str("What the call is about, in one sentence the mechanic hears before the caller"),
       },
-      ["skal", "prioritet"],
+      ["anledning", "skal"],
     ),
   },
   {
     name: "skapa_meddelande",
-    description: "Leave a message for the firm, which becomes a task with the call attached.",
+    description:
+      "Leave a message for the firm, which becomes a task with the call attached. The mechanic is alerted, and the caller gets an sms when the rules say so.",
     input_schema: obj(
       {
-        skal: { type: "string", enum: ["ring_upp", "akut", "reklamation", "foretag", "annat"] },
-        prioritet: { type: "string", enum: ["normal", "hog"] },
+        skal: {
+          type: "string",
+          enum: ["fara", "akut", "ring_upp", "reklamation", "foretag", "sprak", "annat"],
+          description:
+            "fara: danger, the caller was told to ring 112; akut: urgent without danger; foretag: a marina, yard or rental firm; sprak: neither Swedish nor English",
+        },
         text: str("The message, in a few sentences"),
         namn: str("Caller's name, if unknown to the firm"),
       },
-      ["skal", "prioritet", "text"],
+      ["skal", "text"],
     ),
   },
   {

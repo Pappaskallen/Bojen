@@ -1,6 +1,7 @@
 import {
   createFakeEmail,
   createFakeNameplateReader,
+  createFakePush,
   createFakeReportWriter,
   createFakeSms,
   createFakeStorage,
@@ -73,6 +74,26 @@ describe("worker tasks", () => {
     expect(
       Object.keys(reportTasks({ db: {} as Database, now: () => new Date(), ...reports })),
     ).toEqual(["report_draft"]);
+  });
+
+  it("has the alerts, follow-up and voicemail of step 6.4 when it has push", () => {
+    const all = taskList({
+      db: {} as Database,
+      sms: createFakeSms(),
+      now: () => new Date(),
+      optOutKey: "k",
+      email: createFakeEmail(),
+      link: () => "bojen.se/boka/test",
+      escalation: {
+        push: createFakePush(),
+        recordings: { fetch: () => Promise.reject(new Error("not used")) },
+        transcriber: null,
+        appBase: "https://bojen.se",
+      },
+    });
+    expect(Object.keys(all)).toEqual(
+      expect.arrayContaining(["alert_staff", "escalation_follow_up", "voicemail"]),
+    );
   });
 
   it("refuses a payload without a message id", async () => {

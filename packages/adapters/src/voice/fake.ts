@@ -1,5 +1,6 @@
 import type {
   CallAudio,
+  CallDialer,
   ConversationModel,
   ModelTurn,
   SpeechToText,
@@ -117,6 +118,23 @@ export function createFakeCallAudio(): FakeCallAudio {
     hangUp() {
       hungUp = true;
       return Promise.resolve();
+    },
+  };
+}
+
+export interface FakeDialer extends CallDialer {
+  /** Every number rung, with the whisper said to it. */
+  readonly calls: { number: string; whisper: string; timeoutSeconds: number }[];
+}
+
+/** A phone that answers for the numbers in `answering`, and rings out for the rest. */
+export function createFakeDialer(answering: readonly string[] = []): FakeDialer {
+  const calls: FakeDialer["calls"] = [];
+  return {
+    calls,
+    dial(input) {
+      calls.push({ number: input.number, whisper: input.whisper, timeoutSeconds: input.timeoutSeconds });
+      return Promise.resolve(answering.includes(input.number) ? "answered" : "no_answer");
     },
   };
 }

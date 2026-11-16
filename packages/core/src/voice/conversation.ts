@@ -69,6 +69,21 @@ export interface CallAudio {
   hangUp(): Promise<void>;
 }
 
+/**
+ * Rings a mechanic from the call and says the whisper when they answer (byggplan step 6.4,
+ * K2 "medhörning"): `answered` means the mechanic accepted and the caller is put through,
+ * `no_answer` that no one took it within the time. LiveKit SIP over 46elks in production
+ * (step 6.2b), a fake in tests.
+ */
+export interface CallDialer {
+  dial(input: {
+    number: string;
+    whisper: string;
+    timeoutSeconds: number;
+    signal?: AbortSignal;
+  }): Promise<"answered" | "no_answer">;
+}
+
 /** The 90th percentile of the times, in milliseconds (spec 8.5: p90 under 1.2 s). */
 export function p90(times: readonly number[]): number | null {
   if (times.length === 0) return null;

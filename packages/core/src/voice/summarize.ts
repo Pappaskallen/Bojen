@@ -27,8 +27,10 @@ export function transcriptText(messages: readonly ConversationMessage[]): string
       typeof m.content === "string"
         ? m.content
         : m.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join(" ");
-    if (!said.trim() || said === "(Samtalet kopplas upp.)") continue;
-    lines.push(`${m.role === "user" ? "Kund" : "Receptionist"}: ${said.trim()}`);
+    // The system's own notes to the model (K7) are not what anyone said.
+    const spoken = said.replace(/\(Systemnotis:[^)]*\)/g, "").trim();
+    if (!spoken || spoken === "(Samtalet kopplas upp.)") continue;
+    lines.push(`${m.role === "user" ? "Kund" : "Receptionist"}: ${spoken}`);
   }
   return scrubSensitive(lines.join("\n"));
 }

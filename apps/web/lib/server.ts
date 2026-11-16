@@ -10,6 +10,7 @@ import {
   createSupabaseStorage,
   createClaudeClassifier,
   createFakeClassifier,
+  createAgentHealth,
   elksFromEnv,
   kmsFromEnv,
 } from "@bojen/adapters";
@@ -58,6 +59,10 @@ import {
   avslutaSamtal,
   bekraftaKund,
   callContext,
+  decideTask,
+  deletePushSubscription,
+  savePushSubscription,
+  kopplingsutfall,
   foreslaTider,
   hamtaBokningar,
   hittaKund,
@@ -86,6 +91,7 @@ import { createCodesRoute } from "./codes-route";
 import { createDayRoute } from "./day-route";
 import { createPasskeyRoutes } from "./passkey-routes";
 import { createPipelineRoute } from "./pipeline-route";
+import { createTasksRoute } from "./tasks-route";
 import { createVoiceToolsRoute } from "./voice-tools-route";
 import { createReportRoute } from "./report-route";
 import { createPublicRoutes } from "./public-booking";
@@ -427,6 +433,13 @@ export const webhookRoutes = createWebhookRoutes({
   elksIps,
   classifier,
   optOutKey,
+  // K10 (step 6.4): the agent's SIP address and health check; without them, calls go
+  // straight to the mechanic's mobile.
+  voiceAgent: {
+    sip: () => process.env.VOICE_AGENT_SIP ?? null,
+    up: createAgentHealth({ url: process.env.VOICE_AGENT_HEALTH_URL ?? null }),
+  },
+  appUrl: () => appUrl(),
 });
 
 /** `VOICE_TOOLS_SECRET`: signs the calls' tokens and the times offered in them (step 6.1). */
@@ -469,6 +482,14 @@ const VOICE_TOOL_RUNNERS: Record<
   avsluta_samtal: avslutaSamtal,
 };
 
+/** The receptionist's messages and push (step 6.4). */
+export const tasksRoute = createTasksRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  decide: (actor, taskId, decision) => decideTask(db(), actor, taskId, decision, new Date()),
+  subscribe: (actor, input) => savePushSubscription(db(), actor, input),
+  unsubscribe: (actor, endpoint) => deletePushSubscription(db(), actor, endpoint),
+});
+
 /** The receptionist's tools (step 6.1), for the voice agent of step 6.2. */
 export const voiceToolsRoute = createVoiceToolsRoute({
   serviceSecret: () => {
@@ -481,7 +502,10 @@ export const voiceToolsRoute = createVoiceToolsRoute({
   openCall: (tenantId, callId) => openCall(db(), tenantId, callId),
   context: (call) => callContext(voiceDeps(), call),
   facts: (tenantId) => receptionistFacts(db(), tenantId),
-  run: (tool, call, input) => VOICE_TOOL_RUNNERS[tool](voiceDeps(), call, input),
+  run: (tool, call, input) =>
+    tool === "kopplingsutfall"
+      ? kopplingsutfall(voiceDeps(), call, input)
+      : VOICE_TOOL_RUNNERS[tool](voiceDeps(), call, input),
   saveTranscript: async (callId, transcript) => {
     const tenantId = await tenantOfCall(db(), callId);
     return tenantId

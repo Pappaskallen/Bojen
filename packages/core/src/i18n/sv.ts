@@ -276,6 +276,11 @@ export const messages = {
     voice_access_link:
       "Här lägger du in koden och var nyckeln finns. Den krypteras och visas bara för mekanikern: {link} /{firm}",
     voice_pictures_link: "Här kan du skicka bilder på båten och felet till oss: {link} /{firm}",
+    voice_message_soon: "Tack för samtalet! Vi ringer upp dig inom 30 minuter. /{firm}",
+    voice_message_promise: "Tack för samtalet! Vi återkommer {promise}. /{firm}",
+    voice_first_time:
+      "Förlåt att ingen har hunnit ringa upp dig. Boka första lediga tid här: {link} eller ring oss igen. /{firm}",
+    staff_alert: "Bojen: {title}. {note} Svara här: {link}",
   },
   push: {
     f3_unconfirmed:
@@ -422,6 +427,7 @@ export const crm = {
   nav: {
     label: "Meny",
     today: "Idag",
+    tasks: "Ärenden",
     requests: "Förfrågningar",
     pipeline: "Pipeline",
     customers: "Kunder",
@@ -924,6 +930,36 @@ export const crm = {
     cancelled: "Avbokad",
     no_access: "Båten ej tillgänglig",
   },
+  tasks: {
+    title: "Ärenden",
+    none: "Inga öppna ärenden.",
+    take: "Jag tar det",
+    done: "Klart",
+    takenBy: (name: string) => `${name} har tagit det`,
+    callBack: "Ring upp",
+    due: (time: string) => `Svar senast ${time}`,
+    urgent: "Brådskande",
+    open: (n: number) => (n === 1 ? "1 öppet ärende" : `${String(n)} öppna ärenden`),
+    call: "Samtalet",
+    gone: "Ärendet är redan klart eller finns inte.",
+    push: {
+      on: "Slå på aviseringar",
+      active: "Aviseringar är på för den här telefonen.",
+      blocked: "Aviseringar är avstängda i webbläsarens inställningar.",
+      unsupported: "Den här webbläsaren kan inte ta emot aviseringar. Lägg Bojen på hemskärmen först.",
+      failed: "Det gick inte att slå på aviseringar.",
+    },
+    /** Titles of the tasks the receptionist leaves (spec 8.4). */
+    called: (label: string | null, who: string) => `${label ? `${label}: ` : ""}${who} ringde`,
+    voicemail: (who: string) => `Röstmeddelande från ${who}`,
+    unknownCaller: "Okänt nummer",
+    customer: "Kund",
+    wanted: (reason: string) => `Ville kopplas: ${reason}`,
+    transferred: (name: string) => `Kopplad till ${name}`,
+    notTransferred: "Ingen svarade när samtalet kopplades.",
+    emptyVoicemail: "(Inget hördes i röstmeddelandet.)",
+    untranscribed: "(Röstmeddelandet kunde inte skrivas ut. Ring upp kunden.)",
+  },
   message: {
     channel: { sms: "Sms", email: "E-post", push: "Push" },
     direction: { inbound: "Från kunden", outbound: "Till kunden" },
@@ -987,6 +1023,10 @@ export const crm = {
       voice_booking_link: "Länk till bokningen",
       voice_access_link: "Länk för koder",
       voice_pictures_link: "Länk för bilder",
+      voice_message_soon: "Svar inom 30 minuter",
+      voice_message_promise: "Svarslöfte",
+      voice_first_time: "Första lediga tid",
+      staff_alert: "Avisering till mekaniker",
       stop_receipt: "Kvitto på STOPP",
     } as Record<string, string>,
     inboundFallback: "Svar",

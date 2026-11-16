@@ -15,16 +15,20 @@
 import {
   CALL_TOKEN_MINUTES,
   CONTROL_ATTEMPTS,
+  MESSAGE_REASONS,
+  TRANSFER_REASONS,
   answersControl,
   bookingSettings,
   dayMonth,
   firstName,
   isSwedishMobile,
   openOffer,
+  planTransfer,
   promisedWindow,
   receptionistSettings,
   sealOffer,
   stockholmDate,
+  whisperLine,
   toE164,
   type Geocoder,
   type MapsProvider,
@@ -32,11 +36,12 @@ import {
   type OfferedTime,
   type PlacementMode,
 } from "@bojen/core";
+import { crm } from "@bojen/core/i18n/sv";
 import { manageLinkExpiry, shortLinkUrl } from "@bojen/core/links";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { BookingError, changeBooking } from "./booking";
 import type { Database } from "./client";
-import { createTask } from "./flows";
+import { firmByNumber, leaveMessage, onCallNow } from "./escalation";
 import { queueSms, type MessagingDeps } from "./messaging";
 import { publicSuggestions, submitPublicBooking } from "./public-booking";
 import {
@@ -86,14 +91,6 @@ const id = (v: unknown) => (typeof v === "string" && UUID.test(v) ? v : null);
 
 // --- The call ------------------------------------------------------------------------------
 
-/** The firm that owns a number the receptionist answers. */
-async function firmByNumber(db: Db, number: string) {
-  const [row] = await db
-    .select({ id: tenant.id, name: tenant.name })
-    .from(tenant)
-    .where(and(sql`${tenant.settings} -> 'sms' ->> 'from' = ${number}`, isNull(tenant.deletedAt)));
-  return row ?? null;
-}
 
 /**
  * A new call to one of the firm's numbers: the call is logged, and the caller's number looked
@@ -778,58 +775,114 @@ export async function sattVantelista(deps: VoiceDeps, c: CallRow, input: unknown
   return { ok: true, id: entry?.id };
 }
 
+const note = (line: string) =>
+  sql`coalesce(${call.summary} || E'
+', '') || ${line}`;
+
+/** The caller's first name and, with one boat, its name: for the whisper. */
+async function whoIsCalling(deps: VoiceDeps, c: CallRow) {
+  const who = identified(c);
+  if (!who) return { caller: null, boat: null };
+  const [person] = await deps.db.select({ name: customer.name }).from(customer).where(eq(customer.id, who));
+  const boats = await boatsOf(deps.db, c.tenantId, who, stockholmDate(deps.now()));
+  return {
+    caller: person ? firstName(person.name) : null,
+    boat: boats.length === 1 ? (boats[0]?.name ?? null) : null,
+  };
+}
+
 /**
- * koppla_till_mekaniker: until the transfer with a whisper comes in step 6.4, the answer is
- * always `ej_svar`, so the agent takes a message (spec 8.4). The wish is logged on the call.
+ * koppla_till_mekaniker (spec 8.4 K2, K4, K5): on call, the voice agent gets the mechanics to
+ * ring with the whisper, in `koppling`, which it keeps to itself; the model only learns
+ * `kopplar`, and then `kopplad` or `ej_svar`. Outside on-call the model takes a message.
  */
 export async function kopplaTillMekaniker(deps: VoiceDeps, c: CallRow, input: unknown) {
-  const reason = text(record(input).skal, 300);
+  const i = record(input);
+  const reason = TRANSFER_REASONS.find((r) => r === i.anledning);
+  const why = text(i.skal, 300);
+  if (!reason || !why) return { fel: "ogiltig_indata" };
+  await deps.db
+    .update(call)
+    .set({ summary: note(crm.tasks.wanted(why)) })
+    .where(and(eq(call.tenantId, c.tenantId), eq(call.id, c.id)));
+  const now = await onCallNow(deps.db, c.tenantId, deps.now());
+  if (!now) return { fel: "okand_firma" };
+  const reachable = now.order.filter((s) => s.mobile);
+  const plan = planTransfer({
+    reason,
+    onCall: now.onCall,
+    candidates: reachable.map((s) => s.id),
+    timeoutSeconds: now.settings.transferSeconds,
+  });
+  if (plan.do === "message") {
+    return { status: "ta_meddelande", svarslofte: now.settings.answerPromise };
+  }
+  const named = await whoIsCalling(deps, c);
+  return {
+    status: "kopplar",
+    koppling: {
+      mal: plan.targets.map((id) => {
+        const s = reachable.find((r) => r.id === id);
+        return { id, nummer: s?.mobile ?? "", namn: s ? firstName(s.name) : "" };
+      }),
+      sekunder: plan.timeoutSeconds,
+      viskning: whisperLine({ firm: now.firm, caller: named.caller, boat: named.boat, reason, summary: why }),
+    },
+  };
+}
+
+/**
+ * The voice agent reports how the transfer went (not a tool for the model). Answered: the
+ * call is marked as put through, by whom.
+ */
+export async function kopplingsutfall(deps: VoiceDeps, c: CallRow, input: unknown) {
+  const i = record(input);
+  const userId = id(i.mal_id);
+  const answered = i.besvarad === true;
+  const [person] = userId
+    ? await deps.db
+        .select({ name: appUser.name })
+        .from(appUser)
+        .where(and(eq(appUser.tenantId, c.tenantId), eq(appUser.id, userId)))
+    : [];
   await deps.db
     .update(call)
     .set({
-      summary: sql`coalesce(${call.summary} || E'\n', '') || ${`Ville kopplas: ${reason ?? "–"}`}`,
+      summary: note(
+        answered && person ? crm.tasks.transferred(firstName(person.name)) : crm.tasks.notTransferred,
+      ),
+      ...(answered && person ? { outcome: "transferred" as const } : {}),
     })
     .where(and(eq(call.tenantId, c.tenantId), eq(call.id, c.id)));
-  return { status: "ej_svar" as const };
+  return { ok: true };
 }
 
-const MESSAGE_TYPE = {
-  ring_upp: "call_back",
-  akut: "emergency",
-  reklamation: "call_back",
-  foretag: "call_back",
-  annat: "call_back",
-} as const;
-
-/** skapa_meddelande: a task for the firm with the call attached (push comes in step 6.4). */
+/**
+ * skapa_meddelande: a task for the firm with the call attached, an alert to the mechanic by
+ * push (and sms when it is critical), and the sms to the caller the rules ask for (spec 8.4).
+ */
 export async function skapaMeddelande(deps: VoiceDeps, c: CallRow, input: unknown) {
   const i = record(input);
-  const reason = i.skal;
-  if (
-    reason !== "ring_upp" &&
-    reason !== "akut" &&
-    reason !== "reklamation" &&
-    reason !== "foretag" &&
-    reason !== "annat"
-  ) {
-    return { fel: "ogiltig_indata" };
-  }
+  const reason = MESSAGE_REASONS.find((r) => r === i.skal);
+  if (!reason) return { fel: "ogiltig_indata" };
   const body = text(i.text, 2000);
   if (!body) return { fel: "text_saknas" };
   const name = text(i.namn, 120);
   const who = identified(c);
-  const title = `${reason === "reklamation" ? "Reklamation: " : reason === "akut" ? "Akut: " : ""}${
-    name ?? (who ? "Kund" : (c.callerNumber ?? "Okänt nummer"))
-  } ringde`;
-  const taskId = await createTask(deps.db, {
+  let display = name;
+  if (!display && who) {
+    const [person] = await deps.db.select({ name: customer.name }).from(customer).where(eq(customer.id, who));
+    display = person?.name ?? null;
+  }
+  const { taskId } = await leaveMessage(deps, {
     tenantId: c.tenantId,
-    type: MESSAGE_TYPE[reason],
-    priority: i.prioritet === "hog" ? "high" : "normal",
-    title,
-    note: body,
-    customerId: who,
     callId: c.id,
-    dueAt: new Date(deps.now().getTime() + (i.prioritet === "hog" ? 30 : 24 * 60) * MINUTE),
+    reason,
+    text: body,
+    who: display ?? c.callerNumber ?? crm.tasks.unknownCaller,
+    customerId: who,
+    // Only to a customer the call's number names, or the caller's own number.
+    callerNumber: c.callerNumber,
   });
   return { arende_id: taskId };
 }

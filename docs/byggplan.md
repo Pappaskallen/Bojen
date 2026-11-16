@@ -43,7 +43,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 6.1 – Verktygs-API för agenten (1,5 dagar)
 - [ ] Steg 6.2 – Röstagenten (4 dagar)
 - [ ] Steg 6.3 – Efterbearbetning (1,5 dagar)
-- [ ] Steg 6.4 – Kopplingsregler och reservrutin (1,5 dagar)
+- [x] Steg 6.4 – Kopplingsregler och reservrutin (1,5 dagar)
 - [ ] Steg 6.5 – Testsvit för samtal (2 dagar)
 - [ ] Steg 7.1 – KPI-vyer (2 dagar)
 - [ ] Steg 7.2 – Dashboard i mobilen (2 dagar)
@@ -379,6 +379,7 @@ ett alternativ i stället för att byta tyst.
 #### Steg 6.4 – Kopplingsregler och reservrutin (1,5 dagar)
 - **Berör:** `packages/core/voice/escalation.ts`, `apps/voice/transfer.ts`, reservnummer hos 46elks.
 - **Gör:** Implementera K1–K10: medhörning med tidsgräns på 20 s, push med kritiskt ljud, vidarekoppling till nästa jourmekaniker efter 30 min, och vidarekoppling av samtalet till mekanikern när agenten är nere.
+  - (Avstämt med Robert 2026-11-16: byggs mot fejkar. En webbapp kan inte spela kritiskt ljud genom ljudlöst läge, så en kritisk avisering är webbpush plus sms till jourmekanikern. Själva uppringningen med medhörning och röstbrevlådans utskrift kopplas in med LiveKit och Azure i steg 6.2b.)
 - **Klart när:**
   - Enhetstester av beslutsträdet går igenom.
   - Ett test där agentprocessen stängs av visar att samtalet går till mekanikerns nummer.

@@ -7,6 +7,7 @@
 import {
   transcriptText,
   type CallAudio,
+  type CallDialer,
   type ConversationModel,
   type SpeechToText,
   type TextToSpeech,
@@ -22,6 +23,8 @@ export async function handleCall(input: {
   stt: SpeechToText;
   tts: TextToSpeech;
   audio: CallAudio;
+  /** Rings the mechanic when the call is put through (step 6.4). */
+  dialer?: CallDialer | null;
   /** The firm's number that was called, and the caller's (null when hidden). */
   to: string;
   from: string | null;
@@ -42,6 +45,7 @@ export async function handleCall(input: {
     model: input.model,
     tools: input.tools,
     token: started.token,
+    dialer: input.dialer ?? null,
     definitions: started.verktyg,
     system: { stable: stablePrompt(started.firma), context: contextPrompt(started.kontext) },
     firstLine: opening,

@@ -103,6 +103,11 @@ export const SMS_TEMPLATES = {
   voice_booking_link: { flow: "voice", category: "reply", maxSegments: 2 },
   voice_access_link: { flow: "voice", category: "reply", maxSegments: 2 },
   voice_pictures_link: { flow: "voice", category: "reply", maxSegments: 2 },
+  voice_message_soon: { flow: "voice", category: "reply", maxSegments: 1 },
+  voice_message_promise: { flow: "voice", category: "reply", maxSegments: 1 },
+  voice_first_time: { flow: "voice", category: "reply", maxSegments: 2 },
+  // To staff, not customers: sent at once by the worker, never through the STOPP list.
+  staff_alert: { flow: "voice", category: "reply", maxSegments: 3 },
 } as const satisfies Record<SmsTemplateKey, SmsTemplateInfo>;
 
 /** When the quiet hours end for a template: 08:00, or earlier where the spec says so. */

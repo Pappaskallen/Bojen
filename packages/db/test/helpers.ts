@@ -42,6 +42,7 @@ import {
   shortLink,
   smsOptOut,
   nameplateReading,
+  pushSubscription,
   serviceReport,
   staffPasskey,
   verificationCode,
@@ -344,6 +345,13 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     make: "Volvo Penta",
     confidence: "0.90",
     readBy: "fake",
+  });
+  await tx.insert(pushSubscription).values({
+    tenantId,
+    userId: mechanic.id,
+    endpoint: `https://push.example/${tenantId}`,
+    p256dh: "not-a-real-key",
+    auth: "not-a-real-auth",
   });
   await tx.insert(kpiSnapshot).values({
     tenantId,

@@ -1,4 +1,7 @@
 import {
+  createElksRecordings,
+  createFakePush,
+  createFakeTranscriber,
   createFakeEmail,
   createFakeSms,
   createFakeMaps,
@@ -6,13 +9,14 @@ import {
   createOsrmMaps,
   elksFromEnv,
   systemClock,
+  webPushFromEnv,
 } from "@bojen/adapters";
-import type { EmailSender, SmsSender } from "@bojen/core";
+import type { EmailSender, PushSender, SmsSender } from "@bojen/core";
 import { connect, databaseUrl } from "@bojen/db";
 import { run } from "graphile-worker";
 import { customerLinks } from "./flows/deps";
 import { postCallDeps, reportDeps } from "./report-deps";
-import { taskList } from "./tasks";
+import { taskList, type EscalationDeps } from "./tasks";
 
 /**
  * The background worker: Graphile Worker on the same Postgres. Fakes are only allowed
@@ -70,6 +74,35 @@ function linkKey(): string {
   return "development-only-short-link-key-not-secret";
 }
 
+function pushSender(): PushSender {
+  const push = webPushFromEnv();
+  if (push) return push;
+  if (production) throw new Error("Web push is not configured (VAPID keys and VAPID_SUBJECT)");
+  const fake = createFakePush();
+  return {
+    async send(target, payload) {
+      const sent = await fake.send(target, payload);
+      console.info(`[dev-push] ${payload.title}`);
+      return sent;
+    },
+  };
+}
+
+/** Alerts, follow-ups and voicemail (step 6.4). Speech to text waits for Azure (step 6.2b). */
+function escalationDeps(): EscalationDeps {
+  const username = process.env.ELKS_API_USERNAME;
+  const password = process.env.ELKS_API_PASSWORD;
+  return {
+    push: pushSender(),
+    recordings:
+      username && password
+        ? createElksRecordings({ username, password })
+        : { fetch: () => Promise.resolve({ bytes: new Uint8Array(), contentType: "audio/wav" }) },
+    transcriber: production ? null : createFakeTranscriber("Hej, ring upp mig om båten."),
+    appBase: process.env.APP_URL ?? "https://bojen.se",
+  };
+}
+
 async function main() {
   const url = databaseUrl();
   const { db } = connect(url);
@@ -88,6 +121,7 @@ async function main() {
       link: customerLinks(db, linkKey(), process.env.APP_URL ?? "bojen.se"),
       reports,
       postCall: postCallDeps(production, reports.storage),
+      escalation: escalationDeps(),
       maps: process.env.OSRM_URL
         ? createOsrmMaps({ baseUrl: process.env.OSRM_URL })
         : createFakeMaps(),

@@ -5,7 +5,7 @@ import {
   createFakeTextToSpeech,
 } from "@bojen/adapters";
 import { transcriptText, type ConversationBlock, type ModelTurn } from "@bojen/core";
-import { boatOwnership, call, connect, customer, job, tenant, visit } from "@bojen/db";
+import { boatOwnership, call, connect, customer, job, task, tenant, visit } from "@bojen/db";
 import { DEMO_TENANT_ID } from "@bojen/db/seed";
 import { expect, test } from "@playwright/test";
 import { and, eq, sql } from "drizzle-orm";
@@ -14,6 +14,7 @@ import { contextPrompt, firstLine, stablePrompt } from "../../voice/src/prompt";
 import { runCall } from "../../voice/src/session";
 import { createToolsClient } from "../../voice/src/tools-client";
 import { E2E_VOICE_SERVICE_SECRET } from "./keys";
+import { emailCode } from "./staff-login";
 
 /**
  * A call from a phone number to a booking (byggplan step 6.2), with fakes where the accounts
@@ -219,4 +220,42 @@ test("a known customer calls, gets a time offered, says yes and is booked (step 
   expect(await tools.run(started.token, "hamta_bokningar", {})).toEqual({
     fel: "samtalet_har_gatt_ut",
   });
+});
+
+/** A demo mechanic who signs in with a code by e-mail (as in day.spec.ts). */
+const TOR = "tor@jonas-batservice.test";
+
+test("outside on-call a caller asking for a person leaves a message, which a mechanic takes (step 6.4)", async ({
+  page,
+}) => {
+  const who = await caller();
+  const tools = createToolsClient({ baseUrl: BASE, serviceSecret: E2E_VOICE_SERVICE_SECRET });
+  const started = await tools.startCall({ to: FIRM_NUMBER, from: who.phone, externalId: "e2e-voice-k4" });
+  if (!started) throw new Error("The firm did not answer");
+  // The demo firm has no on-call windows: the transfer becomes a message (K4).
+  expect(
+    await tools.run(started.token, "koppla_till_mekaniker", { anledning: "manniska", skal: "Vill prata med en människa" }),
+  ).toMatchObject({ status: "ta_meddelande" });
+  const left = (await tools.run(started.token, "skapa_meddelande", {
+    skal: "ring_upp",
+    text: "Vill bli uppringd om vinterförvaringen.",
+  })) as { arende_id: string };
+  expect(left.arende_id).toMatch(/^[0-9a-f-]{36}$/);
+
+  await emailCode(page, TOR, "/idag/arenden");
+  await expect(page).toHaveURL(/\/idag\/arenden$/);
+  const message = page.getByRole("listitem", { name: `${who.name} ringde` });
+  await expect(message.getByText("Vill bli uppringd om vinterförvaringen.")).toBeVisible();
+  await message.getByRole("button", { name: "Jag tar det" }).click();
+  await expect(page.getByRole("listitem", { name: `${who.name} ringde` }).getByText("har tagit det")).toBeVisible();
+  await page.getByRole("listitem", { name: `${who.name} ringde` }).getByRole("button", { name: "Klart" }).click();
+  await expect(page.getByRole("listitem", { name: `${who.name} ringde` })).toHaveCount(0);
+
+  const { db, close } = connect();
+  try {
+    const [done] = await db.select({ status: task.status }).from(task).where(eq(task.id, left.arende_id));
+    expect(done?.status).toBe("done");
+  } finally {
+    await close();
+  }
 });

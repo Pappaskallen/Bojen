@@ -7,6 +7,9 @@
  *        { callId, transkript }    → 204, after the call (step 6.3)
  *   POST /api/voice-tools/{tool}   Authorization: Bearer {the call's token}
  *        { ...the tool's input }   → 200 { ...the tool's answer }
+ *   POST /api/voice-tools/kopplingsutfall   Authorization: Bearer {the call's token}
+ *        { besvarad, mal_id }      → 200, how the transfer went (step 6.4; the agent's own,
+ *                                    not a tool for the model)
  *
  * A call's token is short-lived, for one call and one firm, and stops working when the call
  * ends. The answers are the tools' own, built from allow-lists: no codes, no addresses.
@@ -37,10 +40,13 @@ export interface VoiceToolsDeps {
   context: (call: CallRow) => Promise<AgentContext>;
   /** The firm, for the system prompt: services, places, prices and its settings. */
   facts: (tenantId: string) => Promise<ReceptionistFacts | null>;
-  run: (tool: VoiceToolName, call: CallRow, input: unknown) => Promise<unknown>;
+  run: (tool: VoiceToolName | typeof TRANSFER_RESULT, call: CallRow, input: unknown) => Promise<unknown>;
   /** The ended call's transcript, kept scrubbed and summarised in the worker. */
   saveTranscript: (callId: string, transcript: string) => Promise<boolean>;
 }
+
+/** The voice agent reports how a transfer went (step 6.4); the model never calls it. */
+export const TRANSFER_RESULT = "kopplingsutfall";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: NO_STORE });
@@ -112,7 +118,7 @@ export function createVoiceToolsRoute(deps: VoiceToolsDeps) {
     async tool(request: Request, name: string): Promise<Response> {
       const claims = openCallToken(deps.tokenSecret(), bearer(request), deps.now());
       if (!claims) return json({ error: "unauthorized" }, 401);
-      if (!isVoiceTool(name)) return json({ error: "unknown_tool" }, 404);
+      if (!isVoiceTool(name) && name !== TRANSFER_RESULT) return json({ error: "unknown_tool" }, 404);
       const call = await deps.openCall(claims.tenantId, claims.callId);
       // An ended call's token is worth nothing, even before it expires.
       if (!call) return json({ error: "unauthorized" }, 401);

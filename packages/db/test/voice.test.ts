@@ -443,20 +443,19 @@ describe("the other tools", () => {
 
       expect(
         await kopplaTillMekaniker(f.deps, await f.current(callId), {
+          anledning: "manniska",
           skal: "Vill prata med Jonas",
-          prioritet: "normal",
         }),
-      ).toEqual({ status: "ej_svar" });
+      ).toEqual({ status: "ta_meddelande", svarslofte: "nästa vardag före klockan tio" });
       const message = await skapaMeddelande(f.deps, await f.current(callId), {
         skal: "reklamation",
-        prioritet: "hog",
         text: "Läcker fortfarande efter förra besöket.",
       });
       const [t] = await tx
         .select({ title: task.title, priority: task.priority, callId: task.callId })
         .from(task)
         .where(eq(task.id, (message as { arende_id: string }).arende_id));
-      expect(t).toEqual({ title: "Reklamation: Kund ringde", priority: "high", callId });
+      expect(t).toEqual({ title: "Reklamation: Övrigafirman kund ringde", priority: "high", callId });
 
       expect(await stoppaInspelning(f.deps, await f.current(callId))).toEqual({ ok: true });
       expect((await f.current(callId)).recordingAllowed).toBe(false);

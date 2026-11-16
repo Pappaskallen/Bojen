@@ -75,6 +75,9 @@ export type {
   EmailSender,
   OutgoingEmail,
   OutgoingSms,
+  PushPayload,
+  PushSender,
+  PushTarget,
   ReplyClassifier,
   ReportWriter,
   Transcriber,
@@ -247,6 +250,7 @@ export {
   p90,
   splitSentences,
   type CallAudio,
+  type CallDialer,
   type ConversationBlock,
   type ConversationMessage,
   type ConversationModel,
@@ -258,9 +262,32 @@ export {
 } from "./voice/conversation";
 export {
   DEFAULT_RECEPTIONIST,
+  describeOnCall,
   receptionistSettings,
+  type OnCallSettings,
+  type OnCallWindow,
   type ReceptionistSettings,
 } from "./voice/settings";
+export {
+  LONG_CALL_MINUTES,
+  MESSAGE_REASONS,
+  TRANSFER_REASONS,
+  alertChannels,
+  callNudge,
+  followUp,
+  incomingRoute,
+  isOnCall,
+  onCallOrder,
+  planMessage,
+  planTransfer,
+  whisperLine,
+  type FollowUp,
+  type IncomingStep,
+  type MessagePlan,
+  type MessageReason,
+  type TransferPlan,
+  type TransferReason,
+} from "./voice/escalation";
 export { CARD_MARK, PERSONAL_NUMBER_MARK, luhn, scrubSensitive } from "./voice/scrub";
 export {
   CALL_OUTCOMES,
