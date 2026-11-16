@@ -36,6 +36,7 @@ function route(over: Partial<VoiceToolsDeps> = {}) {
       }),
     ),
     run: vi.fn(() => Promise.resolve({ ok: true })),
+    saveTranscript: vi.fn(() => Promise.resolve(true)),
     ...over,
   };
   return { deps, r: createVoiceToolsRoute(deps) };
@@ -144,5 +145,40 @@ describe("a tool", () => {
     expect(response.status).toBe(500);
     expect(JSON.stringify(log.mock.calls)).not.toMatch(/1234|Persson|0701119601/);
     log.mockRestore();
+  });
+});
+
+describe("the transcript after the call", () => {
+  const CALL_ID = "6f1c2a4e-1d3b-4c5a-9e8f-0a1b2c3d4e5f";
+
+  it("is taken from the voice agent with its secret, for a call that exists", async () => {
+    const { deps, r } = route();
+    const response = await r.transcript(
+      post("transkript", SERVICE, { callId: CALL_ID, transkript: "Kund: Hej" }),
+    );
+    expect(response.status).toBe(204);
+    expect(deps.saveTranscript).toHaveBeenCalledWith(CALL_ID, "Kund: Hej");
+    const unknown = route({ saveTranscript: () => Promise.resolve(false) });
+    const missing = await unknown.r.transcript(
+      post("transkript", SERVICE, { callId: CALL_ID, transkript: "x" }),
+    );
+    expect(missing.status).toBe(404);
+  });
+
+  it("is refused with a call's token, without a secret, or without text", async () => {
+    const { deps, r } = route();
+    for (const auth of [null, token()]) {
+      const refused = await r.transcript(
+        post("transkript", auth, { callId: CALL_ID, transkript: "x" }),
+      );
+      expect(refused.status).toBe(401);
+    }
+    const badId = await r.transcript(post("transkript", SERVICE, { callId: "x", transkript: "x" }));
+    expect(badId.status).toBe(400);
+    const empty = await r.transcript(
+      post("transkript", SERVICE, { callId: CALL_ID, transkript: " " }),
+    );
+    expect(empty.status).toBe(400);
+    expect(deps.saveTranscript).not.toHaveBeenCalled();
   });
 });

@@ -41,6 +41,7 @@ import {
   travelCache,
   shortLink,
   smsOptOut,
+  nameplateReading,
   serviceReport,
   staffPasskey,
   verificationCode,
@@ -324,13 +325,25 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     codeHash: "0".repeat(64),
     expiresAt: new Date("2027-01-01T00:10:00Z"),
   });
-  await tx.insert(attachment).values({
+  const [picture] = await tx
+    .insert(attachment)
+    .values({
+      tenantId,
+      ownerType: "job",
+      ownerId: j.id,
+      storageKey: `${tenantId}/jobs/${j.id}/drev.jpg`,
+      contentType: "image/jpeg",
+      sizeBytes: 1234,
+    })
+    .returning();
+  if (!picture) throw new Error("picture not created");
+  await tx.insert(nameplateReading).values({
     tenantId,
-    ownerType: "job",
-    ownerId: j.id,
-    storageKey: `${tenantId}/jobs/${j.id}/drev.jpg`,
-    contentType: "image/jpeg",
-    sizeBytes: 1234,
+    attachmentId: picture.id,
+    boatId: b.id,
+    make: "Volvo Penta",
+    confidence: "0.90",
+    readBy: "fake",
   });
   await tx.insert(kpiSnapshot).values({
     tenantId,

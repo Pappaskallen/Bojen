@@ -7,6 +7,7 @@ import {
 import type { ModelTurn } from "@bojen/core";
 import { describe, expect, it, vi } from "vitest";
 import { FALLBACK_LINE, MAX_TOOL_ROUNDS, createCallAgent } from "./agent";
+import { handleCall } from "./call";
 import { contextPrompt, firstLine, stablePrompt, type FirmFacts } from "./prompt";
 import { runCall } from "./session";
 import { createToolsClient, type ToolsClient } from "./tools-client";
@@ -46,6 +47,7 @@ function tools(
   return {
     calls,
     startCall: () => Promise.resolve(null),
+    sendTranscript: () => Promise.resolve(),
     run: (_token, name, input) => {
       calls.push([name, input]);
       return Promise.resolve(answers[name] ?? { ok: true });
@@ -270,5 +272,60 @@ describe("a call", () => {
     expect(result.turns[0]).toMatchObject({ caller: "Vilka tider har ni", interrupted: true });
     expect(audio.heard).not.toContain("Vilken passar?");
     expect(audio.heard.at(-1)).toBe("Onsdag, då bokar jag den.");
+  });
+});
+
+describe("a whole call", () => {
+  it("starts with the tool API, runs, and hands in the transcript without card numbers", async () => {
+    const sent: [string, string][] = [];
+    const client: ToolsClient = {
+      startCall: () =>
+        Promise.resolve({
+          callId: "c1",
+          token: "t",
+          expiresAt: "2027-04-20T09:00:00Z",
+          firma: FIRM,
+          kontext: { kand: false },
+          verktyg: [],
+        }),
+      run: () => Promise.resolve({ ok: true }),
+      sendTranscript: (callId, transcript) => {
+        sent.push([callId, transcript]);
+        return Promise.resolve();
+      },
+    };
+    const audio = createFakeCallAudio();
+    const result = await handleCall({
+      tools: client,
+      model: createFakeConversation([text("Kort tar vi inte emot i telefon.")]),
+      stt: createFakeSpeechToText([{ text: "Mitt kort är 4111 1111 1111 1111", final: true }]),
+      tts: createFakeTextToSpeech(),
+      audio,
+      to: "+46766860011",
+      from: "+46701119601",
+    });
+    expect(result?.callId).toBe("c1");
+    expect(sent).toEqual([
+      [
+        "c1",
+        `Receptionist: ${firstLine(FIRM)}\nKund: Mitt kort är [kortnummer]\nReceptionist: Kort tar vi inte emot i telefon.`,
+      ],
+    ]);
+  });
+
+  it("hangs up on a number that is no firm's", async () => {
+    const audio = createFakeCallAudio();
+    expect(
+      await handleCall({
+        tools: { ...tools(), startCall: () => Promise.resolve(null) },
+        model: createFakeConversation([]),
+        stt: createFakeSpeechToText([]),
+        tts: createFakeTextToSpeech(),
+        audio,
+        to: "+46700000000",
+        from: null,
+      }),
+    ).toBeNull();
+    expect(audio.hungUp).toBe(true);
   });
 });

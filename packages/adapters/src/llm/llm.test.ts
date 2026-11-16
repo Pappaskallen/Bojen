@@ -4,10 +4,15 @@ import type { ReportFacts } from "@bojen/core";
 import {
   REPLY_MODEL,
   REPORT_MODEL,
+  POSTCALL_MODEL,
   createClaudeClassifier,
+  createClaudeNameplateReader,
+  createClaudeSummarizer,
   createClaudeReportWriter,
   createFakeClassifier,
+  createFakeNameplateReader,
   createFakeReportWriter,
+  createFakeSummarizer,
   createFakeTranscriber,
 } from "..";
 
@@ -174,5 +179,71 @@ describe("fake report writer and transcriber", () => {
       await transcriber.transcribe({ bytes: new Uint8Array([1]), contentType: "audio/webm" }),
     ).toBe("Hej");
     expect(transcriber.calls).toHaveLength(1);
+  });
+});
+
+describe("after the call (step 6.3)", () => {
+  it("summarises the transcript with Sonnet 5.5 in a structured answer", async () => {
+    const { requests, client } = offlineClient({
+      text: JSON.stringify({
+        points: ["Per ringde om Bustern", "Bokade en tid"],
+        outcome: "booked",
+      }),
+    });
+    const summarizer = createClaudeSummarizer({ client });
+    expect(summarizer.name).toBe(POSTCALL_MODEL);
+    expect(await summarizer.summarize("Kund: Hej")).toEqual({
+      points: ["Per ringde om Bustern", "Bokade en tid"],
+      outcome: "booked",
+    });
+    expect(requests[0]?.body).toMatchObject({
+      model: "claude-sonnet-5-5",
+      output_config: { format: { type: "json_schema" } },
+    });
+    const sent = (requests[0]?.body.messages as { content: string }[])[0]?.content ?? "";
+    expect(sent.startsWith("<transcript>")).toBe(true);
+    expect(sent).toContain("Kund: Hej");
+  });
+
+  it("reads a type plate from the picture, and never sends a picture the API cannot read", async () => {
+    const reading = {
+      make: "Volvo Penta",
+      model: "D4-300",
+      serialNumber: "2001234567",
+      confidence: 0.92,
+    };
+    const { requests, client } = offlineClient({ text: JSON.stringify(reading) });
+    const reader = createClaudeNameplateReader({ client });
+    expect(
+      await reader.read({ bytes: new Uint8Array([1, 2, 3]), contentType: "image/jpeg" }),
+    ).toEqual(reading);
+    const content = (
+      requests[0]?.body.messages as { content: { type: string; source?: unknown }[] }[]
+    )[0]?.content;
+    expect(content?.[0]).toEqual({
+      type: "image",
+      source: { type: "base64", media_type: "image/jpeg", data: "AQID" },
+    });
+    expect(
+      await reader.read({ bytes: new Uint8Array([1]), contentType: "image/heic" }),
+    ).toMatchObject({
+      confidence: 0,
+    });
+    expect(requests).toHaveLength(1);
+  });
+
+  it("has fakes that summarise the caller's lines and read every plate the same", async () => {
+    const summarizer = createFakeSummarizer();
+    expect(await summarizer.summarize("Kund: A\nReceptionist: B\nKund: C")).toEqual({
+      points: ["A", "C"],
+      outcome: null,
+    });
+    const reader = createFakeNameplateReader();
+    expect(
+      await reader.read({ bytes: new Uint8Array([1]), contentType: "image/png" }),
+    ).toMatchObject({
+      make: "Volvo Penta",
+    });
+    expect(reader.calls).toHaveLength(1);
   });
 });

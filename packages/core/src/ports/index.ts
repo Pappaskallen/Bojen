@@ -73,6 +73,18 @@ export interface ReportWriter {
   draft(facts: ReportFacts): Promise<unknown>;
 }
 
+/** The call's summary in five points from its transcript (step 6.3): Sonnet 5.5, or a fake. */
+export interface CallSummarizer {
+  readonly name: string;
+  summarize(transcript: string): Promise<unknown>;
+}
+
+/** A type plate read from a picture (step 6.3): Sonnet 5.5 with vision, or a fake. */
+export interface NameplateReader {
+  readonly name: string;
+  read(picture: { bytes: Uint8Array; contentType: string }): Promise<unknown>;
+}
+
 /** Speech to text in Swedish (step 5.5d): Azure sv-SE later, a fake until the account exists. */
 export interface Transcriber {
   transcribe(audio: { bytes: Uint8Array; contentType: string }): Promise<string>;

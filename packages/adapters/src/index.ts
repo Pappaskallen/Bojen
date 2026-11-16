@@ -48,3 +48,13 @@ export {
   type FakeConversation,
   type FakeTextToSpeech,
 } from "./voice/fake";
+export {
+  POSTCALL_MODEL,
+  createClaudeNameplateReader,
+  createClaudeSummarizer,
+  createFakeNameplateReader,
+  createFakeSummarizer,
+  type FakeNameplateReader,
+  type FakeSummarizer,
+  type PostCallOptions,
+} from "./llm/postcall";

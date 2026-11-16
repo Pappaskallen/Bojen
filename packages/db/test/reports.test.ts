@@ -26,6 +26,7 @@ import {
   attachment,
   domainEvent,
   jobLine,
+  nameplateReading,
   part,
   serviceReport,
   serviceType,
@@ -367,6 +368,7 @@ describe("the picture of the boat on the day view", () => {
     await withRollback(async (tx) => {
       const f = await setUp(tx, "Bildfirman", "+46701119410");
       // The helper's picture is for the isolation test, with no file behind it.
+      await tx.delete(nameplateReading).where(eq(nameplateReading.tenantId, f.tenantId));
       await tx.delete(attachment).where(eq(attachment.tenantId, f.tenantId));
       const deps = { db: tx, storage: f.storage };
       const picture = async (ownerType: string, ownerId: string, name: string, at: Date) => {

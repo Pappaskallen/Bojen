@@ -28,6 +28,7 @@ import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { encryptAccess } from "./access";
 import { BookingError, changeBooking, type BookingResult } from "./booking";
 import { answerCampaign, recipientForVisit } from "./campaigns";
+import { scheduleNameplate } from "./postcall";
 import type { Database } from "./client";
 import { type VisitContext, visitContext } from "./flows";
 import type { SuggestRequest } from "./public-booking";
@@ -360,14 +361,19 @@ export async function addPicturesByLink(
     const ext = p.contentType.split("/")[1] ?? "bin";
     const key = `${link.tenantId}/jobs/${visit.jobId}/${randomUUID()}.${ext}`;
     await deps.storage.put(key, p.bytes, p.contentType);
-    await deps.db.insert(attachment).values({
-      tenantId: link.tenantId,
-      ownerType: "job",
-      ownerId: visit.jobId,
-      storageKey: key,
-      contentType: p.contentType,
-      sizeBytes: p.bytes.byteLength,
-    });
+    const [saved] = await deps.db
+      .insert(attachment)
+      .values({
+        tenantId: link.tenantId,
+        ownerType: "job",
+        ownerId: visit.jobId,
+        storageKey: key,
+        contentType: p.contentType,
+        sizeBytes: p.bytes.byteLength,
+      })
+      .returning({ id: attachment.id });
+    // Each picture is read for a type plate in the worker (step 6.3).
+    if (saved) await scheduleNameplate(deps.db, link.tenantId, saved.id, deps.now());
   }
   return pictures.length;
 }

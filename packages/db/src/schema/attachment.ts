@@ -39,6 +39,7 @@ export const attachment = pgTable(
       sql`starts_with(${t.storageKey}, ${t.tenantId}::text || '/')`,
     ),
     unique("attachment_storage_key_key").on(t.storageKey),
+    unique("attachment_tenant_id_id_key").on(t.tenantId, t.id),
     index("attachment_owner_idx").on(t.tenantId, t.ownerType, t.ownerId),
     tenantIsolationPolicy(),
   ],

@@ -1,5 +1,21 @@
-import type { EmailSender, MapsProvider, SmsSender } from "@bojen/core";
-import { REPORT_TASK, SEND_MESSAGE_TASK, type DraftDeps, writeReportDraft } from "@bojen/db";
+import type {
+  CallSummarizer,
+  EmailSender,
+  MapsProvider,
+  NameplateReader,
+  ObjectStorage,
+  SmsSender,
+} from "@bojen/core";
+import {
+  NAMEPLATE_TASK,
+  POST_CALL_TASK,
+  REPORT_TASK,
+  SEND_MESSAGE_TASK,
+  readNameplate,
+  runPostCall,
+  writeReportDraft,
+  type DraftDeps,
+} from "@bojen/db";
 import type { Task, TaskList } from "graphile-worker";
 import { CHECK_TASK, sendAvailabilityCheck } from "./flows/availabilityCheck";
 import { ESCALATION_TASK, REMINDER_TASK, handleCheckEvent } from "./flows/availabilityFollowup";
@@ -23,6 +39,8 @@ export interface WorkerDeps extends FlowDeps {
   reports?: Pick<DraftDeps, "storage" | "writer" | "transcriber">;
   /** Travel times for the times the spring campaign holds (step 5.6). */
   maps?: MapsProvider;
+  /** After a call and for pictures of type plates (step 6.3). */
+  postCall?: { summarizer: CallSummarizer; reader: NameplateReader; storage: ObjectStorage };
 }
 
 function field(payload: unknown, name: string): string {
@@ -82,6 +100,7 @@ export function taskList(deps: WorkerDeps): TaskList {
           },
         }
       : {}),
+    ...(deps.postCall ? postCallTasks({ db: deps.db, ...deps.postCall }) : {}),
     ...(deps.reports ? reportTasks({ db: deps.db, now: deps.now, ...deps.reports }) : {}),
   };
 }
@@ -93,5 +112,26 @@ export function taskList(deps: WorkerDeps): TaskList {
 export function reportTasks(deps: DraftDeps): TaskList {
   return {
     [REPORT_TASK]: visitTask((tenantId, visitId) => writeReportDraft(deps, tenantId, visitId)),
+  };
+}
+
+/** The work after a call, and reading pictures for type plates (step 6.3). */
+export function postCallTasks(deps: {
+  db: FlowDeps["db"];
+  summarizer: CallSummarizer;
+  reader: NameplateReader;
+  storage: ObjectStorage;
+}): TaskList {
+  return {
+    [POST_CALL_TASK]: async (payload, helpers) => {
+      const callId = field(payload, "callId");
+      const outcome = await runPostCall(deps, field(payload, "tenantId"), callId);
+      helpers.logger.info(`call ${callId}: ${outcome}`);
+    },
+    [NAMEPLATE_TASK]: async (payload, helpers) => {
+      const attachmentId = field(payload, "attachmentId");
+      const outcome = await readNameplate(deps, field(payload, "tenantId"), attachmentId);
+      helpers.logger.info(`picture ${attachmentId}: ${outcome}`);
+    },
   };
 }

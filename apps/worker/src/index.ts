@@ -11,7 +11,7 @@ import type { EmailSender, SmsSender } from "@bojen/core";
 import { connect, databaseUrl } from "@bojen/db";
 import { run } from "graphile-worker";
 import { customerLinks } from "./flows/deps";
-import { reportDeps } from "./report-deps";
+import { postCallDeps, reportDeps } from "./report-deps";
 import { taskList } from "./tasks";
 
 /**
@@ -73,6 +73,7 @@ function linkKey(): string {
 async function main() {
   const url = databaseUrl();
   const { db } = connect(url);
+  const reports = reportDeps(production);
   const runner = await run({
     connectionString: url,
     concurrency: 4,
@@ -85,7 +86,8 @@ async function main() {
       now: () => systemClock.now(),
       optOutKey: optOutKey(),
       link: customerLinks(db, linkKey(), process.env.APP_URL ?? "bojen.se"),
-      reports: reportDeps(production),
+      reports,
+      postCall: postCallDeps(production, reports.storage),
       maps: process.env.OSRM_URL
         ? createOsrmMaps({ baseUrl: process.env.OSRM_URL })
         : createFakeMaps(),

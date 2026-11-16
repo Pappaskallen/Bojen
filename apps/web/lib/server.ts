@@ -38,6 +38,7 @@ import {
   changeBooking,
   connect,
   createSpringCampaign,
+  decideNameplate,
   moveCard,
   onceOnly,
   passkeyOwner,
@@ -64,6 +65,8 @@ import {
   ombokaBokning,
   openCall,
   receptionistFacts,
+  saveTranscript,
+  tenantOfCall,
   sattVantelista,
   skapaBokning,
   skapaMeddelande,
@@ -75,6 +78,7 @@ import {
 } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createBoatAccessRoute } from "./boat-access";
+import { createNameplateRoute } from "./nameplate-route";
 import { createCampaignRoutes } from "./campaign-routes";
 import { createBoatPictureRoute } from "./boat-picture-route";
 import { createCustomerPage } from "./customer-page";
@@ -319,6 +323,13 @@ export const boatPictureRoute = createBoatPictureRoute({
   picture: (actor, visitId) => visitBoatPicture({ db: db(), storage: storage() }, actor, visitId),
 });
 
+/** The mechanic's decision on a type plate suggestion (step 6.3). */
+export const nameplateRoute = createNameplateRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  decide: (actor, readingId, decision, engineId) =>
+    decideNameplate(db(), actor, readingId, decision, engineId),
+});
+
 /** The service report and the invoice basis (step 5.5d). */
 export const reportRoute = createReportRoute({
   session: (request) => sessionFromRequest(staffAuth(), request),
@@ -471,4 +482,10 @@ export const voiceToolsRoute = createVoiceToolsRoute({
   context: (call) => callContext(voiceDeps(), call),
   facts: (tenantId) => receptionistFacts(db(), tenantId),
   run: (tool, call, input) => VOICE_TOOL_RUNNERS[tool](voiceDeps(), call, input),
+  saveTranscript: async (callId, transcript) => {
+    const tenantId = await tenantOfCall(db(), callId);
+    return tenantId
+      ? saveTranscript(db(), { tenantId, callId, transcript, now: new Date() })
+      : false;
+  },
 });

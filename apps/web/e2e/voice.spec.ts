@@ -4,7 +4,7 @@ import {
   createFakeSpeechToText,
   createFakeTextToSpeech,
 } from "@bojen/adapters";
-import type { ConversationBlock, ModelTurn } from "@bojen/core";
+import { transcriptText, type ConversationBlock, type ModelTurn } from "@bojen/core";
 import { boatOwnership, call, connect, customer, job, tenant, visit } from "@bojen/db";
 import { DEMO_TENANT_ID } from "@bojen/db/seed";
 import { expect, test } from "@playwright/test";
@@ -178,18 +178,34 @@ test("a known customer calls, gets a time offered, says yes and is booked (step 
   expect(audio.heard[0]).toContain("digitala assistent");
   expect(audio.heard.some((s) => s.startsWith("Klart, du är bokad."))).toBe(true);
   expect(audio.hungUp).toBe(true);
+
+  // After the call the voice agent hands in the transcript, for the summary (step 6.3).
+  await tools.sendTranscript(started.callId, transcriptText(agent.messages));
   // The last turn only ends the call: nothing is said, so nothing to time.
   expect(result.latencies).toHaveLength(2);
 
-  // In the database: a booked visit from the phone, the call ended with its job.
+  // In the database: a booked visit from the phone, the call ended with its job, and its
+  // transcript waiting for the worker's summary.
   const { db, close } = connect();
   try {
     const [made] = await db
-      .select({ jobId: call.jobId, outcome: call.outcome, endedAt: call.endedAt })
+      .select({
+        jobId: call.jobId,
+        outcome: call.outcome,
+        endedAt: call.endedAt,
+        transcript: call.transcript,
+        id: call.id,
+      })
       .from(call)
       .where(eq(call.externalId, "e2e-voice"));
     expect(made?.outcome).toBe("booked");
     expect(made?.endedAt).not.toBeNull();
+    expect(made?.transcript).toContain("Kund: Hej, jag vill boka en tid");
+    expect(made?.transcript).toContain("Receptionist: Klart, du är bokad.");
+    const queued = await db.execute(
+      sql`select 1 from graphile_worker._private_jobs where key = ${`post-call:${made?.id ?? ""}`}`,
+    );
+    expect([...queued]).toHaveLength(1);
     const [booked] = await db
       .select({ channel: job.channel, customerId: job.customerId, status: visit.status })
       .from(job)

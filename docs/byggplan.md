@@ -373,6 +373,7 @@ ett alternativ i stället för att byta tyst.
   - Spara transkribering, sammanfattning i 5 punkter och utfall, och koppla samtalet till ett jobb.
   - Tolkning av typskyltsbild (Claude Sonnet 5.5 med bildtolkning) ger förslag på märke, modell och serienummer som mekanikern bekräftar.
   - Rensa bort kort- och personnummer.
+  - (Avstämt med Robert 2026-11-16: byggs först mot fejkar. Testet med fem riktiga typskyltar körs med `pnpm --filter @bojen/worker nameplates <mapp>` när bilderna och en Anthropic-nyckel finns.)
 - **Klart när:** Tester med 5 riktiga typskyltsbilder (Volvo Penta, Mercury, Yamaha, Suzuki och Honda) ger rätt modell i minst 4 av 5 fall.
 
 #### Steg 6.4 – Kopplingsregler och reservrutin (1,5 dagar)

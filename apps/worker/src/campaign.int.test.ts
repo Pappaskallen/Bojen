@@ -197,7 +197,10 @@ describe("the spring campaign (step 5.6)", () => {
 
       // --- The sms go out, and the first customer answers JA. ---
       await run(tasks, ["send_message"]);
-      const first = sent[0];
+      // A customer with one boat in the round, so the JA is for this time (see the next test).
+      const owners = new Map<string, number>();
+      for (const r of sent) owners.set(r.customerId, (owners.get(r.customerId) ?? 0) + 1);
+      const first = sent.find((r) => owners.get(r.customerId) === 1);
       if (!first?.visitId) throw new Error("No held time");
       const [who] = await db
         .select({ phone: customer.phone })
@@ -265,7 +268,7 @@ describe("the spring campaign (step 5.6)", () => {
         springServiceIds: [spring.id],
         layUpServiceIds: [],
         bookServiceTypeId: spring.id,
-        batchSize: 3,
+        batchSize: 10,
       });
       await startCampaign(deps, tenantId, campaignId);
       await run(tasks, ["campaign_round"]);
@@ -281,8 +284,13 @@ describe("the spring campaign (step 5.6)", () => {
         .where(
           and(eq(campaignRecipient.campaignId, campaignId), eq(campaignRecipient.status, "sent")),
         );
-      expect(sent).toHaveLength(3);
-      const [other, no, silent] = sent as [(typeof sent)[0], (typeof sent)[0], (typeof sent)[0]];
+      // Three customers with one boat each: an answer goes to the latest question to the
+      // number, so a customer with two boats in the round would answer for the other one.
+      const byPhone = new Map<string | null, number>();
+      for (const r of sent) byPhone.set(r.phone, (byPhone.get(r.phone) ?? 0) + 1);
+      const single = sent.filter((r) => byPhone.get(r.phone) === 1);
+      expect(single.length).toBeGreaterThanOrEqual(3);
+      const [other, no, silent] = single as [(typeof sent)[0], (typeof sent)[0], (typeof sent)[0]];
       let n = 0;
       const answer = async (from: string | null, body: string) => {
         clock = new Date(clock.getTime() + 60_000);
@@ -328,7 +336,7 @@ describe("the spring campaign (step 5.6)", () => {
       // No answer in 14 days: released, and the freed time does not start the waitlist.
       clock = new Date(clock.getTime() + 15 * 86_400_000);
       const released = await run(tasks, ["campaign_release", "domain_event"]);
-      expect(released.filter((t) => t === "campaign_release")).toHaveLength(3);
+      expect(released.filter((t) => t === "campaign_release")).toHaveLength(sent.length);
       expect(await statusOf(silent.visitId)).toBe("cancelled");
       const waitlist = await db.execute(sql`
         select 1 from graphile_worker._private_jobs j
@@ -342,7 +350,7 @@ describe("the spring campaign (step 5.6)", () => {
         .where(
           inArray(
             campaignRecipient.suggestedVisitId,
-            sent.map((s) => s.visitId ?? ""),
+            [other, no, silent].map((s) => s.visitId ?? ""),
           ),
         );
       expect(rows).toEqual(

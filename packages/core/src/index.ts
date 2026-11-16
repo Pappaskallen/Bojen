@@ -78,6 +78,8 @@ export type {
   ReplyClassifier,
   ReportWriter,
   Transcriber,
+  CallSummarizer,
+  NameplateReader,
   GeocodeResult,
   Geocoder,
   ObjectStorage,
@@ -259,3 +261,22 @@ export {
   receptionistSettings,
   type ReceptionistSettings,
 } from "./voice/settings";
+export { CARD_MARK, PERSONAL_NUMBER_MARK, luhn, scrubSensitive } from "./voice/scrub";
+export {
+  CALL_OUTCOMES,
+  SUMMARY_POINTS,
+  normaliseSummary,
+  summaryText,
+  transcriptText,
+  type CallOutcome,
+  type CallSummary,
+} from "./voice/summarize";
+export {
+  NAMEPLATE_MAKES,
+  SUGGEST_FROM,
+  canonicalMake,
+  normaliseNameplate,
+  sameModel,
+  worthSuggesting,
+  type NameplateReading,
+} from "./vision/nameplate";

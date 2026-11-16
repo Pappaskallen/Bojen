@@ -558,6 +558,25 @@ export const crm = {
   },
   /** The boat card (step 5.2). */
   boat: {
+    nameplate: "Förslag från typskylt",
+    nameplateIntro:
+      "Läst av AI från en bild som kunden skickade. Kontrollera mot bilden innan du använder förslaget.",
+    nameplateRead: (make: string, confidence: number) =>
+      `${make}, säkerhet ${String(Math.round(confidence * 100))} %`,
+    nameplatePicture: "Visa bilden",
+    nameplateEngine: "Till motor",
+    nameplateNewEngine: "Ny motor",
+    nameplateUse: "Använd på motorn",
+    nameplateDismiss: "Avfärda",
+    nameplateDone: {
+      confirmed: "Motorn är uppdaterad från typskylten.",
+      dismissed: "Förslaget är avfärdat.",
+    } as Record<string, string>,
+    nameplateErrors: {
+      not_found: "Förslaget eller motorn finns inte.",
+      decided: "Förslaget är redan hanterat.",
+      failed: "Något gick fel. Försök igen.",
+    } as Record<string, string>,
     title: "Båtkort",
     unnamed: "Båt utan namn",
     about: "Om båten",

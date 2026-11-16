@@ -6,6 +6,7 @@ import type { ConversationTool } from "@bojen/core";
 import type { FirmFacts } from "./prompt";
 
 export interface StartedCall {
+  callId: string;
   token: string;
   expiresAt: string;
   firma: FirmFacts;
@@ -20,6 +21,8 @@ export interface ToolsClient {
     externalId?: string;
   }): Promise<StartedCall | null>;
   run(token: string, tool: string, input: unknown): Promise<unknown>;
+  /** The ended call's transcript, for the summary (step 6.3). */
+  sendTranscript(callId: string, transcript: string): Promise<void>;
 }
 
 export interface ToolsClientOptions {
@@ -46,6 +49,14 @@ export function createToolsClient(options: ToolsClientOptions): ToolsClient {
       if (!response.ok)
         throw new Error(`The tool API refused the call: ${String(response.status)}`);
       return (await response.json()) as StartedCall;
+    },
+    async sendTranscript(callId, transcript) {
+      const response = await post("transkript", options.serviceSecret, {
+        callId,
+        transkript: transcript,
+      });
+      if (!response.ok)
+        throw new Error(`The tool API refused the transcript: ${String(response.status)}`);
     },
     async run(token, tool, input) {
       const response = await post(encodeURIComponent(tool), token, input);

@@ -2,7 +2,9 @@
  * The receptionist's tool API (byggplan step 6.1, spec 8.2), for the voice agent (step 6.2).
  *
  *   POST /api/voice-tools/samtal   Authorization: Bearer {VOICE_SERVICE_SECRET}
- *        { to, from, externalId }  → 201 { token, expiresAt, firma, kontext, verktyg }
+ *        { to, from, externalId }  → 201 { callId, token, expiresAt, firma, kontext, verktyg }
+ *   POST /api/voice-tools/transkript   Authorization: Bearer {VOICE_SERVICE_SECRET}
+ *        { callId, transkript }    → 204, after the call (step 6.3)
  *   POST /api/voice-tools/{tool}   Authorization: Bearer {the call's token}
  *        { ...the tool's input }   → 200 { ...the tool's answer }
  *
@@ -36,6 +38,8 @@ export interface VoiceToolsDeps {
   /** The firm, for the system prompt: services, places, prices and its settings. */
   facts: (tenantId: string) => Promise<ReceptionistFacts | null>;
   run: (tool: VoiceToolName, call: CallRow, input: unknown) => Promise<unknown>;
+  /** The ended call's transcript, kept scrubbed and summarised in the worker. */
+  saveTranscript: (callId: string, transcript: string) => Promise<boolean>;
 }
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -78,6 +82,7 @@ export function createVoiceToolsRoute(deps: VoiceToolsDeps) {
       if (!call) return json({ error: "unknown_number" }, 404);
       return json(
         {
+          callId: started.callId,
           token: sealCallToken(deps.tokenSecret(), started),
           expiresAt: new Date(started.expiresAt).toISOString(),
           firma: await deps.facts(started.tenantId),
@@ -86,6 +91,21 @@ export function createVoiceToolsRoute(deps: VoiceToolsDeps) {
         },
         201,
       );
+    },
+
+    /** The call's transcript once it has ended, from the voice agent. */
+    async transcript(request: Request): Promise<Response> {
+      const secret = deps.serviceSecret();
+      if (!secret || !same(bearer(request), secret)) return json({ error: "unauthorized" }, 401);
+      const input = await body(request);
+      const callId = typeof input?.callId === "string" ? input.callId : "";
+      const text = typeof input?.transkript === "string" ? input.transkript : "";
+      if (!/^[0-9a-f-]{36}$/i.test(callId) || !text.trim()) {
+        return json({ error: "invalid_input" }, 400);
+      }
+      return (await deps.saveTranscript(callId, text))
+        ? new Response(null, { status: 204, headers: NO_STORE })
+        : json({ error: "not_found" }, 404);
     },
 
     /** One tool, for the call the token names. */
