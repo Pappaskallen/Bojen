@@ -104,7 +104,12 @@ export async function onCallNow(db: Db, tenantId: string, now: Date): Promise<On
 /** Queues the alert for a message: push, and an sms too when it is critical. */
 export async function queueAlert(
   db: Pick<Database, "execute">,
-  input: { tenantId: string; taskId: string; userIds: readonly string[]; channels: readonly ("push" | "sms")[] },
+  input: {
+    tenantId: string;
+    taskId: string;
+    userIds: readonly string[];
+    channels: readonly ("push" | "sms")[];
+  },
   at: Date,
 ): Promise<void> {
   if (input.userIds.length === 0) return;
@@ -138,10 +143,20 @@ const short = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 
  */
 export async function sendAlert(
   deps: AlertDeps,
-  input: { tenantId: string; taskId: string; userIds: readonly string[]; channels: readonly string[] },
+  input: {
+    tenantId: string;
+    taskId: string;
+    userIds: readonly string[];
+    channels: readonly string[];
+  },
 ): Promise<{ pushed: number; texted: number }> {
   const [row] = await deps.db
-    .select({ title: task.title, note: task.note, status: task.status, assigneeId: task.assigneeId })
+    .select({
+      title: task.title,
+      note: task.note,
+      status: task.status,
+      assigneeId: task.assigneeId,
+    })
     .from(task)
     .where(and(eq(task.tenantId, input.tenantId), eq(task.id, input.taskId)));
   // Taken or done meanwhile: no one needs waking.
@@ -151,7 +166,12 @@ export async function sendAlert(
   const note = short((row.note ?? "").replace(/\s+/g, " ").trim(), 220);
   let pushed = 0;
   let texted = 0;
-  const log = (values: { channel: "push" | "sms"; to: string; body: string; externalId?: string }) =>
+  const log = (values: {
+    channel: "push" | "sms";
+    to: string;
+    body: string;
+    externalId?: string;
+  }) =>
     deps.db.insert(message).values({
       tenantId: input.tenantId,
       channel: values.channel,
@@ -196,7 +216,13 @@ export async function sendAlert(
       const [person] = await deps.db
         .select({ mobile: appUser.mobile })
         .from(appUser)
-        .where(and(eq(appUser.tenantId, input.tenantId), eq(appUser.id, userId), isNull(appUser.deletedAt)));
+        .where(
+          and(
+            eq(appUser.tenantId, input.tenantId),
+            eq(appUser.id, userId),
+            isNull(appUser.deletedAt),
+          ),
+        );
       if (!person?.mobile) continue;
       const body = renderSms("staff_alert", { title: row.title, note, link }).body;
       const sent = await deps.sms.send({ to: person.mobile, body });
@@ -319,7 +345,12 @@ export async function runFollowUp(
     const alerted = [...input.alerted, next.userId];
     await queueAlert(
       deps.db,
-      { tenantId: input.tenantId, taskId: input.taskId, userIds: [next.userId], channels: ["push", "sms"] },
+      {
+        tenantId: input.tenantId,
+        taskId: input.taskId,
+        userIds: [next.userId],
+        channels: ["push", "sms"],
+      },
       now,
     );
     await scheduleJob(
@@ -363,13 +394,24 @@ export async function incomingCall(
     : undefined;
   const person = chosen?.mobile ? chosen : who.order.find((s) => s.mobile);
   const mechanic = person?.mobile ?? null;
-  return { tenantId: firm.id, steps: incomingRoute({ agentUp: input.agentUp, mechanic }), mechanic };
+  return {
+    tenantId: firm.id,
+    steps: incomingRoute({ agentUp: input.agentUp, mechanic }),
+    mechanic,
+  };
 }
 
 /** A voicemail is in (46elks' record callback): a call row, and the transcription queued. */
 export async function saveVoicemail(
   db: Db,
-  input: { to: string; from: string | null; callId: string; wav: string; seconds: number; now: Date },
+  input: {
+    to: string;
+    from: string | null;
+    callId: string;
+    wav: string;
+    seconds: number;
+    now: Date;
+  },
 ): Promise<{ callId: string } | null> {
   const firm = await firmByNumber(db, toE164(input.to) ?? input.to);
   if (!firm) return null;
@@ -378,7 +420,9 @@ export async function saveVoicemail(
     ? await db
         .select({ id: customer.id })
         .from(customer)
-        .where(and(eq(customer.tenantId, firm.id), eq(customer.phone, from), isNull(customer.deletedAt)))
+        .where(
+          and(eq(customer.tenantId, firm.id), eq(customer.phone, from), isNull(customer.deletedAt)),
+        )
         .limit(2)
     : [];
   const [row] = await db
@@ -435,7 +479,10 @@ export async function runVoicemail(
   }
   await deps.db.update(call).set({ transcript: text, summary: text }).where(eq(call.id, c.id));
   const [person] = c.customerId
-    ? await deps.db.select({ name: customer.name }).from(customer).where(eq(customer.id, c.customerId))
+    ? await deps.db
+        .select({ name: customer.name })
+        .from(customer)
+        .where(eq(customer.id, c.customerId))
     : [];
   const created = await leaveMessage(deps, {
     tenantId: input.tenantId,
@@ -519,7 +566,11 @@ export async function decideTask(
     .set(
       decision === "take"
         ? { assigneeId: sql`coalesce(${task.assigneeId}, ${actor.userId}::uuid)` }
-        : { status: "done", completedAt: now, assigneeId: sql`coalesce(${task.assigneeId}, ${actor.userId}::uuid)` },
+        : {
+            status: "done",
+            completedAt: now,
+            assigneeId: sql`coalesce(${task.assigneeId}, ${actor.userId}::uuid)`,
+          },
     )
     .where(and(eq(task.tenantId, actor.tenantId), eq(task.id, taskId), eq(task.status, "open")))
     .returning({ id: task.id });
@@ -539,7 +590,12 @@ export async function savePushSubscription(
     .values({ tenantId: actor.tenantId, userId: actor.userId, ...input })
     .onConflictDoUpdate({
       target: pushSubscription.endpoint,
-      set: { tenantId: actor.tenantId, userId: actor.userId, p256dh: input.p256dh, auth: input.auth },
+      set: {
+        tenantId: actor.tenantId,
+        userId: actor.userId,
+        p256dh: input.p256dh,
+        auth: input.auth,
+      },
     });
 }
 

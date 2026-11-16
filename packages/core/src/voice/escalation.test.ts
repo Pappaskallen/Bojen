@@ -132,7 +132,13 @@ describe("putting the call through", () => {
       "Skärgårdsmek här. Jag har ett akut samtal från Per om Nimbusen: Motorn stannade vid Sandhamn och startar inte. Säg ja eller tryck 1 för att ta det.",
     );
     expect(
-      whisperLine({ firm: "F", caller: null, boat: null, reason: "manniska", summary: "Vill prata!" }),
+      whisperLine({
+        firm: "F",
+        caller: null,
+        boat: null,
+        reason: "manniska",
+        summary: "Vill prata!",
+      }),
     ).toBe("F här. Jag har ett samtal: Vill prata. Säg ja eller tryck 1 för att ta det.");
   });
 });
@@ -175,7 +181,8 @@ describe("messages", () => {
     expect(plan("sprak")).toMatchObject({ priority: "normal", label: "Annat språk" });
     const morning = at("2027-04-05T09:00");
     expect(
-      planMessage({ reason: "foretag", onCall: true, now: morning, escalateAfterMinutes: 30 }).dueAt,
+      planMessage({ reason: "foretag", onCall: true, now: morning, escalateAfterMinutes: 30 })
+        .dueAt,
     ).toEqual(at("2027-04-05T17:00"));
     // Late in the day: two hours on rather than a time already gone.
     expect(plan("foretag").dueAt).toEqual(at("2027-04-05T19:30"));

@@ -76,10 +76,17 @@ describe("the messages route", () => {
 
   it("only takes push services' https addresses, never one inside our network", async () => {
     const { deps, route: r } = route();
-    for (const endpoint of ["http://fcm.googleapis.com/x", "https://localhost/x", "https://10.0.0.5/x", "nope"]) {
+    for (const endpoint of [
+      "http://fcm.googleapis.com/x",
+      "https://localhost/x",
+      "https://10.0.0.5/x",
+      "nope",
+    ]) {
       expect((await r.push(push({ ...SUB, endpoint }))).status).toBe(400);
     }
-    expect((await r.push(push({ endpoint: SUB.endpoint, keys: { p256dh: "x", auth: "<>" } }))).status).toBe(400);
+    expect(
+      (await r.push(push({ endpoint: SUB.endpoint, keys: { p256dh: "x", auth: "<>" } }))).status,
+    ).toBe(400);
     expect(deps.subscribe).not.toHaveBeenCalled();
   });
 });

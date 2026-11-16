@@ -84,7 +84,10 @@ function onCall(v: unknown): OnCallSettings {
   if (!isRecord(v)) return DEFAULT_RECEPTIONIST.onCall;
   return {
     windows: Array.isArray(v.windows)
-      ? v.windows.map(window).filter((w): w is OnCallWindow => w !== null).slice(0, 14)
+      ? v.windows
+          .map(window)
+          .filter((w): w is OnCallWindow => w !== null)
+          .slice(0, 14)
       : [],
     mechanicIds: Array.isArray(v.mechanicIds)
       ? v.mechanicIds.filter((x): x is string => typeof x === "string" && UUID.test(x)).slice(0, 10)

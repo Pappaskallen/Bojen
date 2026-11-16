@@ -15,7 +15,13 @@ import {
   saveVoicemail,
   sendAlert,
 } from "../src/escalation";
-import { kopplaTillMekaniker, kopplingsutfall, openCall, skapaMeddelande, startCall } from "../src/voice";
+import {
+  kopplaTillMekaniker,
+  kopplingsutfall,
+  openCall,
+  skapaMeddelande,
+  startCall,
+} from "../src/voice";
 import { appUser, call, message, pushSubscription, task, tenant } from "../src/schema";
 import { closeDb, createTenantWithBoat, withRollback, type Tx } from "./helpers";
 
@@ -27,7 +33,11 @@ const FIRM = "+46766860021";
 const ALL_DAY = { days: [1, 2, 3, 4, 5, 6, 7], from: "06:00", to: "22:00" };
 
 const job = async (tx: Tx, key: string) => {
-  const [row] = await tx.execute<{ identifier: string; payload: Record<string, string>; run_at: string }>(sql`
+  const [row] = await tx.execute<{
+    identifier: string;
+    payload: Record<string, string>;
+    run_at: string;
+  }>(sql`
     select t.identifier, j.payload, j.run_at from graphile_worker._private_jobs j
       join graphile_worker._private_tasks t on t.id = j.task_id
      where j.key = ${key}`);
@@ -36,7 +46,10 @@ const job = async (tx: Tx, key: string) => {
 
 async function setUp(tx: Tx, name: string, phone: string, onCall = true) {
   const f = await createTenantWithBoat(tx, name, phone);
-  await tx.update(appUser).set({ mobile: "+46701119801", name: "Anna Andersson" }).where(eq(appUser.id, f.mechanicId));
+  await tx
+    .update(appUser)
+    .set({ mobile: "+46701119801", name: "Anna Andersson" })
+    .where(eq(appUser.id, f.mechanicId));
   const [bo] = await tx
     .insert(appUser)
     .values({ tenantId: f.tenantId, name: "Bo Berg", role: "mechanic", mobile: "+46701119802" })
@@ -94,9 +107,9 @@ describe("putting the call through", () => {
           ) as unknown,
         },
       });
-      expect(
-        await kopplingsutfall(f.deps, f.call, { besvarad: true, mal_id: f.boId }),
-      ).toEqual({ ok: true });
+      expect(await kopplingsutfall(f.deps, f.call, { besvarad: true, mal_id: f.boId })).toEqual({
+        ok: true,
+      });
       const [after] = await tx.select().from(call).where(eq(call.id, f.call.id));
       expect(after).toMatchObject({ outcome: "transferred" });
       expect(after?.summary).toContain("Kopplad till Bo");
@@ -151,16 +164,24 @@ describe("an urgent message on call (K2 without an answer)", () => {
       });
 
       // The alert: push to each of Anna's phones, and an sms since it is critical.
-      await savePushSubscription(tx, { tenantId: f.tenantId, userId: f.mechanicId }, {
-        endpoint: "https://push.example/anna-phone",
-        p256dh: "k",
-        auth: "a",
-      });
-      await savePushSubscription(tx, { tenantId: f.tenantId, userId: f.mechanicId }, {
-        endpoint: "https://push.example/anna-old",
-        p256dh: "k",
-        auth: "a",
-      });
+      await savePushSubscription(
+        tx,
+        { tenantId: f.tenantId, userId: f.mechanicId },
+        {
+          endpoint: "https://push.example/anna-phone",
+          p256dh: "k",
+          auth: "a",
+        },
+      );
+      await savePushSubscription(
+        tx,
+        { tenantId: f.tenantId, userId: f.mechanicId },
+        {
+          endpoint: "https://push.example/anna-old",
+          p256dh: "k",
+          auth: "a",
+        },
+      );
       const push = createFakePush();
       push.gone.add("https://push.example/anna-old");
       const sms2 = createFakeSms();
@@ -221,7 +242,12 @@ describe("an urgent message on call (K2 without an answer)", () => {
       const anna = { tenantId: f.tenantId, userId: f.mechanicId };
       expect(await decideTask(tx, anna, taskId, "take", NOW)).toBe(true);
       const open = (await openTasks(tx, f.tenantId)).find((o) => o.id === taskId);
-      expect(open).toMatchObject({ id: taskId, takenBy: "Anna", phone: "+46701119814", priority: "high" });
+      expect(open).toMatchObject({
+        id: taskId,
+        takenBy: "Anna",
+        phone: "+46701119814",
+        priority: "high",
+      });
       expect(
         await runFollowUp(f.deps, { tenantId: f.tenantId, taskId, alerted: [f.mechanicId] }),
       ).toEqual({ do: "nothing" });
@@ -234,10 +260,12 @@ describe("an urgent message on call (K2 without an answer)", () => {
       ).toEqual({ pushed: 0, texted: 0 });
       // Bo marks it done; another firm cannot.
       const g = await createTenantWithBoat(tx, "Främmandefirman", "+46701119815");
-      expect(await decideTask(tx, { tenantId: g.tenantId, userId: g.mechanicId }, taskId, "done", NOW)).toBe(
-        false,
-      );
-      expect(await decideTask(tx, { tenantId: f.tenantId, userId: f.boId }, taskId, "done", NOW)).toBe(true);
+      expect(
+        await decideTask(tx, { tenantId: g.tenantId, userId: g.mechanicId }, taskId, "done", NOW),
+      ).toBe(false);
+      expect(
+        await decideTask(tx, { tenantId: f.tenantId, userId: f.boId }, taskId, "done", NOW),
+      ).toBe(true);
       expect((await openTasks(tx, f.tenantId)).map((o) => o.id)).not.toContain(taskId);
       expect(await decideTask(tx, anna, taskId, "take", NOW)).toBe(false);
     });
@@ -259,8 +287,12 @@ describe("other messages", () => {
       const [sms] = await tx
         .select({ body: message.body })
         .from(message)
-        .where(and(eq(message.tenantId, f.tenantId), eq(message.template, "voice_message_promise")));
-      expect(sms?.body).toBe("Tack för samtalet! Vi återkommer nästa vardag före klockan tio. /Kvällsfirman");
+        .where(
+          and(eq(message.tenantId, f.tenantId), eq(message.template, "voice_message_promise")),
+        );
+      expect(sms?.body).toBe(
+        "Tack för samtalet! Vi återkommer nästa vardag före klockan tio. /Kvällsfirman",
+      );
     });
   });
 
@@ -335,7 +367,11 @@ describe("when the agent is down (K10)", () => {
           transcribe: () => Promise.resolve("Hej, ring mig. Kortet är 4111 1111 1111 1111."),
         },
       };
-      const input = { tenantId: f.tenantId, callId: saved!.callId, wav: "https://api.46elks.com/a1/recordings/r1.wav" };
+      const input = {
+        tenantId: f.tenantId,
+        callId: saved!.callId,
+        wav: "https://api.46elks.com/a1/recordings/r1.wav",
+      };
       const made = await runVoicemail(deps, input);
       const [t] = await tx.select().from(task).where(eq(task.id, made!.taskId));
       expect(t).toMatchObject({
@@ -357,12 +393,23 @@ describe("push subscriptions", () => {
       const sub = { endpoint: "https://push.example/shared", p256dh: "k", auth: "a" };
       await savePushSubscription(tx, { tenantId: f.tenantId, userId: f.mechanicId }, sub);
       await savePushSubscription(tx, { tenantId: f.tenantId, userId: f.boId }, sub);
-      const rows = await tx.select().from(pushSubscription).where(eq(pushSubscription.endpoint, sub.endpoint));
+      const rows = await tx
+        .select()
+        .from(pushSubscription)
+        .where(eq(pushSubscription.endpoint, sub.endpoint));
       expect(rows.map((r) => r.userId)).toEqual([f.boId]);
-      await deletePushSubscription(tx, { tenantId: f.tenantId, userId: f.mechanicId }, sub.endpoint);
-      expect(await tx.select().from(pushSubscription).where(eq(pushSubscription.endpoint, sub.endpoint))).toHaveLength(1);
+      await deletePushSubscription(
+        tx,
+        { tenantId: f.tenantId, userId: f.mechanicId },
+        sub.endpoint,
+      );
+      expect(
+        await tx.select().from(pushSubscription).where(eq(pushSubscription.endpoint, sub.endpoint)),
+      ).toHaveLength(1);
       await deletePushSubscription(tx, { tenantId: f.tenantId, userId: f.boId }, sub.endpoint);
-      expect(await tx.select().from(pushSubscription).where(eq(pushSubscription.endpoint, sub.endpoint))).toEqual([]);
+      expect(
+        await tx.select().from(pushSubscription).where(eq(pushSubscription.endpoint, sub.endpoint)),
+      ).toEqual([]);
     });
   });
 });

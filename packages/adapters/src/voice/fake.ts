@@ -133,7 +133,11 @@ export function createFakeDialer(answering: readonly string[] = []): FakeDialer 
   return {
     calls,
     dial(input) {
-      calls.push({ number: input.number, whisper: input.whisper, timeoutSeconds: input.timeoutSeconds });
+      calls.push({
+        number: input.number,
+        whisper: input.whisper,
+        timeoutSeconds: input.timeoutSeconds,
+      });
       return Promise.resolve(answering.includes(input.number) ? "answered" : "no_answer");
     },
   };

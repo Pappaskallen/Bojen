@@ -40,7 +40,11 @@ export interface VoiceToolsDeps {
   context: (call: CallRow) => Promise<AgentContext>;
   /** The firm, for the system prompt: services, places, prices and its settings. */
   facts: (tenantId: string) => Promise<ReceptionistFacts | null>;
-  run: (tool: VoiceToolName | typeof TRANSFER_RESULT, call: CallRow, input: unknown) => Promise<unknown>;
+  run: (
+    tool: VoiceToolName | typeof TRANSFER_RESULT,
+    call: CallRow,
+    input: unknown,
+  ) => Promise<unknown>;
   /** The ended call's transcript, kept scrubbed and summarised in the worker. */
   saveTranscript: (callId: string, transcript: string) => Promise<boolean>;
 }
@@ -118,7 +122,8 @@ export function createVoiceToolsRoute(deps: VoiceToolsDeps) {
     async tool(request: Request, name: string): Promise<Response> {
       const claims = openCallToken(deps.tokenSecret(), bearer(request), deps.now());
       if (!claims) return json({ error: "unauthorized" }, 401);
-      if (!isVoiceTool(name) && name !== TRANSFER_RESULT) return json({ error: "unknown_tool" }, 404);
+      if (!isVoiceTool(name) && name !== TRANSFER_RESULT)
+        return json({ error: "unknown_tool" }, 404);
       const call = await deps.openCall(claims.tenantId, claims.callId);
       // An ended call's token is worth nothing, even before it expires.
       if (!call) return json({ error: "unauthorized" }, 401);

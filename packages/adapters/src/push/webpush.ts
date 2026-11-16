@@ -26,7 +26,12 @@ export function createWebPush(options: WebPushOptions): PushSender {
         await webpush.sendNotification(
           { endpoint: target.endpoint, keys: { p256dh: target.p256dh, auth: target.auth } },
           JSON.stringify(payload),
-          { vapidDetails, TTL: 30 * 60, urgency: payload.urgent ? "high" : "normal", timeout: 10_000 },
+          {
+            vapidDetails,
+            TTL: 30 * 60,
+            urgency: payload.urgent ? "high" : "normal",
+            timeout: 10_000,
+          },
         );
         return { gone: false };
       } catch (error) {

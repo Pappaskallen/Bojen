@@ -26,7 +26,9 @@ function covers(w: OnCallWindow, weekday: number, minute: number): boolean {
   const to = minutesOf(w.to);
   if (from < to) return w.days.includes(weekday) && minute >= from && minute < to;
   const yesterday = weekday === 1 ? 7 : weekday - 1;
-  return (w.days.includes(weekday) && minute >= from) || (w.days.includes(yesterday) && minute < to);
+  return (
+    (w.days.includes(weekday) && minute >= from) || (w.days.includes(yesterday) && minute < to)
+  );
 }
 
 /**
@@ -75,7 +77,11 @@ export function planTransfer(input: {
   if (!input.onCall) return { do: "message", why: "not_on_call" };
   if (input.candidates.length === 0) return { do: "message", why: "no_staff" };
   // At most two people while the caller waits: 2 × 20 s is already long on the phone.
-  return { do: "transfer", targets: input.candidates.slice(0, 2), timeoutSeconds: input.timeoutSeconds };
+  return {
+    do: "transfer",
+    targets: input.candidates.slice(0, 2),
+    timeoutSeconds: input.timeoutSeconds,
+  };
 }
 
 /** What the agent says to the mechanic before the caller is let in (K2 "medhörning"). */

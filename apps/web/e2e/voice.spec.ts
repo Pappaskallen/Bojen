@@ -230,11 +230,18 @@ test("outside on-call a caller asking for a person leaves a message, which a mec
 }) => {
   const who = await caller();
   const tools = createToolsClient({ baseUrl: BASE, serviceSecret: E2E_VOICE_SERVICE_SECRET });
-  const started = await tools.startCall({ to: FIRM_NUMBER, from: who.phone, externalId: "e2e-voice-k4" });
+  const started = await tools.startCall({
+    to: FIRM_NUMBER,
+    from: who.phone,
+    externalId: "e2e-voice-k4",
+  });
   if (!started) throw new Error("The firm did not answer");
   // The demo firm has no on-call windows: the transfer becomes a message (K4).
   expect(
-    await tools.run(started.token, "koppla_till_mekaniker", { anledning: "manniska", skal: "Vill prata med en människa" }),
+    await tools.run(started.token, "koppla_till_mekaniker", {
+      anledning: "manniska",
+      skal: "Vill prata med en människa",
+    }),
   ).toMatchObject({ status: "ta_meddelande" });
   const left = (await tools.run(started.token, "skapa_meddelande", {
     skal: "ring_upp",
@@ -247,13 +254,21 @@ test("outside on-call a caller asking for a person leaves a message, which a mec
   const message = page.getByRole("listitem", { name: `${who.name} ringde` });
   await expect(message.getByText("Vill bli uppringd om vinterförvaringen.")).toBeVisible();
   await message.getByRole("button", { name: "Jag tar det" }).click();
-  await expect(page.getByRole("listitem", { name: `${who.name} ringde` }).getByText("har tagit det")).toBeVisible();
-  await page.getByRole("listitem", { name: `${who.name} ringde` }).getByRole("button", { name: "Klart" }).click();
+  await expect(
+    page.getByRole("listitem", { name: `${who.name} ringde` }).getByText("har tagit det"),
+  ).toBeVisible();
+  await page
+    .getByRole("listitem", { name: `${who.name} ringde` })
+    .getByRole("button", { name: "Klart" })
+    .click();
   await expect(page.getByRole("listitem", { name: `${who.name} ringde` })).toHaveCount(0);
 
   const { db, close } = connect();
   try {
-    const [done] = await db.select({ status: task.status }).from(task).where(eq(task.id, left.arende_id));
+    const [done] = await db
+      .select({ status: task.status })
+      .from(task)
+      .where(eq(task.id, left.arende_id));
     expect(done?.status).toBe("done");
   } finally {
     await close();

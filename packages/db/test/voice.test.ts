@@ -455,7 +455,11 @@ describe("the other tools", () => {
         .select({ title: task.title, priority: task.priority, callId: task.callId })
         .from(task)
         .where(eq(task.id, (message as { arende_id: string }).arende_id));
-      expect(t).toEqual({ title: "Reklamation: Övrigafirman kund ringde", priority: "high", callId });
+      expect(t).toEqual({
+        title: "Reklamation: Övrigafirman kund ringde",
+        priority: "high",
+        callId,
+      });
 
       expect(await stoppaInspelning(f.deps, await f.current(callId))).toEqual({ ok: true });
       expect((await f.current(callId)).recordingAllowed).toBe(false);

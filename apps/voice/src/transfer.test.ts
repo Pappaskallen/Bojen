@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 import { createCallAgent } from "./agent";
 import type { ToolsClient } from "./tools-client";
 
-const text = (t: string): ModelTurn => ({ stopReason: "end_turn", content: [{ type: "text", text: t }] });
+const text = (t: string): ModelTurn => ({
+  stopReason: "end_turn",
+  content: [{ type: "text", text: t }],
+});
 const koppla: ModelTurn = {
   stopReason: "tool_use",
   content: [
@@ -43,7 +46,11 @@ function tools(answer: unknown = ORDER) {
   return { client, calls };
 }
 
-function agentWith(answer: unknown, dialer: ReturnType<typeof createFakeDialer> | null, now?: () => number) {
+function agentWith(
+  answer: unknown,
+  dialer: ReturnType<typeof createFakeDialer> | null,
+  now?: () => number,
+) {
   const model = createFakeConversation([koppla, text("Du är kopplad.")]);
   const t = tools(answer);
   const agent = createCallAgent({
@@ -110,7 +117,11 @@ describe("putting the call through (K2)", () => {
 describe("K7", () => {
   it("reminds the model once to offer a message after eight minutes, apart from the transcript", async () => {
     let clock = 0;
-    const model = createFakeConversation([text("Okej."), text("Vill du att jag tar ett meddelande?"), text("Ja.")]);
+    const model = createFakeConversation([
+      text("Okej."),
+      text("Vill du att jag tar ett meddelande?"),
+      text("Ja."),
+    ]);
     const agent = createCallAgent({
       model,
       tools: tools().client,

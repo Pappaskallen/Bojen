@@ -49,7 +49,9 @@ export default async function TasksPage({ searchParams }: Props) {
             <li key={task.id} className="day-visit" aria-label={task.title}>
               <header>
                 {task.priority === "high" ? <span className="badge">{t.urgent}</span> : null}
-                {task.dueAt ? <span className="when">{t.due(clock.format(task.dueAt))}</span> : null}
+                {task.dueAt ? (
+                  <span className="when">{t.due(clock.format(task.dueAt))}</span>
+                ) : null}
               </header>
               <h2>{task.title}</h2>
               {task.note ? <p className="pre">{task.note}</p> : null}

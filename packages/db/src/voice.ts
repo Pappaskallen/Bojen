@@ -91,7 +91,6 @@ const id = (v: unknown) => (typeof v === "string" && UUID.test(v) ? v : null);
 
 // --- The call ------------------------------------------------------------------------------
 
-
 /**
  * A new call to one of the firm's numbers: the call is logged, and the caller's number looked
  * up (spec 8.3). Null when the number belongs to no firm.
@@ -783,7 +782,10 @@ const note = (line: string) =>
 async function whoIsCalling(deps: VoiceDeps, c: CallRow) {
   const who = identified(c);
   if (!who) return { caller: null, boat: null };
-  const [person] = await deps.db.select({ name: customer.name }).from(customer).where(eq(customer.id, who));
+  const [person] = await deps.db
+    .select({ name: customer.name })
+    .from(customer)
+    .where(eq(customer.id, who));
   const boats = await boatsOf(deps.db, c.tenantId, who, stockholmDate(deps.now()));
   return {
     caller: person ? firstName(person.name) : null,
@@ -826,7 +828,13 @@ export async function kopplaTillMekaniker(deps: VoiceDeps, c: CallRow, input: un
         return { id, nummer: s?.mobile ?? "", namn: s ? firstName(s.name) : "" };
       }),
       sekunder: plan.timeoutSeconds,
-      viskning: whisperLine({ firm: now.firm, caller: named.caller, boat: named.boat, reason, summary: why }),
+      viskning: whisperLine({
+        firm: now.firm,
+        caller: named.caller,
+        boat: named.boat,
+        reason,
+        summary: why,
+      }),
     },
   };
 }
@@ -849,7 +857,9 @@ export async function kopplingsutfall(deps: VoiceDeps, c: CallRow, input: unknow
     .update(call)
     .set({
       summary: note(
-        answered && person ? crm.tasks.transferred(firstName(person.name)) : crm.tasks.notTransferred,
+        answered && person
+          ? crm.tasks.transferred(firstName(person.name))
+          : crm.tasks.notTransferred,
       ),
       ...(answered && person ? { outcome: "transferred" as const } : {}),
     })
@@ -871,7 +881,10 @@ export async function skapaMeddelande(deps: VoiceDeps, c: CallRow, input: unknow
   const who = identified(c);
   let display = name;
   if (!display && who) {
-    const [person] = await deps.db.select({ name: customer.name }).from(customer).where(eq(customer.id, who));
+    const [person] = await deps.db
+      .select({ name: customer.name })
+      .from(customer)
+      .where(eq(customer.id, who));
     display = person?.name ?? null;
   }
   const { taskId } = await leaveMessage(deps, {

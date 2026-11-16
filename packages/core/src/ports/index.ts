@@ -176,4 +176,3 @@ export interface PushPayload {
 export interface PushSender {
   send(target: PushTarget, payload: PushPayload): Promise<{ gone: boolean }>;
 }
-

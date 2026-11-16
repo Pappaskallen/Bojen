@@ -26,11 +26,21 @@ export function elksCallActions(steps: readonly IncomingStep[], t: IncomingTarge
     const step = steps[i];
     const rest = i + 1 < steps.length ? build(i + 1) : { hangup: "reject" };
     if (step === "agent" && t.agentSip) {
-      return { connect: t.agentSip, timeout: String(t.agentSeconds ?? 10), failed: rest, busy: rest };
+      return {
+        connect: t.agentSip,
+        timeout: String(t.agentSeconds ?? 10),
+        failed: rest,
+        busy: rest,
+      };
     }
     if (step === "mechanic" && t.mechanic) {
       // No callerid: the mechanic sees the caller's own number and can call back.
-      return { connect: t.mechanic, timeout: String(t.mechanicSeconds ?? 25), failed: rest, busy: rest };
+      return {
+        connect: t.mechanic,
+        timeout: String(t.mechanicSeconds ?? 25),
+        failed: rest,
+        busy: rest,
+      };
     }
     if (step === "voicemail") {
       return { play: "sound/beep", next: { record: t.voicemailUrl, timelimit: "120" } };

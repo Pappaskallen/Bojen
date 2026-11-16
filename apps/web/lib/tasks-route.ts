@@ -17,7 +17,10 @@ interface Actor {
 export interface TasksRouteDeps {
   session: (request: Request) => Promise<StaffSession | null>;
   decide: (actor: Actor, taskId: string, decision: "take" | "done") => Promise<boolean>;
-  subscribe: (actor: Actor, input: { endpoint: string; p256dh: string; auth: string }) => Promise<void>;
+  subscribe: (
+    actor: Actor,
+    input: { endpoint: string; p256dh: string; auth: string },
+  ) => Promise<void>;
   unsubscribe: (actor: Actor, endpoint: string) => Promise<void>;
 }
 
@@ -52,7 +55,8 @@ export function createTasksRoute(deps: TasksRouteDeps) {
         new Response(null, { status: 303, headers: { location: `/idag/arenden${query}` } });
       const form = await request.formData().catch(() => null);
       const what = form?.get("do");
-      if (!UUID.test(taskId) || (what !== "take" && what !== "done")) return back("?arendefel=gone");
+      if (!UUID.test(taskId) || (what !== "take" && what !== "done"))
+        return back("?arendefel=gone");
       return (await deps.decide(actor, taskId, what)) ? back() : back("?arendefel=gone");
     },
 
@@ -71,7 +75,12 @@ export function createTasksRoute(deps: TasksRouteDeps) {
       }
       const p256dh = body?.keys?.p256dh;
       const auth = body?.keys?.auth;
-      if (typeof p256dh !== "string" || typeof auth !== "string" || !B64URL.test(p256dh) || !B64URL.test(auth)) {
+      if (
+        typeof p256dh !== "string" ||
+        typeof auth !== "string" ||
+        !B64URL.test(p256dh) ||
+        !B64URL.test(auth)
+      ) {
         return Response.json({ error: "invalid_input" }, { status: 400 });
       }
       await deps.subscribe(actor, { endpoint, p256dh, auth });

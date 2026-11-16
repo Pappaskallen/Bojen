@@ -69,9 +69,11 @@ export function createCallAgent(input: {
       alreadyNudged: nudged,
     });
     if (nudge) nudged = true;
-    const said = nudge ? `${heard}
+    const said = nudge
+      ? `${heard}
 
-${nudge}` : heard;
+${nudge}`
+      : heard;
     // What the turn adds stays apart until it is whole: a turn cut short leaves no half.
     const turn: ConversationMessage[] = pendingOpening
       ? [

@@ -1,4 +1,12 @@
-import { foreignKey, index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  foreignKey,
+  index,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { baseColumns, tenantIsolationPolicy } from "./_shared";
 import { tenant } from "./tenant";
 import { appUser } from "./user";

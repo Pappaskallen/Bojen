@@ -175,7 +175,9 @@ export function escalationTasks(
           channels: list(payload, "channels"),
         },
       );
-      helpers.logger.info(`alert for task ${taskId}: ${String(sent.pushed)} push, ${String(sent.texted)} sms`);
+      helpers.logger.info(
+        `alert for task ${taskId}: ${String(sent.pushed)} push, ${String(sent.texted)} sms`,
+      );
     },
     [FOLLOW_UP_TASK]: async (payload, helpers) => {
       const taskId = field(payload, "taskId");

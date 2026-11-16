@@ -38,11 +38,15 @@ const VOICE = resolve(__dirname, "../../voice");
 /** Starts the agent's health check as its own process; resolves with its address. */
 function startAgent(): Promise<{ child: ChildProcess; url: string }> {
   const tsx = createRequire(resolve(VOICE, "package.json")).resolve("tsx");
-  const child = spawn(process.execPath, ["--import", pathToFileURL(tsx).href, "src/health-cli.ts"], {
-    cwd: VOICE,
-    env: { ...process.env, VOICE_HEALTH_PORT: "0" },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const child = spawn(
+    process.execPath,
+    ["--import", pathToFileURL(tsx).href, "src/health-cli.ts"],
+    {
+      cwd: VOICE,
+      env: { ...process.env, VOICE_HEALTH_PORT: "0" },
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
   return new Promise((done, fail) => {
     const timer = setTimeout(() => fail(new Error("The agent did not start")), 15_000);
     child.stdout?.on("data", (chunk: Buffer) => {
@@ -89,7 +93,9 @@ async function firm(db: Database) {
     .insert(tenant)
     .values({ name: "Reservfirman", settings: { sms: { from: FIRM_NUMBER } } })
     .returning();
-  await db.insert(appUser).values({ tenantId: t!.id, name: "Jonas", role: "owner", mobile: MECHANIC });
+  await db
+    .insert(appUser)
+    .values({ tenantId: t!.id, name: "Jonas", role: "owner", mobile: MECHANIC });
   return t!.id;
 }
 
@@ -164,8 +170,15 @@ describe("a call to the firm's number (K10)", () => {
         }),
       );
       expect(response.status).toBe(204);
-      const [saved] = await db.select().from(call).where(and(eq(call.tenantId, tenantId)));
-      expect(saved).toMatchObject({ callerNumber: "+46709998877", outcome: "message", recordingAllowed: false });
+      const [saved] = await db
+        .select()
+        .from(call)
+        .where(and(eq(call.tenantId, tenantId)));
+      expect(saved).toMatchObject({
+        callerNumber: "+46709998877",
+        outcome: "message",
+        recordingAllowed: false,
+      });
       const jobs = await db.execute<{ key: string }>(
         sql`select key from graphile_worker._private_jobs where key = ${`voicemail:${saved!.id}`}`,
       );

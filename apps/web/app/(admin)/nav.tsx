@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { crm } from "@bojen/core/i18n/sv";
 
-type Page = "today" | "tasks" | "requests" | "pipeline" | "customers" | "places" | "campaigns" | "security";
+type Page =
+  "today" | "tasks" | "requests" | "pipeline" | "customers" | "places" | "campaigns" | "security";
 
 const LINKS: { page: Page; href: string }[] = [
   { page: "today", href: "/idag" },

@@ -946,7 +946,8 @@ export const crm = {
       on: "Slå på aviseringar",
       active: "Aviseringar är på för den här telefonen.",
       blocked: "Aviseringar är avstängda i webbläsarens inställningar.",
-      unsupported: "Den här webbläsaren kan inte ta emot aviseringar. Lägg Bojen på hemskärmen först.",
+      unsupported:
+        "Den här webbläsaren kan inte ta emot aviseringar. Lägg Bojen på hemskärmen först.",
       failed: "Det gick inte att slå på aviseringar.",
     },
     /** Titles of the tasks the receptionist leaves (spec 8.4). */
