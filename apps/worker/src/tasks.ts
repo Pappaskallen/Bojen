@@ -12,11 +12,15 @@ import {
   ALERT_TASK,
   FOLLOW_UP_TASK,
   NAMEPLATE_TASK,
+  REFRESH_KPIS_TASK,
+  SNAPSHOT_KPIS_TASK,
   POST_CALL_TASK,
   REPORT_TASK,
   SEND_MESSAGE_TASK,
   VOICEMAIL_TASK,
   readNameplate,
+  refreshKpiViews,
+  snapshotKpis,
   runFollowUp,
   runVoicemail,
   sendAlert,
@@ -101,6 +105,13 @@ export function taskList(deps: WorkerDeps): TaskList {
     },
     [ETA_TASK]: visitTask((tenantId, visitId) => sendMorningEta(deps, tenantId, visitId)),
     [SURVEY_TASK]: visitTask((tenantId, visitId) => sendSurvey(deps, tenantId, visitId)),
+    // The dashboard (step 7.1), from the crontab in index.ts.
+    [REFRESH_KPIS_TASK]: async () => {
+      await refreshKpiViews(deps.db);
+    },
+    [SNAPSHOT_KPIS_TASK]: async (_payload, helpers) => {
+      helpers.logger.info(`kpi snapshots: ${String(await snapshotKpis(deps.db, deps.now()))}`);
+    },
     [CAMPAIGN_RELEASE_TASK]: async (payload, helpers) => {
       const recipientId = field(payload, "recipientId");
       const outcome = await releaseCampaignHold(deps, field(payload, "tenantId"), recipientId);

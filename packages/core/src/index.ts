@@ -205,6 +205,25 @@ export {
 } from "./reports/invoice";
 export { reportContent, type ReportContent } from "./reports/content";
 export {
+  computeKpis,
+  DEFAULT_SEASONS,
+  KPI_KEYS,
+  KPI_TARGETS,
+  kpiLevel,
+  kpiSeasons,
+  median,
+  nextSeason,
+  prebookingSnapshotKey,
+  type KpiKey,
+  type KpiLevel,
+  type KpiTarget,
+  type KpiTotals,
+  type KpiValues,
+  type Prebooking,
+  type Season,
+  type SeasonWindow,
+} from "./reports/kpi";
+export {
   autumnBefore,
   looksLikeLayUp,
   looksLikeSpringService,

@@ -24,3 +24,4 @@ export * from "./campaigns";
 export * from "./voice";
 export * from "./postcall";
 export * from "./escalation";
+export * from "./kpi";

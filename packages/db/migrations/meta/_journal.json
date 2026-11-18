@@ -204,6 +204,13 @@
       "when": 1794847457543,
       "tag": "0028_escalation",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1794981177472,
+      "tag": "0029_kpi_views",
+      "breakpoints": true
     }
   ]
 }
