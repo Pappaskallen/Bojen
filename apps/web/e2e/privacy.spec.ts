@@ -45,12 +45,14 @@ test("the owner exports a customer's data and then erases the customer", async (
   // Without the word nothing happens.
   await page.getByLabel("Skriv RADERA för att bekräfta").fill("ja");
   await page.getByRole("button", { name: "Radera kunden" }).click();
-  await expect(page.getByRole("alert")).toHaveText("Skriv RADERA i rutan för att radera kunden.");
+  await expect(page.getByRole("main").getByRole("alert")).toHaveText(
+    "Skriv RADERA i rutan för att radera kunden.",
+  );
 
   await page.getByLabel("Skriv RADERA för att bekräfta").fill("RADERA");
   await page.getByRole("button", { name: "Radera kunden" }).click();
   await expect(page).toHaveURL(/\/kunder\?raderad=1$/);
-  await expect(page.getByRole("status")).toHaveText("Kunden är raderad.");
+  await expect(page.getByRole("main").getByRole("status")).toHaveText("Kunden är raderad.");
   expect((await page.request.get(`/kunder/${customerId}`)).status()).toBe(404);
 
   const { db, close } = connect();
