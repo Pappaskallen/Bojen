@@ -32,7 +32,7 @@ import { scheduleNameplate } from "./postcall";
 import type { Database } from "./client";
 import { type VisitContext, visitContext } from "./flows";
 import type { SuggestRequest } from "./public-booking";
-import { accessInfo, attachment, boatPlacement, job, shortLink } from "./schema";
+import { accessInfo, attachment, boatPlacement, job, shortLink, survey, tenant } from "./schema";
 
 type Db = Pick<Database, "select" | "insert" | "update">;
 
@@ -376,4 +376,36 @@ export async function addPicturesByLink(
     if (saved) await scheduleNameplate(deps.db, link.tenantId, saved.id, deps.now());
   }
   return pictures.length;
+}
+
+/**
+ * The review link in F9's answer to a good score (`/r/{code}`): counts the first click on the
+ * visit's survey (KPI 18) and gives the firm's review page, or null for a link that does not
+ * exist, has expired or is no review link, or a firm without a review page.
+ */
+export async function openReviewLink(
+  db: Db,
+  key: string,
+  code: string,
+  now: Date,
+): Promise<string | null> {
+  const link = await findShortLink(db, key, code);
+  if (link?.purpose !== "review" || linkState(link, now) !== "valid") return null;
+  const [firm] = await db
+    .select({ settings: tenant.settings })
+    .from(tenant)
+    .where(eq(tenant.id, link.tenantId));
+  const url = firm?.settings.reviewUrl;
+  if (typeof url !== "string" || !/^https?:\/\//.test(url)) return null;
+  await db
+    .update(survey)
+    .set({ reviewLinkClickedAt: now })
+    .where(
+      and(
+        eq(survey.tenantId, link.tenantId),
+        eq(survey.visitId, link.visitId),
+        isNull(survey.reviewLinkClickedAt),
+      ),
+    );
+  return url;
 }

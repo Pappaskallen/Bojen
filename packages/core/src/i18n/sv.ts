@@ -409,6 +409,8 @@ export const customerPage = {
   },
   errors: {
     missing: "Länken finns inte. Kontrollera att du har skrivit av den rätt.",
+    /** The review link in F9 (`/r/{code}`) after 90 days, or when the firm has no review page. */
+    review: "Länken till recensionen fungerar inte längre. Tack ändå för ditt betyg!",
     expired: "Länken har gått ut. Ring oss om du vill ändra något.",
     used: "Länken är redan använd. Använd länken i det senaste sms:et från oss, eller ring oss.",
     closed: "Besöket går inte längre att ändra här. Ring oss om du har frågor.",

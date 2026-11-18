@@ -20,9 +20,11 @@ import {
   location,
   managePage,
   message,
+  openReviewLink,
   receiveSms,
   rescheduleByLink,
   serviceType,
+  startSurvey,
   survey,
   task,
   tenant,
@@ -43,6 +45,7 @@ const fakeReports = () => ({
 });
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { customerLinks } from "./flows/deps";
+import { handleSurveyAnswer } from "./flows/survey";
 import { taskList } from "./tasks";
 
 /**
@@ -1320,4 +1323,77 @@ describe("flows F1, F5, F7 and F9", () => {
       if (!(error instanceof Rollback)) throw error;
     }
   }, 60_000);
+});
+
+describe("a good score gets the review link (F9, KPI 18)", () => {
+  it("sends bojen.se/r/{code}, which counts the click and leads to the firm's review page", async () => {
+    await inRollback(async (db) => {
+      const REVIEW = "https://g.page/r/flodesfirman/review";
+      const KEY = "flow-test-short-link-key-0123456789abcdef";
+      let clock = at("2027-11-15T14:00:00");
+      const f = await setup(db);
+      await db
+        .update(tenant)
+        .set({ settings: { sms: { from: FIRM_NUMBER }, reviewUrl: REVIEW } })
+        .where(eq(tenant.id, f.tenantId));
+      const staff = { tenantId: f.tenantId, actor: { type: "staff" as const, id: f.mechanicId } };
+      const booked = await createBooking(
+        { db, now: () => clock },
+        { ...staff, idempotencyKey: "review-book" },
+        {
+          customerId: f.customerId,
+          boatId: f.boatId,
+          serviceTypeId: f.serviceTypeId,
+          mechanicId: f.mechanicId,
+          start: at("2027-11-17T08:00:00"),
+          channel: "phone",
+          needsApproval: false,
+          partsMissing: false,
+        },
+      );
+      const visitId = booked.visit.id;
+      clock = at("2027-11-17T08:05:00");
+      await changeBooking(
+        { db, now: () => clock },
+        { ...staff, idempotencyKey: "review-start" },
+        visitId,
+        {
+          event: "start",
+        },
+      );
+      clock = at("2027-11-17T10:00:00");
+      await changeBooking(
+        { db, now: () => clock },
+        { ...staff, idempotencyKey: "review-done" },
+        visitId,
+        {
+          event: "complete",
+        },
+      );
+      await startSurvey(db, f.tenantId, visitId, at("2027-11-18T10:00:00"));
+
+      clock = at("2027-11-18T10:20:00");
+      const deps = {
+        db,
+        now: () => clock,
+        optOutKey: "flow-test-opt-out-key",
+        link: customerLinks(db, KEY, "https://bojen.se", () => clock),
+      };
+      expect(await handleSurveyAnswer(deps, f.tenantId, visitId, 5)).toBe("review");
+      const [reply] = await db
+        .select({ body: message.body })
+        .from(message)
+        .where(and(eq(message.visitId, visitId), eq(message.template, "f9_reply_good")));
+      const code = /bojen\.se\/r\/([A-Za-z0-9]{8})/.exec(reply?.body ?? "")?.[1] ?? "";
+      expect(reply?.body).toBe(
+        `Tack, vad glad jag blir! Vill du hjälpa andra båtägare hitta hit? En recension tar 30 sek: bojen.se/r/${code} /Jonas`,
+      );
+
+      // The customer taps it: the click is counted and the review page opens.
+      clock = at("2027-11-18T10:21:00");
+      expect(await openReviewLink(db, KEY, code, clock)).toBe(REVIEW);
+      const [answered] = await db.select().from(survey).where(eq(survey.visitId, visitId));
+      expect(answered).toMatchObject({ score: 5, reviewLinkClickedAt: clock });
+    });
+  });
 });

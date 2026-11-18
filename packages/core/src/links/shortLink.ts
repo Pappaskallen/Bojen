@@ -10,7 +10,11 @@ const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
 /** The largest multiple of 62 below 256; bytes from here up are thrown away, so no bias. */
 const LIMIT = 248;
 
-export type LinkPurpose = "manage";
+/**
+ * `manage`: the booking's own page. `review`: the firm's review page after a good score in
+ * F9, through `/r/{code}` so the click is counted (KPI 18, step 7.2).
+ */
+export type LinkPurpose = "manage" | "review";
 
 /** A new code. `random` is only replaced in tests. */
 export function newShortCode(random: (size: number) => Uint8Array = randomBytes): string {
@@ -41,6 +45,12 @@ export function shortLinkUrl(base: string, code: string): string {
   return `${host}/x/${code}`;
 }
 
+/** `bojen.se/r/AbC12xYz`: the review link, which counts the click and goes on to the review. */
+export function reviewLinkUrl(base: string, code: string): string {
+  const host = base.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  return `${host}/r/${code}`;
+}
+
 export type LinkState = "valid" | "expired" | "used";
 
 /** A used link stays used; otherwise it is valid until it expires. */
@@ -52,4 +62,11 @@ export function linkState(link: { expiresAt: Date; usedAt: Date | null }, now: D
 /** A link to manage a booking works until the visit starts. */
 export function manageLinkExpiry(visitStart: Date): Date {
   return visitStart;
+}
+
+/** A review link works for 90 days, as long as the next survey waits (F9). */
+export const REVIEW_LINK_DAYS = 90;
+
+export function reviewLinkExpiry(sentAt: Date): Date {
+  return new Date(sentAt.getTime() + REVIEW_LINK_DAYS * 24 * 3_600_000);
 }

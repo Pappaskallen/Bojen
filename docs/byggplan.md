@@ -416,7 +416,8 @@ ett alternativ i stället för att byta tyst.
 
 ### Avslutande kontroll före piloten (3 dagar)
 
-- [ ] Hela kedjan i Playwright: bokning på webben → bekräftelse → 24-timmarskontroll med JA → dagvy offline → Klart → rapport → nöjdhetsfråga med betyg 5 → länk till recension.
+- [x] Hela kedjan i Playwright: bokning på webben → bekräftelse → 24-timmarskontroll med JA → dagvy offline → Klart → rapport → nöjdhetsfråga med betyg 5 → länk till recension.
+  - (Byggt 2026-11-18: `apps/web/e2e/chain.spec.ts`. Arbetarens jobb körs i testet för just det besöket, med sms genom den riktiga 46elks-adaptern till den fejkade 46elks. Serverns klocka går inte att flytta, så arbetarens klocka går före till kontrollen dagen innan och till nöjdhetsfrågan, och besöket flyttas till i dag när dagen kommer. Kundens svar JA och 5 kommer därför in genom `receiveSms`, som 46elks-webhooken anropar, i stället för genom webhooken; den har egna tester. Länken till recensionen räknade inga klick, så F9 skickar nu `bojen.se/r/{kod}`, som sparar klicket (KPI 18) och skickar vidare till firmans recensionssida.)
 - [ ] Belastningstest: 20 samtidiga röstsamtal och 500 sms per minut genom kön.
 - [ ] Säkerhet: isoleringstesterna går igenom, testsviten för samtal ger 0 regelbrott, beroendeskanningen hittar inget kritiskt och de kritiska delarna av ASVS-checklistan är avbockade.
 - [ ] Juridik: personuppgiftsbiträdesavtal, villkor, integritetspolicy, mall för konsekvensbedömning och publik lista över underbiträden.

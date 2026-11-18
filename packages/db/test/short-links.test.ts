@@ -1,16 +1,17 @@
 import { randomBytes } from "node:crypto";
 import { createLocalKms } from "@bojen/adapters";
 import { decryptField, fieldAad } from "@bojen/core/crypto";
-import { linkHash } from "@bojen/core/links";
+import { linkHash, reviewLinkExpiry } from "@bojen/core/links";
 import { and, eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { BookingError } from "../src/booking";
-import { accessInfo, domainEvent, shortLink, tenant, visit } from "../src/schema";
+import { accessInfo, domainEvent, shortLink, survey, tenant, visit } from "../src/schema";
 import {
   cancelByLink,
   createShortLink,
   findShortLink,
   managePage,
+  openReviewLink,
   rescheduleByLink,
   saveAccessByLink,
 } from "../src/short-links";
@@ -177,6 +178,73 @@ describe("short links", () => {
       expect(
         await errorCode(saveAccessByLink({ ...f.deps(), kms }, f.code, { code: "x".repeat(201) })),
       ).toBe("invalid_input");
+    });
+  });
+});
+
+describe("the review link (F9, KPI 18)", () => {
+  const REVIEW = "https://g.page/r/lankfirman/review";
+  const SENT = new Date("2027-04-21T09:00:00Z");
+
+  async function reviewSetup(tx: Tx, reviewUrl: string | null = REVIEW) {
+    const f = await setup(tx);
+    if (reviewUrl) {
+      await tx.update(tenant).set({ settings: { reviewUrl } }).where(eq(tenant.id, f.tenantId));
+    }
+    // The helper's visit has a survey already; start from one sent and answered 5.
+    await tx.delete(survey).where(eq(survey.visitId, f.visitId));
+    await tx
+      .insert(survey)
+      .values({ tenantId: f.tenantId, visitId: f.visitId, sentAt: SENT, score: 5 });
+    const review = await createShortLink(tx, KEY, {
+      tenantId: f.tenantId,
+      visitId: f.visitId,
+      purpose: "review",
+      expiresAt: reviewLinkExpiry(SENT),
+    });
+    const clicked = async () =>
+      (
+        await tx
+          .select({ at: survey.reviewLinkClickedAt })
+          .from(survey)
+          .where(eq(survey.visitId, f.visitId))
+      )[0]?.at ?? null;
+    return { ...f, review, clicked };
+  }
+
+  it("counts the first click and gives the firm's review page", async () => {
+    await withRollback(async (tx) => {
+      const f = await reviewSetup(tx);
+      const first = new Date("2027-04-21T09:05:00Z");
+      expect(await openReviewLink(tx, KEY, f.review, first)).toBe(REVIEW);
+      expect(await f.clicked()).toEqual(first);
+      // Opened again, or by a link preview: still the page, but the first click stays.
+      expect(await openReviewLink(tx, KEY, f.review, new Date("2027-04-22T10:00:00Z"))).toBe(
+        REVIEW,
+      );
+      expect(await f.clicked()).toEqual(first);
+    });
+  });
+
+  it("is not the booking's page, and the booking's link is no review link", async () => {
+    await withRollback(async (tx) => {
+      const f = await reviewSetup(tx);
+      expect(await managePage(f.deps(), f.review)).toEqual({ state: "missing" });
+      expect(await openReviewLink(tx, KEY, f.code, SENT)).toBeNull();
+      expect(await f.clicked()).toBeNull();
+    });
+  });
+
+  it("gives nothing once expired, for an unknown code or without a review page", async () => {
+    await withRollback(async (tx) => {
+      const f = await reviewSetup(tx);
+      expect(await openReviewLink(tx, KEY, f.review, reviewLinkExpiry(SENT))).toBeNull();
+      expect(await openReviewLink(tx, KEY, "Zz9Zz9Zz", SENT)).toBeNull();
+      expect(await f.clicked()).toBeNull();
+    });
+    await withRollback(async (tx) => {
+      const f = await reviewSetup(tx, null);
+      expect(await openReviewLink(tx, KEY, f.review, SENT)).toBeNull();
     });
   });
 });

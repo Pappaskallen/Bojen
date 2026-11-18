@@ -75,6 +75,7 @@ import {
   sattVantelista,
   skapaBokning,
   skapaMeddelande,
+  openReviewLink,
   skickaLank,
   startCall,
   stoppaInspelning,
@@ -94,6 +95,7 @@ import { createPipelineRoute } from "./pipeline-route";
 import { createTasksRoute } from "./tasks-route";
 import { createVoiceToolsRoute } from "./voice-tools-route";
 import { createReportRoute } from "./report-route";
+import { createReviewLinkRoute } from "./review-link-route";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
 import { ELKS_IPS, createWebhookRoutes } from "./webhooks";
@@ -369,6 +371,11 @@ export const customerPage = createCustomerPage({
   now: () => new Date(),
   linkKey,
   storage,
+});
+
+/** The review link in F9's answer to a good score (`/r/{code}`): counts the click (KPI 18). */
+export const reviewLinkRoute = createReviewLinkRoute({
+  open: (code) => openReviewLink(db(), linkKey(), code, new Date()),
 });
 
 export const publicRoutes = createPublicRoutes({

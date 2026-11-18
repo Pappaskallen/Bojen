@@ -6,6 +6,8 @@ import {
   linkState,
   manageLinkExpiry,
   newShortCode,
+  reviewLinkExpiry,
+  reviewLinkUrl,
   shortLinkUrl,
 } from "./shortLink";
 
@@ -68,6 +70,19 @@ describe("link url", () => {
     expect(shortLinkUrl("http://localhost:3000", "AbC12xYz")).toBe("localhost:3000/x/AbC12xYz");
     // 3 characters more than the spec's 5-character example (decided with Robert 2026-11-12).
     expect(shortLinkUrl("bojen.se", "AbC12xYz")).toHaveLength(19);
+  });
+});
+
+describe("review link", () => {
+  it("writes bojen.se/r/{code}, as long as the booking's link", () => {
+    expect(reviewLinkUrl("https://bojen.se/", "AbC12xYz")).toBe("bojen.se/r/AbC12xYz");
+    expect(reviewLinkUrl("bojen.se", "AbC12xYz")).toHaveLength(19);
+  });
+
+  it("works for 90 days", () => {
+    expect(reviewLinkExpiry(new Date("2026-11-18T10:00:00Z"))).toEqual(
+      new Date("2027-02-16T10:00:00Z"),
+    );
   });
 });
 
