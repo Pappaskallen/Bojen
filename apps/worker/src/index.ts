@@ -1,3 +1,4 @@
+import { safeError } from "@bojen/core/logging";
 import {
   createElksRecordings,
   createFakePush,
@@ -16,7 +17,7 @@ import { connect, databaseUrl, KPI_CRONTAB } from "@bojen/db";
 import { run } from "graphile-worker";
 import { customerLinks } from "./flows/deps";
 import { postCallDeps, reportDeps } from "./report-deps";
-import { taskList, type EscalationDeps } from "./tasks";
+import { taskList, withSafeErrors, type EscalationDeps } from "./tasks";
 
 /**
  * The background worker: Graphile Worker on the same Postgres. Fakes are only allowed
@@ -113,26 +114,28 @@ async function main() {
     noHandleSignals: false,
     pollInterval: 2000,
     crontab: KPI_CRONTAB,
-    taskList: taskList({
-      db,
-      sms: smsSender(),
-      email: emailSender(),
-      now: () => systemClock.now(),
-      optOutKey: optOutKey(),
-      link: customerLinks(db, linkKey(), process.env.APP_URL ?? "bojen.se"),
-      reports,
-      postCall: postCallDeps(production, reports.storage),
-      escalation: escalationDeps(),
-      maps: process.env.OSRM_URL
-        ? createOsrmMaps({ baseUrl: process.env.OSRM_URL })
-        : createFakeMaps(),
-    }),
+    taskList: withSafeErrors(
+      taskList({
+        db,
+        sms: smsSender(),
+        email: emailSender(),
+        now: () => systemClock.now(),
+        optOutKey: optOutKey(),
+        link: customerLinks(db, linkKey(), process.env.APP_URL ?? "bojen.se"),
+        reports,
+        postCall: postCallDeps(production, reports.storage),
+        escalation: escalationDeps(),
+        maps: process.env.OSRM_URL
+          ? createOsrmMaps({ baseUrl: process.env.OSRM_URL })
+          : createFakeMaps(),
+      }),
+    ),
   });
   console.info(`[worker] ${systemClock.now().toISOString()} started`);
   await runner.promise;
 }
 
 main().catch((error: unknown) => {
-  console.error("[worker] stopped", error);
+  console.error("[worker] stopped", safeError(error));
   process.exitCode = 1;
 });

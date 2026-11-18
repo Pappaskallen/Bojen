@@ -5,3 +5,9 @@ packages:
 # Dependencies allowed to run install scripts.
 allowBuilds:
   esbuild: true
+
+# Security fixes for transitive dependencies (pnpm audit, Avslutande kontroll).
+# next 15.5 pins postcss 8.4; drizzle-kit pulls esbuild 0.18 through @esbuild-kit.
+overrides:
+  "next>postcss": 8.5.33
+  "@esbuild-kit/core-utils>esbuild": 0.25.12

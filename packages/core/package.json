@@ -10,7 +10,8 @@
     "./catalog": "./src/catalog/brands.ts",
     "./messaging": "./src/messaging/index.ts",
     "./links": "./src/links/shortLink.ts",
-    "./pipeline": "./src/pipeline/pipeline.ts"
+    "./pipeline": "./src/pipeline/pipeline.ts",
+    "./logging": "./src/logging/safeError.ts"
   },
   "scripts": {
     "lint": "eslint .",

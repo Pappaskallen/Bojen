@@ -28,6 +28,7 @@ import {
   writeReportDraft,
   type DraftDeps,
 } from "@bojen/db";
+import { safeError } from "@bojen/core/logging";
 import type { Task, TaskList } from "graphile-worker";
 import { CHECK_TASK, sendAvailabilityCheck } from "./flows/availabilityCheck";
 import { ESCALATION_TASK, REMINDER_TASK, handleCheckEvent } from "./flows/availabilityFollowup";
@@ -213,4 +214,24 @@ export function escalationTasks(
       helpers.logger.info(`voicemail ${callId}: ${made ? "message" : "no call"}`);
     },
   };
+}
+
+/**
+ * Every task, with what a failure says made safe (ASVS V7.1): Graphile Worker logs a failed
+ * job's error and keeps its message in `last_error`, and a database error's message carries
+ * the query's parameters. The retry still happens; only the message changes.
+ */
+export function withSafeErrors(tasks: TaskList): TaskList {
+  const safe: TaskList = {};
+  for (const [name, task] of Object.entries(tasks)) {
+    if (!task) continue;
+    safe[name] = async (payload, helpers) => {
+      try {
+        await task(payload, helpers);
+      } catch (error) {
+        throw new Error(safeError(error));
+      }
+    };
+  }
+  return safe;
 }

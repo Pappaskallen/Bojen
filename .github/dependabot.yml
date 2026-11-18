@@ -1,0 +1,21 @@
+# Dependency updates (spec 10: Dependabot). Weekly, grouped so a week is one PR per kind.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Stockholm
+    open-pull-requests-limit: 5
+    groups:
+      dev:
+        dependency-type: development
+        update-types: [minor, patch]
+      prod:
+        dependency-type: production
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

@@ -1,3 +1,4 @@
+import { safeError } from "@bojen/core/logging";
 /**
  * The customer's page behind the short link (byggplan step 3.4).
  *
@@ -98,7 +99,7 @@ export function createCustomerPage(deps: CustomerPageDeps) {
       return back(request, code, `klart=${await work()}`);
     } catch (error) {
       const problem = problemFor(error);
-      if (problem === "failed") console.error("[customer-page] change failed", error);
+      if (problem === "failed") console.error("[customer-page] change failed", safeError(error));
       return back(request, code, `fel=${problem}`);
     }
   }
@@ -113,7 +114,7 @@ export function createCustomerPage(deps: CustomerPageDeps) {
         page.visit.tenantId,
         page.suggest,
       ).catch((error: unknown) => {
-        console.error("[customer-page] no suggestions", error);
+        console.error("[customer-page] no suggestions", safeError(error));
         return [];
       });
       return { page, times };
