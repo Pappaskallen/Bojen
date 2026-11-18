@@ -13,7 +13,7 @@ import {
   webPushFromEnv,
 } from "@bojen/adapters";
 import type { EmailSender, PushSender, SmsSender } from "@bojen/core";
-import { connect, databaseUrl, KPI_CRONTAB } from "@bojen/db";
+import { connect, databaseUrl, KPI_CRONTAB, PRIVACY_CRONTAB } from "@bojen/db";
 import { run } from "graphile-worker";
 import { customerLinks } from "./flows/deps";
 import { postCallDeps, reportDeps } from "./report-deps";
@@ -113,7 +113,7 @@ async function main() {
     concurrency: 4,
     noHandleSignals: false,
     pollInterval: 2000,
-    crontab: KPI_CRONTAB,
+    crontab: `${KPI_CRONTAB}\n${PRIVACY_CRONTAB}`,
     taskList: withSafeErrors(
       taskList({
         db,
@@ -125,6 +125,7 @@ async function main() {
         reports,
         postCall: postCallDeps(production, reports.storage),
         escalation: escalationDeps(),
+        privacy: { storage: reports.storage },
         maps: process.env.OSRM_URL
           ? createOsrmMaps({ baseUrl: process.env.OSRM_URL })
           : createFakeMaps(),

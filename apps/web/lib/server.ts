@@ -81,6 +81,9 @@ import {
   stoppaInspelning,
   type CallRow,
   type VoiceDeps,
+  eraseCustomer as eraseCustomerData,
+  exportCustomer as exportCustomerData,
+  recordExport,
 } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createBoatAccessRoute } from "./boat-access";
@@ -96,6 +99,7 @@ import { createTasksRoute } from "./tasks-route";
 import { createVoiceToolsRoute } from "./voice-tools-route";
 import { createReportRoute } from "./report-route";
 import { createReviewLinkRoute } from "./review-link-route";
+import { createPrivacyRoutes } from "./privacy-routes";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
 import { ELKS_IPS, createWebhookRoutes } from "./webhooks";
@@ -519,4 +523,22 @@ export const voiceToolsRoute = createVoiceToolsRoute({
       ? saveTranscript(db(), { tenantId, callId, transcript, now: new Date() })
       : false;
   },
+});
+
+/** Export and erasure of a customer's personal data (step 7.4). */
+export const privacyRoutes = createPrivacyRoutes({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  async exportCustomer(tenantId, customerId, actorId) {
+    const now = new Date();
+    const data = await exportCustomerData(db(), tenantId, customerId, now);
+    if (data) await recordExport(db(), tenantId, customerId, actorId, now);
+    return data;
+  },
+  erase: (tenantId, customerId, actorId) =>
+    eraseCustomerData(
+      { db: db(), storage: storage(), now: () => new Date() },
+      tenantId,
+      customerId,
+      actorId,
+    ),
 });

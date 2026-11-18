@@ -90,8 +90,9 @@ Bojen hjälper Firman, så långt det är rimligt, att
 
 - **svara på registrerades begäran** om tillgång, rättelse, radering, begränsning,
   dataportabilitet och invändning. Bojen svarar på Firmans begäran inom **5 arbetsdagar**, så
-  att Firman kan hålla lagens frist på en månad. [Under piloten görs export och radering av
-  Bojen på begäran. Knappar för export och radering i administrationen är inte byggda ännu.]
+  att Firman kan hålla lagens frist på en månad. Firmans ägare och administratörer kan själva
+  exportera en kunds uppgifter (JSON) och radera en kund från kundkortet. Varje export och
+  radering loggas.
 - göra konsekvensbedömningar och samråd med IMY;
 - uppfylla kraven på säkerhet.
 
@@ -181,14 +182,14 @@ statistik till Firmans översikt, import från Excel, och export.
 | Utskrift och sammanfattning av samtal | 24 månader |
 | Förfrågningar som inte blev bokningar | 12 månader |
 | Kund, båt och servicehistorik | Under kundrelationen och 36 månader efter senaste jobbet, sedan anonymiseras de |
-| Koder och åtkomstinformation | Tills kunden ändrar dem, eller 30 dagar efter senaste besöket om kunden har valt det |
+| Koder och åtkomstinformation | Tills kunden ändrar eller tar bort dem, eller till det slutdatum som har angetts för dem |
 | Innehåll i sms och e-post | 24 månader |
 | Avregistrerade nummer (STOPP) | Så länge Firman använder Bojen, som hash |
 | Revisionslogg | 24 månader |
 
-[ATT AVGÖRA: Den automatiska raderingen enligt tabellen är inte byggd ännu. Antingen byggs den
-före piloten, eller så anger avtalet att den införs senast ett visst datum och att Bojen
-raderar manuellt på begäran fram till dess.]
+Rensningen sker automatiskt varje natt. En raderad eller utgången kund anonymiseras: namn, nummer, e-post, adress,
+samtycken, meddelandenas innehåll, samtal och koder tas bort, och båtens tekniska historik finns
+kvar utan koppling till en person.
 
 ## Bilaga 2. Säkerhetsåtgärder
 

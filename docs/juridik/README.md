@@ -15,12 +15,10 @@ Skrivna 2026-11-18 utifrån specifikationen (kapitel 10 och 13) och det som fakt
 
 ## Öppna frågor att avgöra före piloten
 
-1. **Automatisk radering och export.**
-   - Specifikationen 10.3 lovar nattlig radering enligt lagringstiderna och export och radering
-     med ett klick. **Inget av det är byggt**, och det finns inget steg för det i byggplanen.
-   - Förslag: ett steg före piloten med en nattlig rensning i arbetaren och export och radering
-     per kund i administrationen.
-   - Annars anger avtalet att Bojen raderar och exporterar manuellt på begäran under piloten.
+1. **Automatisk radering och export:** *byggt 2026-11-18 i steg 7.4.* Det som återstår:
+   - Valet mellan 30 och 90 dagars ljud görs i `tenant.settings.privacy.audioDays`. Det finns
+     ingen knapp för det i administrationen ännu.
+   - Export av en hel firma när avtalet upphör görs av Bojen på begäran.
 2. **Anthropic och lagring.**
    - Specifikationen lovar att inga transkriberingar lagras hos amerikanska underbiträden.
      Samtalstext går till Anthropic för att receptionisten ska kunna svara, och sms-svar,

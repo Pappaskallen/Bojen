@@ -12,7 +12,8 @@
     "./links": "./src/links/shortLink.ts",
     "./pipeline": "./src/pipeline/pipeline.ts",
     "./logging": "./src/logging/safeError.ts",
-    "./onboarding": "./src/onboarding/customerImport.ts"
+    "./onboarding": "./src/onboarding/customerImport.ts",
+    "./privacy": "./src/privacy/retention.ts"
   },
   "scripts": {
     "lint": "eslint .",

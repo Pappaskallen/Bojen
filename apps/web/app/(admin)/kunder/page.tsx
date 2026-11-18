@@ -43,6 +43,7 @@ export default async function CustomersPage({ searchParams }: Props) {
     <main className="booking crm">
       <AdminNav current="customers" />
       <h1>{crm.list.title}</h1>
+      {first(params.raderad) === "1" ? <p role="status">{crm.privacy.erased}</p> : null}
       <SignOutButton />
 
       <form method="get" action="/kunder" role="search" className="customer-search">

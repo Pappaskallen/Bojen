@@ -61,6 +61,8 @@ export interface ObjectStorage {
   signedUrl(key: string, seconds: number): Promise<string>;
   /** The file itself, for the worker (a voice note to transcribe). */
   get(key: string): Promise<Uint8Array>;
+  /** Removes the files; a key that is not there is no error (step 7.4, the nightly clean-up). */
+  delete(keys: string[]): Promise<void>;
 }
 
 /**

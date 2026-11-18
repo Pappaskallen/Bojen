@@ -53,7 +53,7 @@ Bojen kombinerar flera saker som IMY:s lista räknar som tecken på hög risk:
 | Någon lurar AI-receptionisten att lämna ut uppgifter | Medel | Hög | Verktygen kan inte lämna ut koder eller adresser, och manipulationsförsök testas före varje release | Låg |
 | AI:n missförstår ett svar och bokar fel | Medel | Låg till medel | Osäkra svar går till en person, och kunden får en bekräftelse som går att ändra | Låg |
 | Överföring till USA (Anthropic, Vercel, Supabase och Mailgun som bolag) | – | Medel | Lagring inom EU och standardavtalsklausuler. Koder och adresser skickas aldrig till AI. [Avtal om nolllagring med Anthropic, se README.] | [Bedöm] |
-| Samtalsljud sparas längre än nödvändigt | Medel | Medel | Firman väljer 30 eller 90 dagar eller bara sammanfattning. [Automatisk radering byggs före piloten.] | [Bedöm] |
+| Samtalsljud sparas längre än nödvändigt | Medel | Medel | Firman väljer 30 eller 90 dagar eller bara sammanfattning, och ljudet raderas automatiskt varje natt när tiden har gått | Låg |
 | Personalens telefon kommer bort | Medel | Medel | Kortlivade sessioner som kan spärras. Koder i telefonen raderas efter jobbet eller efter 24 timmar. | Låg |
 | Konto tas över | Låg | Hög | Engångskod eller passkey, och tvåfaktorsautentisering för ägare och administratörer | Låg |
 | Erbjudanden skickas utan grund | Medel | Medel | Samtycke lagras, STOPP respekteras alltid och kampanjer går till tidigare kunder | Låg |

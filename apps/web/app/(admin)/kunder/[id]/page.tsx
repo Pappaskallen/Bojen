@@ -18,11 +18,19 @@ export const metadata: Metadata = {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const none = crm.card.unknown;
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+const PRIVACY_ERRORS: Record<string, string> = crm.privacy.errors;
 
 /** The customer card: contact details, boats, visits and the messages (byggplan step 5.1). */
-export default async function CustomerCardPage({ params }: Props) {
+export default async function CustomerCardPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const fel = (await searchParams).fel;
+  const privacyError =
+    typeof fel === "string" && Object.hasOwn(PRIVACY_ERRORS, fel) ? PRIVACY_ERRORS[fel] : null;
   const staff = await requireStaff(`/kunder/${id}`);
   if (!UUID.test(id)) notFound();
   const now = new Date();
@@ -161,6 +169,41 @@ export default async function CustomerCardPage({ params }: Props) {
                 </li>
               ))}
             </ol>
+          </>
+        )}
+      </section>
+
+      <section aria-labelledby="privacy">
+        <h2 id="privacy">{crm.privacy.heading}</h2>
+        {privacyError ? (
+          <p role="alert" className="error">
+            {privacyError}
+          </p>
+        ) : null}
+        {staff.role === "mechanic" ? (
+          <p className="help">{crm.privacy.onlyOwners}</p>
+        ) : (
+          <>
+            <p>
+              <a href={`/api/kunder/${card.id}/export`} download>
+                {crm.privacy.exportLabel}
+              </a>
+            </p>
+            <p className="help">{crm.privacy.exportHelp}</p>
+            <form method="post" action={`/api/kunder/${card.id}/radera`} className="erase">
+              <p className="help" id="erase-help">
+                {crm.privacy.eraseHelp}
+              </p>
+              <label htmlFor="confirm">{crm.privacy.confirmLabel}</label>
+              <input
+                id="confirm"
+                name="confirm"
+                autoComplete="off"
+                required
+                aria-describedby="erase-help"
+              />
+              <button type="submit">{crm.privacy.eraseLabel}</button>
+            </form>
           </>
         )}
       </section>

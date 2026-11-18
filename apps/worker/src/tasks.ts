@@ -26,7 +26,10 @@ import {
   sendAlert,
   runPostCall,
   writeReportDraft,
+  RETENTION_TASK,
+  runRetention,
   type DraftDeps,
+  type PrivacyDeps,
 } from "@bojen/db";
 import { safeError } from "@bojen/core/logging";
 import type { Task, TaskList } from "graphile-worker";
@@ -56,6 +59,8 @@ export interface WorkerDeps extends FlowDeps {
   postCall?: { summarizer: CallSummarizer; reader: NameplateReader; storage: ObjectStorage };
   /** Alerts to staff, the follow-up and the voicemail (step 6.4). */
   escalation?: EscalationDeps;
+  /** The nightly clean-up of personal data (step 7.4): the files go from this storage. */
+  privacy?: { storage: ObjectStorage };
 }
 
 export interface EscalationDeps {
@@ -135,6 +140,9 @@ export function taskList(deps: WorkerDeps): TaskList {
       : {}),
     ...(deps.postCall ? postCallTasks({ db: deps.db, ...deps.postCall }) : {}),
     ...(deps.escalation ? escalationTasks(deps, deps.escalation) : {}),
+    ...(deps.privacy
+      ? privacyTasks({ db: deps.db, now: deps.now, storage: deps.privacy.storage })
+      : {}),
     ...(deps.reports ? reportTasks({ db: deps.db, now: deps.now, ...deps.reports }) : {}),
   };
 }
@@ -234,4 +242,16 @@ export function withSafeErrors(tasks: TaskList): TaskList {
     };
   }
   return safe;
+}
+
+/** The nightly clean-up (step 7.4, spec 10.3), from the crontab in index.ts. */
+export function privacyTasks(deps: PrivacyDeps): TaskList {
+  return {
+    [RETENTION_TASK]: async (_payload, helpers) => {
+      const r = await runRetention(deps);
+      helpers.logger.info(
+        `retention: ${String(r.audio)} recordings, ${String(r.callTexts)} call texts, ${String(r.messages)} messages, ${String(r.auditEntries)} log entries, ${String(r.accessInfo)} access, ${String(r.inquiries)} inquiries, ${String(r.customers)} customers`,
+      );
+    },
+  };
 }

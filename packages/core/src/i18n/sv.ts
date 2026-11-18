@@ -1006,6 +1006,27 @@ export const crm = {
       `${description} (art.nr ${articleNumber}) × ${quantity}`,
     recommendationLine: (priority: string, text: string) => `${priority}: ${text}`,
   },
+  /** Export and erasure of a customer's personal data (step 7.4, spec 10.3). */
+  privacy: {
+    erasedName: "Raderad kund",
+    erasedTask: "Ärende om en raderad kund",
+    heading: "Personuppgifter",
+    exportLabel: "Exportera kundens uppgifter (JSON)",
+    exportHelp:
+      "Allt Bojen har om kunden, för en begäran om registerutdrag eller dataportabilitet. Koder och åtkomstinformation ingår inte.",
+    eraseLabel: "Radera kunden",
+    eraseHelp:
+      "Namn, nummer, e-post, adress, samtycken, meddelandenas innehåll och samtal tas bort. Båtens tekniska historik finns kvar utan koppling till kunden. Det går inte att ångra.",
+    confirmLabel: "Skriv RADERA för att bekräfta",
+    confirmWord: "RADERA",
+    onlyOwners: "Bara ägare och administratörer kan exportera och radera.",
+    erased: "Kunden är raderad.",
+    errors: {
+      confirm: "Skriv RADERA i rutan för att radera kunden.",
+      forbidden: "Bara ägare och administratörer kan radera kunder.",
+      failed: "Det gick inte att radera kunden. Försök igen.",
+    },
+  },
   /** The Excel import for a new firm's customers and boats (Avslutande kontroll, onboarding). */
   customerImport: {
     sheet: "Kunder och båtar",

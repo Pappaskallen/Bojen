@@ -27,3 +27,5 @@ export * from "./escalation";
 export * from "./kpi";
 export * from "./dashboard";
 export * from "./calls";
+export * from "./privacy";
+export * from "./customer-import";

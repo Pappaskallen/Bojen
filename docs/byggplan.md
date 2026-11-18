@@ -48,6 +48,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 7.1 – KPI-vyer (2 dagar)
 - [x] Steg 7.2 – Dashboard i mobilen (2 dagar)
 - [x] Steg 7.3 – Statistik för receptionisten (0,5 dag)
+- [x] Steg 7.4 – Radering och export (1,5 dagar)
 - [ ] Steg 8 – Fortnox (2–3 dagar, när partneravtalet är klart)
 - [ ] Avslutande kontroll före piloten
 
@@ -408,6 +409,17 @@ ett alternativ i stället för att byta tyst.
 #### Steg 7.3 – Statistik för receptionisten (0,5 dag)
 - (Byggt 2026-11-18: KPI 22 behöver veta vad den som ringde ville, så samtalet har fått `intent` (migrering 0030). Agenten anger det i `avsluta_samtal` (`arende`), annars sammanfattningen. KPI 24 behöver öppettider som går att räkna på, så `tenant.settings.receptionist.officeHours` har fönster som jouren, med vardagar 07–17 som standard.)
 - **Klart när:** KPI 21–24 visas och samtalslistan kan filtreras på utfall.
+
+#### Steg 7.4 – Radering och export (1,5 dagar)
+- (Tillagt 2026-11-18 efter genomgången av juridiken: specifikationen 10.3 lovar lagringstider som raderas automatiskt varje natt och export och radering med ett klick, men inget steg byggde det. Beslutat med Robert att det byggs före piloten.)
+- (Byggt 2026-11-18: en raderad kund anonymiseras i stället för att tas bort, så att jobb, besök och rapporter behåller sina rader. Åtkomstinformationen följer sitt slutdatum (`valid_until`), eftersom inget val av "30 dagar efter senaste besöket" finns. Exporten är JSON. Pdf enligt 10.3 återstår. Bilder på båten behålls som teknisk historik. Valet av 30 dagars ljud ligger i `tenant.settings.privacy.audioDays` och har ingen knapp än.)
+- **Mål:** Lagringstiderna i 10.3 gäller av sig själva, och en registrerads begäran om export eller radering klaras med ett klick.
+- **Berör:** `packages/core/privacy/*`, `packages/db/src/privacy.ts`, `apps/worker/src/tasks.ts`, `apps/web/app/(admin)/kunder/[id]`, `apps/web/app/api/kunder/*`.
+- **Gör:**
+  - Lagringsreglerna som ren logik.
+  - En nattlig rensning i arbetaren: samtalsljud efter 90 dagar (30 om firman har valt det), samtalstext och meddelandeinnehåll efter 24 månader, förfrågningar som inte blev affär efter 12 månader, revisionslogg efter 24 månader, åtkomstinformation när den har gått ut och kunder 36 månader efter senaste jobbet (anonymiseras).
+  - Export (JSON) och radering per kund för ägare och administratör.
+- **Klart när:** Tester visar att varje lagringstid rensar det den ska och inget annat, att en raderad kund inte har kvar några personuppgifter men att båtens tekniska historik finns kvar, och att exporten innehåller kundens uppgifter men inga koder.
 
 ### Steg 8 – Fortnox (2–3 dagar, när partneravtalet är klart)
 - **Berör:** `packages/adapters/fortnox/*`, `apps/web/app/(admin)/installningar/integrationer/*`.
