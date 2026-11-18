@@ -56,6 +56,7 @@ describe("the call's transcript and summary", () => {
     const summary = normaliseSummary({
       points: ["Per ringde om Bustern", " ", "Pnr 811218-9876 sades", "3", "4", "5", "6"],
       outcome: "booked",
+      intent: "book",
     });
     expect(summary.points).toEqual([
       "Per ringde om Bustern",
@@ -65,11 +66,13 @@ describe("the call's transcript and summary", () => {
       "5",
     ]);
     expect(summary.outcome).toBe("booked");
-    expect(normaliseSummary({ points: "x", outcome: "sold" })).toEqual({
+    expect(summary.intent).toBe("book");
+    expect(normaliseSummary({ points: "x", outcome: "sold", intent: "buy" })).toEqual({
       points: [],
       outcome: null,
+      intent: null,
     });
-    expect(summaryText({ points: ["a", "b"], outcome: null })).toBe("- a\n- b");
+    expect(summaryText({ points: ["a", "b"], outcome: null, intent: null })).toBe("- a\n- b");
   });
 });
 

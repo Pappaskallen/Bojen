@@ -26,6 +26,7 @@ import {
   kpiTotals,
   kpiValues,
   openTasks,
+  receptionistStats,
   revenueByWeek,
   reviewClicks,
   snapshotOn,
@@ -34,6 +35,7 @@ import { db, maps, requireStaff } from "../../../lib/server";
 import { AdminNav } from "../nav";
 import { SignOutButton } from "../sign-out";
 import { KpiCard, Level } from "./card";
+import { ReceptionistCard, receptionistWindow } from "./receptionist";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -81,6 +83,8 @@ export default async function OverviewPage({ searchParams }: Props) {
   const route = await dayRoute({ db: d, maps: maps() }, tenantId, visits, now).catch(() => null);
   const tasks = await openTasks(d, tenantId);
   const clicks = await reviewClicks(d, tenantId, period);
+  const last30 = receptionistWindow(now);
+  const calls = await receptionistStats(d, tenantId, last30.from, last30.to);
 
   const revenueChange = change(values.revenue, lastYear.revenueOre || null);
   const places = new Set(visits.flatMap((v) => (v.place ? [v.place.id] : []))).size;
@@ -175,6 +179,8 @@ export default async function OverviewPage({ searchParams }: Props) {
           </p>
         </Link>
       ) : null}
+
+      <ReceptionistCard stats={calls} />
 
       <Link className="dash-card dash-link" href={link("csat")}>
         <h2>{t.customers}</h2>

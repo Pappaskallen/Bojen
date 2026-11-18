@@ -467,15 +467,18 @@ describe("the other tools", () => {
         await avslutaSamtal(f.deps, await f.current(callId), {
           sammanfattning: "Reklamation, ring upp.",
           utfall: "message",
+          arende: "annat",
         }),
       ).toEqual({ ok: true });
       // Ended: the call's token leads nowhere any more.
       expect(await openCall(tx, f.tenantId, callId)).toBeNull();
       const [ended] = await tx
-        .select({ outcome: call.outcome, summary: call.summary })
+        .select({ outcome: call.outcome, summary: call.summary, intent: call.intent })
         .from(call)
         .where(eq(call.id, callId));
       expect(ended?.outcome).toBe("message");
+      // What the caller wanted, for KPI 22 (step 7.3).
+      expect(ended?.intent).toBe("other");
       expect(ended?.summary).toContain("Ville kopplas: Vill prata med Jonas");
       expect(ended?.summary).toContain("Reklamation, ring upp.");
     });

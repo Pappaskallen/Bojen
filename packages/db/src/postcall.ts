@@ -100,6 +100,7 @@ export async function runPostCall(
         .filter(Boolean)
         .join("\n"),
       outcome: c.outcome ?? summary.outcome,
+      intent: c.intent ?? summary.intent,
       jobId,
       ...(c.recordingAllowed ? {} : { transcript: null }),
     })

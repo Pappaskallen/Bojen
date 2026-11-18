@@ -118,7 +118,11 @@ export type KpiLevel = "green" | "yellow" | "red";
 
 /** Green when the target is met, yellow within 10 % of it, red when further off. */
 export function kpiLevel(key: KpiKey, value: number | null): KpiLevel | null {
-  const target = KPI_TARGETS[key];
+  return levelAgainst(KPI_TARGETS[key], value);
+}
+
+/** The colour of a value against any target. */
+export function levelAgainst(target: KpiTarget | null, value: number | null): KpiLevel | null {
   if (!target || value === null) return null;
   const { min, max } = target;
   if (min !== undefined && value < min) return value >= min * 0.9 ? "yellow" : "red";

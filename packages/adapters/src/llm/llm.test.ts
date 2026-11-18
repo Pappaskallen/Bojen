@@ -188,6 +188,7 @@ describe("after the call (step 6.3)", () => {
       text: JSON.stringify({
         points: ["Per ringde om Bustern", "Bokade en tid"],
         outcome: "booked",
+        intent: "book",
       }),
     });
     const summarizer = createClaudeSummarizer({ client });
@@ -195,6 +196,7 @@ describe("after the call (step 6.3)", () => {
     expect(await summarizer.summarize("Kund: Hej")).toEqual({
       points: ["Per ringde om Bustern", "Bokade en tid"],
       outcome: "booked",
+      intent: "book",
     });
     expect(requests[0]?.body).toMatchObject({
       model: "claude-sonnet-5-5",
@@ -237,6 +239,7 @@ describe("after the call (step 6.3)", () => {
     expect(await summarizer.summarize("Kund: A\nReceptionist: B\nKund: C")).toEqual({
       points: ["A", "C"],
       outcome: null,
+      intent: null,
     });
     const reader = createFakeNameplateReader();
     expect(

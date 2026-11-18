@@ -1,7 +1,7 @@
-import { appUser, connect, refreshKpiViews, task } from "@bojen/db";
+import { appUser, call, connect, refreshKpiViews, task } from "@bojen/db";
 import { DEMO_TENANT_ID } from "@bojen/db/seed";
 import { expect, test } from "@playwright/test";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { signInOwner } from "./staff-login";
 
 /** An owner of their own, independent of the other tests. */
@@ -9,6 +9,8 @@ const DAG = "dag@jonas-batservice.test";
 const TODO = "Ring Anna L – obekräftad i morgon";
 const tenantId = DEMO_TENANT_ID;
 let taskId = "";
+const CALL_NOTE = "- E2E: kopplad till mekanikern om impellern";
+let callIds: string[] = [];
 
 // The sketch in spec 9.2 is drawn for a phone 360 px wide.
 test.use({ viewport: { width: 360, height: 800 } });
@@ -29,6 +31,28 @@ test.beforeAll(async () => {
       })
       .returning({ id: task.id });
     taskId = made?.id ?? "";
+    // Two calls an hour ago, for the receptionist's card and list (step 7.3).
+    const hourAgo = new Date(Date.now() - 3_600_000);
+    const calls = await db
+      .insert(call)
+      .values([
+        {
+          tenantId,
+          startedAt: hourAgo,
+          outcome: "transferred",
+          intent: "emergency",
+          summary: CALL_NOTE,
+        },
+        {
+          tenantId,
+          startedAt: hourAgo,
+          outcome: "spam",
+          intent: "other",
+          summary: "- E2E: säljare",
+        },
+      ])
+      .returning({ id: call.id });
+    callIds = calls.map((c) => c.id);
     // No worker runs here: the views are brought up to date as it would every 15 minutes.
     await refreshKpiViews(db);
   } finally {
@@ -40,6 +64,7 @@ test.afterAll(async () => {
   const { db, close } = connect();
   try {
     await db.delete(task).where(eq(task.id, taskId));
+    await db.delete(call).where(inArray(call.id, callIds));
   } finally {
     await close();
   }
@@ -53,7 +78,7 @@ test("the owner's dashboard follows the sketch at 360 px, and its cards open (st
 
   // Top to bottom as in spec 9.2.
   const headings = await page.getByRole("heading", { level: 2 }).allTextContents();
-  const order = ["Idag", "Intäkt", "förbokad", "Kunder", "Att göra"].map((name) =>
+  const order = ["Idag", "Intäkt", "förbokad", "Receptionisten", "Kunder", "Att göra"].map((name) =>
     headings.findIndex((h) => h.includes(name)),
   );
   expect(order.every((i) => i >= 0)).toBe(true);
@@ -105,4 +130,30 @@ test("the owner's dashboard follows the sketch at 360 px, and its cards open (st
 
   await page.getByRole("link", { name: "← Översikt" }).click();
   await expect(page).toHaveURL(/\/oversikt\?manad=/);
+
+  // The receptionist's card opens KPI 21–24 and the calls, filtered on outcome (step 7.3).
+  await page.getByRole("link", { name: /^Receptionisten \(30 dagar\)/ }).click();
+  await expect(page).toHaveURL(/\/oversikt\/samtal$/);
+  for (const name of [
+    "Antal samtal",
+    "Konvertering till bokning",
+    "Kopplade vidare",
+    "Utanför kontorstid",
+  ]) {
+    await expect(page.getByRole("link", { name: new RegExp(`^${name}`) })).toBeVisible();
+  }
+  const list = page.getByRole("list", { name: "Samtal" });
+  await expect(list.getByText(CALL_NOTE)).toBeVisible();
+  const filters = page.getByRole("navigation", { name: "Utfall" });
+  await filters.getByRole("link", { name: "Kopplade" }).click();
+  await expect(page).toHaveURL(/utfall=transferred$/);
+  await expect(filters.getByText("Kopplade")).toHaveAttribute("aria-current", "page");
+  await expect(list.getByText(CALL_NOTE)).toBeVisible();
+  for (const item of await list.getByRole("listitem").all()) {
+    await expect(item.getByText(/^Kopplad/)).toBeVisible();
+  }
+  await filters.getByRole("link", { name: "Spam" }).click();
+  await expect(list.getByText("- E2E: säljare")).toBeVisible();
+  await expect(list.getByText(CALL_NOTE)).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
 });

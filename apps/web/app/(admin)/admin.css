@@ -550,3 +550,36 @@ a.kpi-card:focus-visible {
   text-align: right;
   white-space: nowrap;
 }
+
+/* The call list (step 7.3), filtered on outcome. */
+.call-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 14px 0 6px;
+}
+
+.call-filters [aria-current="page"] {
+  font-weight: 600;
+}
+
+.call-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.call-list li {
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+.call-list p {
+  margin: 2px 0;
+}
+
+.call-summary {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}

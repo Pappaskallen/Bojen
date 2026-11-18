@@ -495,6 +495,47 @@ export const crm = {
     week: (n: number) => `v.${String(n)}`,
     nothing: "–",
     ownersOnly: "Översikten är för ägare och administratörer.",
+    /** The receptionist's card and the call list (step 7.3, KPI 21–24). */
+    receptionist: "Receptionisten (30 dagar)",
+    callsAndBookings: (calls: number, bookings: number) =>
+      `${String(calls)} samtal · ${String(bookings)} bokningar`,
+    outsideHours: (share: string) => `${share} utanför kontorstid`,
+    transferredAndConversion: (n: number, conversion: string) =>
+      `${String(n)} kopplade · ${conversion} till bokning`,
+    calls: {
+      title: "Samtal",
+      period: "Senaste 30 dagarna",
+      kpis: {
+        calls: "Antal samtal",
+        conversion: "Konvertering till bokning",
+        transferShare: "Kopplade vidare",
+        outsideHours: "Utanför kontorstid",
+      },
+      filter: "Utfall",
+      all: "Alla",
+      filters: {
+        booked: "Bokade",
+        message: "Meddelanden",
+        transferred: "Kopplade",
+        spam: "Spam",
+        none: "Utan utfall",
+      } as Record<"booked" | "message" | "transferred" | "spam" | "none", string>,
+      outcome: {
+        booked: "Bokad",
+        message: "Meddelande",
+        transferred: "Kopplad",
+        spam: "Spam",
+      } as Record<string, string>,
+      intent: {
+        book: "ville boka",
+        emergency: "akut",
+        question: "fråga",
+        other: "annat",
+      } as Record<string, string>,
+      noOutcome: "Utan utfall",
+      unknownCaller: "Dolt nummer",
+      none: "Inga samtal.",
+    },
   },
   /** The campaigns (step 5.6). */
   campaigns: {

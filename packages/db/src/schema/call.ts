@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { baseColumns, isE164, tenantIsolationPolicy } from "./_shared";
 import { customer } from "./customer";
-import { callOutcome } from "./enums";
+import { callIntent, callOutcome } from "./enums";
 import { job } from "./job";
 import { tenant } from "./tenant";
 
@@ -36,6 +36,8 @@ export const call = pgTable(
     transcript: text("transcript"),
     summary: text("summary"),
     outcome: callOutcome("outcome"),
+    /** What the caller wanted, from the agent or else the summary (KPI 22). */
+    intent: callIntent("intent"),
     /** The job the call created, if any. */
     jobId: uuid("job_id"),
     /** What the call cost in the voice pipeline, in öre (KPI 25). */

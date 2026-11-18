@@ -47,7 +47,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [ ] Steg 6.5 – Testsvit för samtal (2 dagar)
 - [x] Steg 7.1 – KPI-vyer (2 dagar)
 - [x] Steg 7.2 – Dashboard i mobilen (2 dagar)
-- [ ] Steg 7.3 – Statistik för receptionisten (0,5 dag)
+- [x] Steg 7.3 – Statistik för receptionisten (0,5 dag)
 - [ ] Steg 8 – Fortnox (2–3 dagar, när partneravtalet är klart)
 - [ ] Avslutande kontroll före piloten
 
@@ -406,6 +406,7 @@ ett alternativ i stället för att byta tyst.
 - **Klart när:** Layouten följer skissen i 9.2 vid 360 px bredd, färgerna följer målen, korten går att trycka på och listan *Att göra* visar de öppna ärendena. Ett Playwright-test med skärmdump på mobil går igenom.
 
 #### Steg 7.3 – Statistik för receptionisten (0,5 dag)
+- (Byggt 2026-11-18: KPI 22 behöver veta vad den som ringde ville, så samtalet har fått `intent` (migrering 0030). Agenten anger det i `avsluta_samtal` (`arende`), annars sammanfattningen. KPI 24 behöver öppettider som går att räkna på, så `tenant.settings.receptionist.officeHours` har fönster som jouren, med vardagar 07–17 som standard.)
 - **Klart när:** KPI 21–24 visas och samtalslistan kan filtreras på utfall.
 
 ### Steg 8 – Fortnox (2–3 dagar, när partneravtalet är klart)

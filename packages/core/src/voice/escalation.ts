@@ -31,15 +31,21 @@ function covers(w: OnCallWindow, weekday: number, minute: number): boolean {
   );
 }
 
+/** Whether any of the windows covers the instant, by the Stockholm clock (also office hours). */
+export function withinWindows(windows: readonly OnCallWindow[], now: Date): boolean {
+  const { weekday, minute } = stockholmClock(now);
+  return windows.some((w) => covers(w, weekday, minute));
+}
+
 /**
  * Whether a call can be put through to a person now (spec 8.4 "Jourtid?"). Saturdays and
  * Sundays only count when the firm offers weekend emergencies at all.
  */
 export function isOnCall(settings: OnCallSettings, now: Date): boolean {
-  const { weekday, minute } = stockholmClock(now);
+  const { weekday } = stockholmClock(now);
   // The weekend runs from Saturday 00:00 to Monday 00:00 by the clock, whichever window.
   if (!settings.weekendEmergency && weekday >= 6) return false;
-  return settings.windows.some((w) => covers(w, weekday, minute));
+  return withinWindows(settings.windows, now);
 }
 
 /**

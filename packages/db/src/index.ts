@@ -26,3 +26,4 @@ export * from "./postcall";
 export * from "./escalation";
 export * from "./kpi";
 export * from "./dashboard";
+export * from "./calls";
