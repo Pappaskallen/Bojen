@@ -1223,3 +1223,82 @@ export const crm = {
     outboundFallback: "Meddelande",
   },
 } as const;
+
+/**
+ * Bojen's sub-processors (Avslutande kontroll, juridik; spec 10.1): the public list that the
+ * data processing agreement points to. A change is announced to the firms 30 days ahead, so
+ * a new row starts as `planned` with the date it is taken into use.
+ */
+export const legal = {
+  subprocessors: {
+    title: "Underbiträden",
+    intro:
+      "Bojen behandlar personuppgifter för de firmor som använder tjänsten. Här är de företag Bojen anlitar för det. Vi meddelar firmorna 30 dagar innan ett underbiträde läggs till eller byts ut.",
+    updated: "Senast ändrad 18 november 2026.",
+    headers: ["Företag", "Vad de gör åt Bojen", "Uppgifter", "Var", "Skydd vid överföring"],
+    planned: "Tas i bruk senare",
+    rows: [
+      {
+        name: "Supabase Inc.",
+        purpose: "Databas, inloggning och lagring av bilder och filer",
+        data: "Alla uppgifter i tjänsten. Koder och åtkomstinformation är krypterade.",
+        where: "Stockholm (AWS eu-north-1)",
+        safeguard: "EU:s standardavtalsklausuler",
+        status: "active",
+      },
+      {
+        name: "Vercel Inc.",
+        purpose: "Drift av webbappen och bokningssidorna",
+        data: "Det som skickas till och från webbappen",
+        where: "Stockholm (arn1)",
+        safeguard: "EU:s standardavtalsklausuler",
+        status: "active",
+      },
+      {
+        name: "Amazon Web Services EMEA SARL",
+        purpose: "Nyckelhantering för krypteringen (KMS)",
+        data: "Krypteringsnycklar, inga personuppgifter i klartext",
+        where: "Stockholm (eu-north-1)",
+        safeguard: "Inom EU",
+        status: "active",
+      },
+      {
+        name: "46elks AB",
+        purpose: "Sms och telefoni",
+        data: "Telefonnummer, sms och samtal",
+        where: "Sverige",
+        safeguard: "Inom EU",
+        status: "active",
+      },
+      {
+        name: "Mailgun Technologies Inc.",
+        purpose: "E-post",
+        data: "E-postadress och e-postens innehåll",
+        where: "EU (Mailguns EU-region)",
+        safeguard: "EU:s standardavtalsklausuler",
+        status: "active",
+      },
+      {
+        name: "Anthropic PBC",
+        purpose:
+          "AI som tolkar sms-svar, skriver utkast till servicerapporter, läser typskyltar och är receptionist i telefon",
+        data: "Text från sms och samtal, anteckningar och bilder på typskyltar. Aldrig koder eller adresser.",
+        where: "USA",
+        safeguard:
+          "EU:s standardavtalsklausuler. Uppgifterna används inte för att träna AI-modeller.",
+        status: "active",
+      },
+      {
+        name: "Microsoft Ireland Operations Ltd (Azure)",
+        purpose: "Tal till text och text till tal för receptionisten",
+        data: "Ljudet i samtal till firman",
+        where: "Sverige (Sweden Central)",
+        safeguard: "Inom EU",
+        status: "planned",
+      },
+    ],
+    pushNote:
+      "Aviseringar till personalens mobiler går genom webbläsarens egen push-tjänst (Apple, Google eller Mozilla). De är krypterade så att push-tjänsten inte kan läsa dem.",
+    contact: "Frågor om personuppgifter: dataskydd@bojen.se",
+  },
+} as const;
