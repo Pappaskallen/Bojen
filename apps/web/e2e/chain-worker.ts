@@ -1,4 +1,5 @@
 import { createElksSms, createFakeClassifier, createFakeEmail } from "@bojen/adapters";
+import { earliestSend } from "@bojen/core/messaging";
 import { receiveSms, type Database } from "@bojen/db";
 import { customerLinks } from "@bojen/worker/links";
 import { taskList } from "@bojen/worker/tasks";
@@ -75,7 +76,18 @@ export function chainWorker(db: Database, visitId: string, appBase: string) {
       // Again each round: a job one of the tasks just added has the database's time, which can
       // be a moment after the limit was first worked out (and the database's clock may run a
       // little ahead of this process's). Two seconds are far less than any planned job's delay.
-      const limit = new Date(Math.max(until?.getTime() ?? 0, clock.getTime(), Date.now() + 2_000));
+      // At night (CI often runs after 21:00 in Stockholm) an sms is held until the morning:
+      // the night passes for the worker, as it would for the real one. An hour more for a firm
+      // whose quiet hours end later than 08:00.
+      const morning = earliestSend(clock, "notice").getTime();
+      const limit = new Date(
+        Math.max(
+          until?.getTime() ?? 0,
+          clock.getTime(),
+          Date.now() + 2_000,
+          morning > clock.getTime() ? morning + 3_600_000 : 0,
+        ),
+      );
       const due = await jobs(limit);
       if (due.length === 0) return ran;
       for (const job of due) {
