@@ -14,13 +14,16 @@
     "test": "vitest run",
     "migrate": "tsx src/migrate.ts",
     "seed": "tsx src/seed.ts",
-    "generate": "drizzle-kit generate"
+    "generate": "drizzle-kit generate",
+    "kundimport": "tsx src/import-cli.ts"
   },
   "dependencies": {
     "@bojen/core": "workspace:*",
     "drizzle-orm": "0.45.4",
     "graphile-worker": "0.18.0",
-    "postgres": "4.1.0"
+    "postgres": "4.1.0",
+    "read-excel-file": "9.3.17",
+    "write-excel-file": "4.1.1"
   },
   "devDependencies": {
     "@bojen/adapters": "workspace:*",

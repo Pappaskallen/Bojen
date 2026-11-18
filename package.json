@@ -18,7 +18,8 @@
     "db:migrate": "pnpm --filter @bojen/db migrate",
     "db:generate": "pnpm --filter @bojen/db generate",
     "db:seed": "pnpm --filter @bojen/db seed",
-    "e2e": "pnpm --filter @bojen/web e2e"
+    "e2e": "pnpm --filter @bojen/web e2e",
+    "db:import": "pnpm --filter @bojen/db run kundimport"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
