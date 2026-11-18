@@ -21,7 +21,8 @@ const tenantId = DEMO_TENANT_ID;
 const OWNER = "kedja@jonas-batservice.test";
 const MECHANIC = "kim@jonas-batservice.test";
 const NAME = "Kedja Kundsson";
-const PHONE = "+46701740698";
+// Outside the demo data's numbers (fictionalMobile: 0605–0644 and 0695–0699).
+const PHONE = "+46701740680";
 /** The firm's sms number, which the customer answers (PTS range for fiction). */
 const FIRM_NUMBER = "+46766860010";
 /** The firm's review page; the test reads the redirect and never goes there. */
@@ -83,7 +84,7 @@ test("a booking on the web goes all the way to the review link (before the pilot
     await page.getByRole("radio", { name: /Vinterkonservering/ }).check();
     await page.getByRole("button", { name: "Nästa" }).click();
     await page.getByLabel("Ditt namn").fill(NAME);
-    await page.getByLabel("Mobilnummer").fill("070-174 06 98");
+    await page.getByLabel("Mobilnummer").fill("070-174 06 80");
     await page.getByLabel("Båtmärke").fill("Nimbus");
     await page.getByLabel("Modell", { exact: true }).fill("305 Coupé");
     await page.getByRole("button", { name: "Nästa" }).click();
