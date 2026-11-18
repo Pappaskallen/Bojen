@@ -6,14 +6,15 @@ import {
   sv,
   weekdayShort,
 } from "@bojen/core";
-import { manageLinkExpiry, shortLinkUrl } from "@bojen/core/links";
+import { manageLinkExpiry, reviewLinkExpiry, reviewLinkUrl, shortLinkUrl } from "@bojen/core/links";
 import { type Database, type VisitContext, createShortLink } from "@bojen/db";
 
 /**
  * `manage`: the booking's own page. `report`: the service report. `rebook`: the firm's
- * booking page, for a new time after a cancelled visit.
+ * booking page, for a new time after a cancelled visit. `review`: the firm's review page after
+ * a good score (F9), through a link that counts the click.
  */
-export type LinkUse = "manage" | "report" | "rebook";
+export type LinkUse = "manage" | "report" | "rebook" | "review";
 
 /** What every flow needs. The clock is injected, so tests run the flows at any time. */
 export interface FlowDeps {
@@ -28,11 +29,25 @@ export interface FlowDeps {
 /**
  * The links in the flows (step 3.4): `manage` is a new short link, `bojen.se/x/{code}`, valid
  * until the visit starts. The report has no page of its own yet, so `report` is still the
- * firm's booking page.
+ * firm's booking page. `review` is a short link too, `bojen.se/r/{code}`, valid for 90 days.
  */
-export function customerLinks(db: Database, linkKey: string, base: string) {
+export function customerLinks(
+  db: Database,
+  linkKey: string,
+  base: string,
+  now: () => Date = () => new Date(),
+) {
   const page = bookingPageLink(base);
   return async (visit: VisitContext, purpose: LinkUse) => {
+    if (purpose === "review") {
+      const code = await createShortLink(db, linkKey, {
+        tenantId: visit.tenantId,
+        visitId: visit.visitId,
+        purpose,
+        expiresAt: reviewLinkExpiry(now()),
+      });
+      return reviewLinkUrl(base, code);
+    }
     if (purpose !== "manage") return page(visit);
     const code = await createShortLink(db, linkKey, {
       tenantId: visit.tenantId,

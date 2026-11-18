@@ -10,7 +10,7 @@ import {
 import type { Database } from "@bojen/db";
 import type { JobHelpers } from "graphile-worker";
 import { describe, expect, it } from "vitest";
-import { reportTasks, taskList } from "./tasks";
+import { privacyTasks, reportTasks, taskList, withSafeErrors } from "./tasks";
 
 describe("worker tasks", () => {
   const tasks = taskList({
@@ -100,5 +100,54 @@ describe("worker tasks", () => {
 
   it("refuses a payload without a message id", async () => {
     await expect(tasks.send_message?.({}, {} as JobHelpers)).rejects.toThrow("messageId");
+  });
+});
+
+describe("withSafeErrors", () => {
+  it("keeps a failed query's parameters out of the job's error, and still fails the job", async () => {
+    const failing = Object.assign(
+      new Error('Failed query: update "visit" set "note" = $1\nparams: Kod 4711 till +46701740680'),
+      {
+        name: "DrizzleQueryError",
+        query: 'update "visit" set "note" = $1',
+        cause: { code: "23514" },
+      },
+    );
+    const ok: string[] = [];
+    const safe = withSafeErrors({
+      fails: () => Promise.reject(failing),
+      works: (payload) => {
+        ok.push(String(payload));
+        return Promise.resolve();
+      },
+    });
+    const helpers = {} as JobHelpers;
+    await expect(safe.fails?.({}, helpers)).rejects.toThrow(
+      'DrizzleQueryError: update "visit" (pg 23514)',
+    );
+    await expect(safe.fails?.({}, helpers)).rejects.not.toThrow(/4711|\+4670/);
+    await safe.works?.("x", helpers);
+    expect(ok).toEqual(["x"]);
+  });
+});
+
+describe("the nightly clean-up (step 7.4)", () => {
+  it("is a task when the worker has storage, and runs at night from the crontab", async () => {
+    const { PRIVACY_CRONTAB } = await import("@bojen/db");
+    const storage = createFakeStorage();
+    const tasks = taskList({
+      db: {} as Database,
+      sms: createFakeSms(),
+      now: () => new Date(),
+      optOutKey: "k",
+      email: createFakeEmail(),
+      link: () => "bojen.se/boka/test",
+      privacy: { storage },
+    });
+    expect(Object.keys(tasks)).toContain("privacy_retention");
+    expect(
+      Object.keys(privacyTasks({ db: {} as Database, storage, now: () => new Date() })),
+    ).toEqual(["privacy_retention"]);
+    expect(PRIVACY_CRONTAB).toBe("0 2 * * * privacy_retention");
   });
 });

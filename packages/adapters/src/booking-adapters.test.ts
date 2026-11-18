@@ -194,5 +194,35 @@ describe("Supabase storage", () => {
     await expect(storage.signedUrl("t/none.jpg", 60)).rejects.toThrow();
     expect([...(await storage.get("t/a.jpg"))]).toEqual([1]);
     await expect(storage.get("t/none.jpg")).rejects.toThrow();
+    await storage.delete(["t/a.jpg", "t/none.jpg"]);
+    expect(storage.objects.size).toBe(0);
+  });
+
+  it("deletes many files in one call, and nothing for an empty list", async () => {
+    const { fetch, calls } = recordingFetch(() => Response.json([]));
+    const storage = createSupabaseStorage({
+      url: "http://supabase.test",
+      serviceRoleKey: "secret-service-key",
+      bucket: "attachments",
+      fetch,
+    });
+    await storage.delete([]);
+    expect(calls).toHaveLength(0);
+    await storage.delete(["t1/calls/c1.wav", "t1/calls/c2.wav"]);
+    expect(calls[0]?.url).toBe("http://supabase.test/storage/v1/object/attachments");
+    expect(calls[0]?.init.method).toBe("DELETE");
+    expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
+      prefixes: ["t1/calls/c1.wav", "t1/calls/c2.wav"],
+    });
+
+    const refused = createSupabaseStorage({
+      url: "http://supabase.test",
+      serviceRoleKey: "secret-service-key",
+      bucket: "b",
+      fetch: recordingFetch(() => new Response("no", { status: 403 })).fetch,
+    });
+    await expect(refused.delete(["t/x.wav"])).rejects.toThrow(
+      /^Supabase Storage refused to delete: 403$/,
+    );
   });
 });

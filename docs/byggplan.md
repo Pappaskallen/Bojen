@@ -48,6 +48,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 7.1 – KPI-vyer (2 dagar)
 - [x] Steg 7.2 – Dashboard i mobilen (2 dagar)
 - [x] Steg 7.3 – Statistik för receptionisten (0,5 dag)
+- [x] Steg 7.4 – Radering och export (1,5 dagar)
 - [ ] Steg 8 – Fortnox (2–3 dagar, när partneravtalet är klart)
 - [ ] Avslutande kontroll före piloten
 
@@ -409,6 +410,17 @@ ett alternativ i stället för att byta tyst.
 - (Byggt 2026-11-18: KPI 22 behöver veta vad den som ringde ville, så samtalet har fått `intent` (migrering 0030). Agenten anger det i `avsluta_samtal` (`arende`), annars sammanfattningen. KPI 24 behöver öppettider som går att räkna på, så `tenant.settings.receptionist.officeHours` har fönster som jouren, med vardagar 07–17 som standard.)
 - **Klart när:** KPI 21–24 visas och samtalslistan kan filtreras på utfall.
 
+#### Steg 7.4 – Radering och export (1,5 dagar)
+- (Tillagt 2026-11-18 efter genomgången av juridiken: specifikationen 10.3 lovar lagringstider som raderas automatiskt varje natt och export och radering med ett klick, men inget steg byggde det. Beslutat med Robert att det byggs före piloten.)
+- (Byggt 2026-11-18: en raderad kund anonymiseras i stället för att tas bort, så att jobb, besök och rapporter behåller sina rader. Åtkomstinformationen följer sitt slutdatum (`valid_until`), eftersom inget val av "30 dagar efter senaste besöket" finns. Exporten är JSON. Pdf enligt 10.3 återstår. Bilder på båten behålls som teknisk historik. Valet av 30 dagars ljud ligger i `tenant.settings.privacy.audioDays` och har ingen knapp än.)
+- **Mål:** Lagringstiderna i 10.3 gäller av sig själva, och en registrerads begäran om export eller radering klaras med ett klick.
+- **Berör:** `packages/core/privacy/*`, `packages/db/src/privacy.ts`, `apps/worker/src/tasks.ts`, `apps/web/app/(admin)/kunder/[id]`, `apps/web/app/api/kunder/*`.
+- **Gör:**
+  - Lagringsreglerna som ren logik.
+  - En nattlig rensning i arbetaren: samtalsljud efter 90 dagar (30 om firman har valt det), samtalstext och meddelandeinnehåll efter 24 månader, förfrågningar som inte blev affär efter 12 månader, revisionslogg efter 24 månader, åtkomstinformation när den har gått ut och kunder 36 månader efter senaste jobbet (anonymiseras).
+  - Export (JSON) och radering per kund för ägare och administratör.
+- **Klart när:** Tester visar att varje lagringstid rensar det den ska och inget annat, att en raderad kund inte har kvar några personuppgifter men att båtens tekniska historik finns kvar, och att exporten innehåller kundens uppgifter men inga koder.
+
 ### Steg 8 – Fortnox (2–3 dagar, när partneravtalet är klart)
 - **Berör:** `packages/adapters/fortnox/*`, `apps/web/app/(admin)/installningar/integrationer/*`.
 - **Gör:** Koppling via OAuth 2, synk av kunder och artiklar, faktura skapas från fakturaunderlaget och betalstatus hämtas via polling.
@@ -416,11 +428,15 @@ ett alternativ i stället för att byta tyst.
 
 ### Avslutande kontroll före piloten (3 dagar)
 
-- [ ] Hela kedjan i Playwright: bokning på webben → bekräftelse → 24-timmarskontroll med JA → dagvy offline → Klart → rapport → nöjdhetsfråga med betyg 5 → länk till recension.
+- [x] Hela kedjan i Playwright: bokning på webben → bekräftelse → 24-timmarskontroll med JA → dagvy offline → Klart → rapport → nöjdhetsfråga med betyg 5 → länk till recension.
+  - (Byggt 2026-11-18: `apps/web/e2e/chain.spec.ts`. Arbetarens jobb körs i testet för just det besöket, med sms genom den riktiga 46elks-adaptern till den fejkade 46elks. Serverns klocka går inte att flytta, så arbetarens klocka går före till kontrollen dagen innan och till nöjdhetsfrågan, och besöket flyttas till i dag när dagen kommer. Kundens svar JA och 5 kommer därför in genom `receiveSms`, som 46elks-webhooken anropar, i stället för genom webhooken; den har egna tester. Länken till recensionen räknade inga klick, så F9 skickar nu `bojen.se/r/{kod}`, som sparar klicket (KPI 18) och skickar vidare till firmans recensionssida.)
 - [ ] Belastningstest: 20 samtidiga röstsamtal och 500 sms per minut genom kön.
 - [ ] Säkerhet: isoleringstesterna går igenom, testsviten för samtal ger 0 regelbrott, beroendeskanningen hittar inget kritiskt och de kritiska delarna av ASVS-checklistan är avbockade.
+  - (Delvis 2026-11-18, se `docs/sakerhet-asvs.md`: isoleringstesterna, beroendeskanningen och ASVS-checklistan är klara. Genomgången lade till säkerhetsrubriker och CSP och tog bort personuppgifter ur felloggarna. Testsviten för samtal väntar på steg 6.5.)
 - [ ] Juridik: personuppgiftsbiträdesavtal, villkor, integritetspolicy, mall för konsekvensbedömning och publik lista över underbiträden.
+  - (Utkast 2026-11-18 i `docs/juridik/`: personuppgiftsbiträdesavtal, allmänna villkor, integritetspolicy, mall för information till firmans kunder och förifylld mall för konsekvensbedömning. Listan över underbiträden finns som publik sida på `/underbitraden` och följer MVP-stacken. Juristgranskning och åtta öppna frågor återstår, bland dem att automatisk radering och export enligt 10.3 inte är byggda och att löftet om lagring hos Anthropic kräver ett avtal om nolllagring.)
 - [ ] Onboarding: importmall för Excel, guide för nummerportering hos 46elks och utbildningsvideo på 10 minuter för pilotfirmorna.
+  - (Delvis 2026-11-18, se `docs/onboarding/`: importmallen finns, tillsammans med en import som kontrollerar listan och sedan sparar den i en enda transaktion (`pnpm db:import`). Guiden för nummerportering finns. 46elks porteringsvillkor är inte offentliga, så de är frågor att ställa till 46elks. Manuset till videon finns, men videon återstår att spela in.)
 - [ ] Drift inom EU (spec 10): egna servrar för OSRM och Photon (OpenStreetMap) i stället för de publika, så att adresser och platser inte lämnar vår drift. Supabase-projektet i produktion har JWT-kroken, den svenska mejlmallen, avstängda registreringar, SMTP via Mailgun, sms-kroken (`send_sms` till `/api/webhooks/supabase/send-sms` med egen hemlighet) och sms-kodens giltighet på 10 minuter inställda. 46elks har leveransrapporter till `/api/webhooks/elks/delivery` med egen token, och `SMS_OPT_OUT_KEY` är satt och säkerhetskopierad (byts den går STOPP-listan förlorad). `SHORT_LINK_KEY` är satt, densamma i webben och arbetaren (byts den slutar alla skickade länkar att fungera), och `KMS_KEY_ID` pekar på AWS KMS i eu-north-1 för webben också.
 
 **Summa:** cirka 70 utvecklardagar (före tilläggen 2026-11-11 och 2026-11-12: steg 2.7 och 2.8 och utökade steg 3.1 och 5.5, cirka 4 dagar till), alltså cirka 16 veckor med två utvecklare inklusive marginal. Det stämmer med tidsplanen i 12.1.

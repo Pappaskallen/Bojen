@@ -26,8 +26,12 @@ import {
   sendAlert,
   runPostCall,
   writeReportDraft,
+  RETENTION_TASK,
+  runRetention,
   type DraftDeps,
+  type PrivacyDeps,
 } from "@bojen/db";
+import { safeError } from "@bojen/core/logging";
 import type { Task, TaskList } from "graphile-worker";
 import { CHECK_TASK, sendAvailabilityCheck } from "./flows/availabilityCheck";
 import { ESCALATION_TASK, REMINDER_TASK, handleCheckEvent } from "./flows/availabilityFollowup";
@@ -55,6 +59,8 @@ export interface WorkerDeps extends FlowDeps {
   postCall?: { summarizer: CallSummarizer; reader: NameplateReader; storage: ObjectStorage };
   /** Alerts to staff, the follow-up and the voicemail (step 6.4). */
   escalation?: EscalationDeps;
+  /** The nightly clean-up of personal data (step 7.4): the files go from this storage. */
+  privacy?: { storage: ObjectStorage };
 }
 
 export interface EscalationDeps {
@@ -134,6 +140,9 @@ export function taskList(deps: WorkerDeps): TaskList {
       : {}),
     ...(deps.postCall ? postCallTasks({ db: deps.db, ...deps.postCall }) : {}),
     ...(deps.escalation ? escalationTasks(deps, deps.escalation) : {}),
+    ...(deps.privacy
+      ? privacyTasks({ db: deps.db, now: deps.now, storage: deps.privacy.storage })
+      : {}),
     ...(deps.reports ? reportTasks({ db: deps.db, now: deps.now, ...deps.reports }) : {}),
   };
 }
@@ -211,6 +220,38 @@ export function escalationTasks(
         { tenantId: field(payload, "tenantId"), callId, wav: field(payload, "wav") },
       );
       helpers.logger.info(`voicemail ${callId}: ${made ? "message" : "no call"}`);
+    },
+  };
+}
+
+/**
+ * Every task, with what a failure says made safe (ASVS V7.1): Graphile Worker logs a failed
+ * job's error and keeps its message in `last_error`, and a database error's message carries
+ * the query's parameters. The retry still happens; only the message changes.
+ */
+export function withSafeErrors(tasks: TaskList): TaskList {
+  const safe: TaskList = {};
+  for (const [name, task] of Object.entries(tasks)) {
+    if (!task) continue;
+    safe[name] = async (payload, helpers) => {
+      try {
+        await task(payload, helpers);
+      } catch (error) {
+        throw new Error(safeError(error));
+      }
+    };
+  }
+  return safe;
+}
+
+/** The nightly clean-up (step 7.4, spec 10.3), from the crontab in index.ts. */
+export function privacyTasks(deps: PrivacyDeps): TaskList {
+  return {
+    [RETENTION_TASK]: async (_payload, helpers) => {
+      const r = await runRetention(deps);
+      helpers.logger.info(
+        `retention: ${String(r.audio)} recordings, ${String(r.callTexts)} call texts, ${String(r.messages)} messages, ${String(r.auditEntries)} log entries, ${String(r.accessInfo)} access, ${String(r.inquiries)} inquiries, ${String(r.customers)} customers`,
+      );
     },
   };
 }

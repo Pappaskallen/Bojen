@@ -18,6 +18,10 @@ export function createFakeStorage(): FakeStorage {
       const object = objects.get(key);
       return object ? Promise.resolve(object.body) : Promise.reject(new Error("No such object"));
     },
+    delete(keys) {
+      for (const key of keys) objects.delete(key);
+      return Promise.resolve();
+    },
     signedUrl(key, seconds) {
       if (!objects.has(key)) return Promise.reject(new Error("No such object"));
       // A data URL, so a page in development shows the picture without a storage server.

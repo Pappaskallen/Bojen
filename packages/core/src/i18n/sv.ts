@@ -409,6 +409,8 @@ export const customerPage = {
   },
   errors: {
     missing: "Länken finns inte. Kontrollera att du har skrivit av den rätt.",
+    /** The review link in F9 (`/r/{code}`) after 90 days, or when the firm has no review page. */
+    review: "Länken till recensionen fungerar inte längre. Tack ändå för ditt betyg!",
     expired: "Länken har gått ut. Ring oss om du vill ändra något.",
     used: "Länken är redan använd. Använd länken i det senaste sms:et från oss, eller ring oss.",
     closed: "Besöket går inte längre att ändra här. Ring oss om du har frågor.",
@@ -1004,6 +1006,112 @@ export const crm = {
       `${description} (art.nr ${articleNumber}) × ${quantity}`,
     recommendationLine: (priority: string, text: string) => `${priority}: ${text}`,
   },
+  /** Export and erasure of a customer's personal data (step 7.4, spec 10.3). */
+  privacy: {
+    erasedName: "Raderad kund",
+    erasedTask: "Ärende om en raderad kund",
+    heading: "Personuppgifter",
+    exportLabel: "Exportera kundens uppgifter (JSON)",
+    exportHelp:
+      "Allt Bojen har om kunden, för en begäran om registerutdrag eller dataportabilitet. Koder och åtkomstinformation ingår inte.",
+    eraseLabel: "Radera kunden",
+    eraseHelp:
+      "Namn, nummer, e-post, adress, samtycken, meddelandenas innehåll och samtal tas bort. Båtens tekniska historik finns kvar utan koppling till kunden. Det går inte att ångra.",
+    confirmLabel: "Skriv RADERA för att bekräfta",
+    confirmWord: "RADERA",
+    onlyOwners: "Bara ägare och administratörer kan exportera och radera.",
+    erased: "Kunden är raderad.",
+    errors: {
+      confirm: "Skriv RADERA i rutan för att radera kunden.",
+      forbidden: "Bara ägare och administratörer kan radera kunder.",
+      failed: "Det gick inte att radera kunden. Försök igen.",
+    },
+  },
+  /** The Excel import for a new firm's customers and boats (Avslutande kontroll, onboarding). */
+  customerImport: {
+    sheet: "Kunder och båtar",
+    helpSheet: "Instruktioner",
+    columns: {
+      name: "Kundnamn",
+      phone: "Mobil",
+      email: "E-post",
+      type: "Kundtyp",
+      billingAddress: "Fakturaadress",
+      marketingSms: "Erbjudanden per sms",
+      boatName: "Båtens namn",
+      boatMake: "Båtmärke",
+      boatModel: "Båtmodell",
+      boatYear: "Årsmodell",
+      lengthM: "Längd (m)",
+      registration: "Reg.nr",
+      engineMake: "Motormärke",
+      engineModel: "Motormodell",
+      engineType: "Motortyp",
+      fuel: "Bränsle",
+      engineYear: "Motorns årsmodell",
+      serial: "Serienummer",
+      hours: "Motortimmar",
+      summerPlace: "Plats sommar",
+      summerSpot: "Bryggplats",
+      winterPlace: "Plats vinter",
+      winterMode: "Vinterläge",
+      launchDate: "Sjösättning",
+      haulOutDate: "Upptagning",
+    },
+    help: {
+      intro:
+        "En rad per båt. En kund med två båtar får två rader med samma mobilnummer. En kund utan båt får en rad med bara kunduppgifterna. Raden med kolumnnamn får inte ändras, men kolumnerna kan stå i vilken ordning som helst.",
+      headers: ["Kolumn", "Krävs", "Förklaring", "Tillåtna värden"],
+      required: "Ja",
+      optional: "",
+      name: "För- och efternamn, eller företagets eller klubbens namn.",
+      phone:
+        "Kundens mobilnummer, till exempel 070-123 45 67. Det är så Bojen känner igen kunden när hen ringer eller sms:ar. Mobil eller e-post krävs.",
+      email: "Används för rapporter och kvitton.",
+      type: "Lämnas tom för privatpersoner.",
+      billingAddress: "Gatuadress, postnummer och ort.",
+      marketingSms:
+        "Ja bara om kunden har sagt ja till erbjudanden och ni kan visa det. Tomt betyder nej. Påminnelser om bokningar skickas ändå.",
+      boatName: "Båtens namn, om den har ett.",
+      boatMake: "Till exempel Nimbus, Buster eller Bavaria.",
+      boatModel: "Till exempel 305 Coupé.",
+      boatYear: "Fyra siffror.",
+      lengthM: "I meter, till exempel 9,5.",
+      registration: "Registreringsnummer eller SXK-nummer.",
+      engineMake: "Till exempel Volvo Penta, Mercury eller Yamaha.",
+      engineModel: "Till exempel D4-300.",
+      engineType: "",
+      fuel: "",
+      engineYear: "Fyra siffror.",
+      serial: "Motorns serienummer från typskylten.",
+      hours: "Senast kända motortimmar.",
+      summerPlace:
+        "Marinan eller klubben där båten ligger i sjön. Namnet ska finnas under Marinor i Bojen.",
+      summerSpot: "Bryggplatsen, till exempel B14.",
+      winterPlace: "Där båten står på vintern. Namnet ska finnas under Marinor i Bojen.",
+      winterMode: "Tomt betyder på land.",
+      launchDate: "Planerad sjösättning, till exempel 2027-04-24.",
+      haulOutDate: "Planerad upptagning, till exempel 2027-10-16.",
+    },
+    yes: ["ja", "j", "x", "1", "sant", "true", "yes"],
+    no: ["nej", "n", "0", "falskt", "false", "no"],
+    errors: {
+      noHeader: "Hittar inte raden med kolumnnamn. Den ska börja med {column}.",
+      missingColumn: "Kolumnen {column} saknas.",
+      noName: "Kundnamn saknas.",
+      noContact: "Mobil eller e-post krävs.",
+      phone: "{value} är inget giltigt telefonnummer.",
+      email: "{value} är ingen giltig e-postadress.",
+      choice: "{column}: {value} är inget av {allowed}.",
+      number: "{column}: {value} är inget tal.",
+      year: "{column}: {value} är inget årtal.",
+      date: "{column}: {value} är inget datum. Skriv till exempel 2027-04-24.",
+      place: "{column}: platsen {value} finns inte. Lägg in den under Marinor först.",
+      boatWithoutMake: "Båten saknar både namn och märke.",
+      otherName: "Samma mobil eller e-post som rad {row}, men ett annat namn ({name}).",
+      otherDetails: "{column} skiljer sig från rad {row}. Värdet från rad {row} används.",
+    },
+  },
   season: { summer: "Sommar", winter: "Vinter" },
   enginePosition: { port: "Babord", stbd: "Styrbord", single: "" },
   engineType: { inboard: "inombordare", outboard: "utombordare", sterndrive: "drev", jet: "jet" },
@@ -1134,5 +1242,84 @@ export const crm = {
     } as Record<string, string>,
     inboundFallback: "Svar",
     outboundFallback: "Meddelande",
+  },
+} as const;
+
+/**
+ * Bojen's sub-processors (Avslutande kontroll, juridik; spec 10.1): the public list that the
+ * data processing agreement points to. A change is announced to the firms 30 days ahead, so
+ * a new row starts as `planned` with the date it is taken into use.
+ */
+export const legal = {
+  subprocessors: {
+    title: "Underbiträden",
+    intro:
+      "Bojen behandlar personuppgifter för de firmor som använder tjänsten. Här är de företag Bojen anlitar för det. Vi meddelar firmorna 30 dagar innan ett underbiträde läggs till eller byts ut.",
+    updated: "Senast ändrad 18 november 2026.",
+    headers: ["Företag", "Vad de gör åt Bojen", "Uppgifter", "Var", "Skydd vid överföring"],
+    planned: "Tas i bruk senare",
+    rows: [
+      {
+        name: "Supabase Inc.",
+        purpose: "Databas, inloggning och lagring av bilder och filer",
+        data: "Alla uppgifter i tjänsten. Koder och åtkomstinformation är krypterade.",
+        where: "Stockholm (AWS eu-north-1)",
+        safeguard: "EU:s standardavtalsklausuler",
+        status: "active",
+      },
+      {
+        name: "Vercel Inc.",
+        purpose: "Drift av webbappen och bokningssidorna",
+        data: "Det som skickas till och från webbappen",
+        where: "Stockholm (arn1)",
+        safeguard: "EU:s standardavtalsklausuler",
+        status: "active",
+      },
+      {
+        name: "Amazon Web Services EMEA SARL",
+        purpose: "Nyckelhantering för krypteringen (KMS)",
+        data: "Krypteringsnycklar, inga personuppgifter i klartext",
+        where: "Stockholm (eu-north-1)",
+        safeguard: "Inom EU",
+        status: "active",
+      },
+      {
+        name: "46elks AB",
+        purpose: "Sms och telefoni",
+        data: "Telefonnummer, sms och samtal",
+        where: "Sverige",
+        safeguard: "Inom EU",
+        status: "active",
+      },
+      {
+        name: "Mailgun Technologies Inc.",
+        purpose: "E-post",
+        data: "E-postadress och e-postens innehåll",
+        where: "EU (Mailguns EU-region)",
+        safeguard: "EU:s standardavtalsklausuler",
+        status: "active",
+      },
+      {
+        name: "Anthropic PBC",
+        purpose:
+          "AI som tolkar sms-svar, skriver utkast till servicerapporter, läser typskyltar och är receptionist i telefon",
+        data: "Text från sms och samtal, anteckningar och bilder på typskyltar. Aldrig koder eller adresser.",
+        where: "USA",
+        safeguard:
+          "EU:s standardavtalsklausuler. Uppgifterna används inte för att träna AI-modeller.",
+        status: "active",
+      },
+      {
+        name: "Microsoft Ireland Operations Ltd (Azure)",
+        purpose: "Tal till text och text till tal för receptionisten",
+        data: "Ljudet i samtal till firman",
+        where: "Sverige (Sweden Central)",
+        safeguard: "Inom EU",
+        status: "planned",
+      },
+    ],
+    pushNote:
+      "Aviseringar till personalens mobiler går genom webbläsarens egen push-tjänst (Apple, Google eller Mozilla). De är krypterade så att push-tjänsten inte kan läsa dem.",
+    contact: "Frågor om personuppgifter: dataskydd@bojen.se",
   },
 } as const;

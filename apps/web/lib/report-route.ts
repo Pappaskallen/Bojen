@@ -1,3 +1,4 @@
+import { safeError } from "@bojen/core/logging";
 /**
  * The service report page's form (byggplan step 5.5d). It needs coverage: the draft is
  * written on the server, and the approval sends the report to the customer.
@@ -119,7 +120,7 @@ export function createReportRoute(deps: ReportRouteDeps) {
       if (error instanceof BadForm) problem = "invalid_input";
       else if (error instanceof ReportError) problem = error.code;
       else {
-        console.error("[rapport] action failed", error);
+        console.error("[rapport] action failed", safeError(error));
         problem = "failed";
       }
     }

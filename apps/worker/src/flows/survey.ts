@@ -55,8 +55,9 @@ export async function sendSurvey(
 }
 
 /**
- * The answer to F9: the score is stored; 4–5 gets the review link (when the firm has one in
- * `settings.reviewUrl`), 1–3 a task to call within 24 hours and the mechanic's reply.
+ * The answer to F9: the score is stored; 4–5 gets the review link (when the firm has a review
+ * page in `settings.reviewUrl`; the sms has `bojen.se/r/{code}`, which counts the click),
+ * 1–3 a task to call within 24 hours and the mechanic's reply.
  */
 export async function handleSurveyAnswer(
   deps: FlowDeps,
@@ -79,8 +80,9 @@ export async function handleSurveyAnswer(
   if (followUp === "review") {
     const reviewUrl = visit.firm.settings.reviewUrl;
     if (typeof reviewUrl === "string" && reviewUrl !== "") {
+      // Through our own link, so the click is counted (KPI 18) before it goes on to the review.
       await queueSms(deps, target, "f9_reply_good", {
-        googleLink: reviewUrl,
+        googleLink: await deps.link(visit, "review"),
         mechanicFirstName: vars.mechanicFirstName,
       });
     }

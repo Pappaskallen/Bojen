@@ -45,6 +45,7 @@ export const config = {
     "/api/batar/:path*",
     "/api/pipeline/:path*",
     "/api/kampanjer/:path*",
+    "/api/kunder/:path*",
     "/api/idag/:path*",
     "/api/passkey/:path*",
     "/api/auth/:path*",

@@ -80,5 +80,18 @@ export function createSupabaseStorage(options: SupabaseStorageOptions): ObjectSt
       }
       return new Uint8Array(await response.arrayBuffer());
     },
+
+    async delete(keys) {
+      if (keys.length === 0) return;
+      // One call removes many; names that are not there are skipped, not an error.
+      const response = await send(`${base}/object/${options.bucket}`, {
+        method: "DELETE",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({ prefixes: keys }),
+      });
+      if (!response.ok) {
+        throw new Error(`Supabase Storage refused to delete: ${String(response.status)}`);
+      }
+    },
   };
 }
