@@ -2,9 +2,18 @@ import Link from "next/link";
 import { crm } from "@bojen/core/i18n/sv";
 
 type Page =
-  "today" | "tasks" | "requests" | "pipeline" | "customers" | "places" | "campaigns" | "security";
+  | "overview"
+  | "today"
+  | "tasks"
+  | "requests"
+  | "pipeline"
+  | "customers"
+  | "places"
+  | "campaigns"
+  | "security";
 
 const LINKS: { page: Page; href: string }[] = [
+  { page: "overview", href: "/oversikt" },
   { page: "today", href: "/idag" },
   { page: "tasks", href: "/idag/arenden" },
   { page: "requests", href: "/forfragningar" },

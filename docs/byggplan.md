@@ -46,7 +46,7 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 6.4 – Kopplingsregler och reservrutin (1,5 dagar)
 - [ ] Steg 6.5 – Testsvit för samtal (2 dagar)
 - [x] Steg 7.1 – KPI-vyer (2 dagar)
-- [ ] Steg 7.2 – Dashboard i mobilen (2 dagar)
+- [x] Steg 7.2 – Dashboard i mobilen (2 dagar)
 - [ ] Steg 7.3 – Statistik för receptionisten (0,5 dag)
 - [ ] Steg 8 – Fortnox (2–3 dagar, när partneravtalet är klart)
 - [ ] Avslutande kontroll före piloten
@@ -402,6 +402,7 @@ ett alternativ i stället för att byta tyst.
 
 #### Steg 7.2 – Dashboard i mobilen (2 dagar)
 - **Berör:** `apps/web/app/(admin)/oversikt/*`.
+  - (Byggt 2026-11-18: Receptionistens kort kommer med KPI 21–24 i steg 7.3. Återkommande kunder (KPI 20) ingår inte i MVP:n och visas inte. Recensioner räknas som klick till recensionen. Skärmdumpen sparas i testrapporten men jämförs inte mot en referensbild, eftersom en sådan bara blir stabil om den skapas i CI.)
 - **Klart när:** Layouten följer skissen i 9.2 vid 360 px bredd, färgerna följer målen, korten går att trycka på och listan *Att göra* visar de öppna ärendena. Ett Playwright-test med skärmdump på mobil går igenom.
 
 #### Steg 7.3 – Statistik för receptionisten (0,5 dag)

@@ -38,6 +38,7 @@ export const config = {
     "/pipeline/:path*",
     "/kampanjer/:path*",
     "/idag/:path*",
+    "/oversikt/:path*",
     "/logga-in/tvafaktor",
     "/api/bookings/:path*",
     "/api/staff/:path*",

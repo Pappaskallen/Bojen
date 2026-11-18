@@ -24,6 +24,7 @@
 import { computeKpis, kpiLevel } from "@bojen/core";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
+import { revenueByWeek, reviewClicks, snapshotOn } from "../src/dashboard";
 import { kpiTotals, kpiValues, refreshKpiViews, snapshotKpis } from "../src/kpi";
 import {
   appUser,
@@ -445,6 +446,34 @@ describe("the KPIs of the MVP (step 7.1)", () => {
       expect(rows).toEqual([
         { kpi: "kpi14_prebooking_spring", day: "2027-04-05", value: "0.2188" },
       ]);
+    });
+  });
+  it("give the dashboard its bars, last year's snapshot and the review clicks (step 7.2)", async () => {
+    await withRollback(async (tx) => {
+      const f = await week(tx);
+      expect(
+        await revenueByWeek(tx, f.tenantId, [
+          { week: 14, from: "2027-04-05", to: "2027-04-11" },
+          { week: 15, from: "2027-04-12", to: "2027-04-18" },
+        ]),
+      ).toEqual([
+        { week: 14, ore: 500_000 },
+        { week: 15, ore: 99_900 },
+      ]);
+      await tx.insert(kpiSnapshot).values({
+        tenantId: f.tenantId,
+        snapshotDate: "2026-04-03",
+        kpi: "kpi14_prebooking_spring",
+        value: "0.3100",
+      });
+      // The same day last year, or the latest snapshot in the week before it.
+      expect(await snapshotOn(tx, f.tenantId, "kpi14_prebooking_spring", "2026-04-05")).toBe(0.31);
+      expect(await snapshotOn(tx, f.tenantId, "kpi14_prebooking_spring", "2026-04-20")).toBeNull();
+      await tx
+        .update(survey)
+        .set({ reviewLinkClickedAt: at("06", "20:00") })
+        .where(and(eq(survey.tenantId, f.tenantId), eq(survey.score, 5)));
+      expect(await reviewClicks(tx, f.tenantId, WEEK)).toBe(1);
     });
   });
 

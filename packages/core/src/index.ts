@@ -224,6 +224,28 @@ export {
   type SeasonWindow,
 } from "./reports/kpi";
 export {
+  change,
+  DASHBOARD_TILES,
+  DETAIL_KPIS,
+  formatChange,
+  formatKpi,
+  formatMinutes,
+  isoWeek,
+  KPI_SLUGS,
+  kpiFromSlug,
+  lastWeeks,
+  monthLabel,
+  monthOf,
+  monthPeriod,
+  shiftMonth,
+  sparkline,
+  weeksIn,
+  yearBefore,
+  type DetailKpi,
+  type Period,
+  type Week,
+} from "./reports/dashboard";
+export {
   autumnBefore,
   looksLikeLayUp,
   looksLikeSpringService,
