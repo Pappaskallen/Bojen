@@ -8,7 +8,8 @@
     "start": "tsx src/index.ts",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "nameplates": "tsx src/nameplates-cli.ts"
   },
   "dependencies": {
     "@bojen/adapters": "workspace:*",

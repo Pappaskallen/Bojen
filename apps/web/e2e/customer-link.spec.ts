@@ -213,3 +213,51 @@ test("a customer leaves the boat's code through the link, and it is stored encry
     await close();
   }
 });
+
+test("a customer sends a picture of the type plate through the link, which is read for the mechanic (steps 6.1 and 6.3)", async ({
+  page,
+}) => {
+  const { db, close } = connect();
+  try {
+    const [link] = await db.execute<{ id: string; start: string; job_id: string }>(sql`
+      select v.id, lower(v.time_window) as start, v.job_id
+      from visit v join job j on j.id = v.job_id
+      join customer c on c.id = j.customer_id
+      where c.phone = ${PHONE} and v.status = 'booked' limit 1`);
+    if (!link) throw new Error("The first test did not leave a booked visit");
+    const code = await createShortLink(db, E2E_SHORT_LINK_KEY, {
+      tenantId,
+      visitId: link.id,
+      purpose: "manage",
+      expiresAt: new Date(link.start),
+    });
+
+    await page.goto(`/x/${code}`);
+    const pictures = page.getByRole("region", { name: "Bilder och typskylt" });
+    await pictures.getByLabel("Välj eller ta bilder").setInputFiles({
+      name: "typskylt.png",
+      mimeType: "image/png",
+      buffer: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        "base64",
+      ),
+    });
+    await pictures.getByRole("button", { name: "Skicka bilderna" }).click();
+    await expect(page.getByRole("status")).toHaveText(
+      "Tack! Bilderna är skickade till mekanikern.",
+    );
+
+    // On the job, and waiting to be read for a type plate in the worker.
+    const saved = await db.execute<{ id: string }>(sql`
+      select id from attachment where owner_type = 'job' and owner_id = ${link.job_id}
+        and content_type = 'image/png'`);
+    const [picture] = [...saved];
+    expect(picture).toBeTruthy();
+    const queued = await db.execute(
+      sql`select 1 from graphile_worker._private_jobs where key = ${`nameplate:${picture?.id ?? ""}`}`,
+    );
+    expect([...queued]).toHaveLength(1);
+  } finally {
+    await close();
+  }
+});

@@ -40,10 +40,10 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [x] Steg 5.4 – Pipeline (1 dag)
 - [x] Steg 5.5 – Mekanikerns dagvy som PWA, offline (3 dagar)
 - [x] Steg 5.6 – Vårkampanj, enkel version (2 dagar)
-- [ ] Steg 6.1 – Verktygs-API för agenten (1,5 dagar)
+- [x] Steg 6.1 – Verktygs-API för agenten (1,5 dagar)
 - [ ] Steg 6.2 – Röstagenten (4 dagar)
 - [ ] Steg 6.3 – Efterbearbetning (1,5 dagar)
-- [ ] Steg 6.4 – Kopplingsregler och reservrutin (1,5 dagar)
+- [x] Steg 6.4 – Kopplingsregler och reservrutin (1,5 dagar)
 - [ ] Steg 6.5 – Testsvit för samtal (2 dagar)
 - [ ] Steg 7.1 – KPI-vyer (2 dagar)
 - [ ] Steg 7.2 – Dashboard i mobilen (2 dagar)
@@ -354,6 +354,7 @@ ett alternativ i stället för att byta tyst.
   - Kortlivad token per samtal och firma.
   - Inget verktyg returnerar koder eller adresser.
   - Kontrollfrågan krävs före ombokning och avbokning.
+  - (Avstämt med Robert 2026-11-15: vid ett annat nummer än samtalets ges bara förnamnet tills kontrollfrågan är godkänd; kundens korta länk får uppladdning av bilder och typskylt för `skicka_lank`.)
 - **Klart när:** Kontraktstester finns för varje verktyg. Ett test visar att `hitta_kund` aldrig returnerar åtkomstinformation.
 
 #### Steg 6.2 – Röstagenten (4 dagar)
@@ -363,6 +364,7 @@ ett alternativ i stället för att byta tyst.
   - Pipeline: Azure STT sv-SE med ordlista, Claude Haiku 5.5 med effort `low` och cachad prompt, Azure TTS och brusreducering.
   - Kundkontexten läggs in före första repliken.
   - Avbrott när kunden börjar prata (barge-in).
+  - (Avstämt med Robert 2026-11-15: steget byggs först mot fejkar, del a. LiveKit, Azure Speech, 46elks SIP och Claude med riktig nyckel kopplas in när kontona finns, del b, och då görs testsamtalen i Klart när.)
 - **Klart när:** Ett manuellt testsamtal till ett testnummer bokar en tid, och bokningen syns i administrationen. Svarstiden p90 är under 1,2 s, mätt i loggarna under 20 testsamtal.
 
 #### Steg 6.3 – Efterbearbetning (1,5 dagar)
@@ -371,11 +373,13 @@ ett alternativ i stället för att byta tyst.
   - Spara transkribering, sammanfattning i 5 punkter och utfall, och koppla samtalet till ett jobb.
   - Tolkning av typskyltsbild (Claude Sonnet 5.5 med bildtolkning) ger förslag på märke, modell och serienummer som mekanikern bekräftar.
   - Rensa bort kort- och personnummer.
+  - (Avstämt med Robert 2026-11-16: byggs först mot fejkar. Testet med fem riktiga typskyltar körs med `pnpm --filter @bojen/worker nameplates <mapp>` när bilderna och en Anthropic-nyckel finns.)
 - **Klart när:** Tester med 5 riktiga typskyltsbilder (Volvo Penta, Mercury, Yamaha, Suzuki och Honda) ger rätt modell i minst 4 av 5 fall.
 
 #### Steg 6.4 – Kopplingsregler och reservrutin (1,5 dagar)
 - **Berör:** `packages/core/voice/escalation.ts`, `apps/voice/transfer.ts`, reservnummer hos 46elks.
 - **Gör:** Implementera K1–K10: medhörning med tidsgräns på 20 s, push med kritiskt ljud, vidarekoppling till nästa jourmekaniker efter 30 min, och vidarekoppling av samtalet till mekanikern när agenten är nere.
+  - (Avstämt med Robert 2026-11-16: byggs mot fejkar. En webbapp kan inte spela kritiskt ljud genom ljudlöst läge, så en kritisk avisering är webbpush plus sms till jourmekanikern. Själva uppringningen med medhörning och röstbrevlådans utskrift kopplas in med LiveKit och Azure i steg 6.2b.)
 - **Klart när:**
   - Enhetstester av beslutsträdet går igenom.
   - Ett test där agentprocessen stängs av visar att samtalet går till mekanikerns nummer.

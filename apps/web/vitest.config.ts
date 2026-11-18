@@ -7,5 +7,8 @@ export default defineConfig({
     include: ["app/**/*.test.ts", "lib/**/*.test.ts", "test/**/*.test.ts"],
     globalSetup: ["test/global-setup.ts"],
     fileParallelism: false,
+    // The sign-in tests go through the local Supabase Auth; under the whole repo's test run
+    // on a loaded laptop the default 5 s has failed tests that pass on their own.
+    testTimeout: 20_000,
   },
 });

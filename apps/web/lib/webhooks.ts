@@ -7,6 +7,9 @@
  *                                          46elks does not sign these, so the URL carries a
  *                                          secret token instead.
  *   POST /api/webhooks/elks/sms?token=…    An sms a customer sent to the firm's number.
+ *   POST /api/webhooks/elks/samtal?token=…   A call to the firm's number (`voice_start`):
+ *                                          the answer says where it goes (step 6.4, K10).
+ *   POST /api/webhooks/elks/rostbrevlada?token=…   The voicemail when no one answered.
  *
  * 46elks has no signatures (checked against their documentation 2026-11-12). Its own advice
  * is to allow only its IP addresses, so both 46elks routes need the token and, in
@@ -14,10 +17,23 @@
  *
  * The code in the sms hook is passed on to 46elks and nowhere else: not logged, not stored.
  */
-import { parseElksDeliveryReport } from "@bojen/adapters";
+import {
+  elksCallActions,
+  parseElksDeliveryReport,
+  parseElksIncomingCall,
+  parseElksRecording,
+} from "@bojen/adapters";
 import type { ReplyClassifier, SmsSender } from "@bojen/core";
 import { standardWebhookValid, tokenMatches } from "@bojen/core/crypto";
-import { receiveSms, recordDelivery, sendCodeSms, staffByAuthUser, type Database } from "@bojen/db";
+import {
+  incomingCall,
+  receiveSms,
+  recordDelivery,
+  saveVoicemail,
+  sendCodeSms,
+  staffByAuthUser,
+  type Database,
+} from "@bojen/db";
 
 export interface WebhookDeps {
   db: () => Database;
@@ -33,6 +49,10 @@ export interface WebhookDeps {
   classifier: () => ReplyClassifier;
   /** `SMS_OPT_OUT_KEY`, for STOPP. */
   optOutKey: () => string;
+  /** The voice agent (step 6.4): its SIP address and whether it answers now. */
+  voiceAgent?: { sip: () => string | null; up: () => Promise<boolean> };
+  /** The app's own address, for the voicemail's webhook: `https://bojen.se`. */
+  appUrl?: () => string;
 }
 
 /** 46elks' API and webhook servers, from https://46elks.com/docs/ip-addresses (2026-11-12). */
@@ -154,6 +174,49 @@ export function createWebhookRoutes(deps: WebhookDeps) {
         { externalId: id, from, to, body },
       );
       // No body: 46elks would send any text in the answer to the customer as an sms.
+      return new Response(null, { status: 204 });
+    },
+
+    /**
+     * Where a call to the firm's number goes (K10): to the agent if it answers, else straight
+     * to the mechanic's mobile, and the voicemail last. 46elks moves on by itself when a step
+     * fails, so a call reaches a person even if the agent dies during it.
+     */
+    async elksCall(request: Request): Promise<Response> {
+      const refused = fromElks(request);
+      if (refused) return refused;
+      const incoming = parseElksIncomingCall(new URLSearchParams(await request.text()));
+      if (!incoming) return Response.json({ error: "invalid_input" }, { status: 400 });
+      const sip = deps.voiceAgent?.sip() ?? null;
+      const agentUp = sip !== null && (await deps.voiceAgent?.up()) === true;
+      const route = await incomingCall(deps.db(), { to: incoming.to, agentUp, now: deps.now() });
+      if (!route) return Response.json({ hangup: "reject" });
+      const app = (deps.appUrl?.() ?? new URL(request.url).origin).replace(/\/+$/, "");
+      const token = encodeURIComponent(deps.elksToken() ?? "");
+      return Response.json(
+        elksCallActions(route.steps, {
+          agentSip: sip,
+          mechanic: route.mechanic,
+          voicemailUrl: `${app}/api/webhooks/elks/rostbrevlada?token=${token}`,
+        }),
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    },
+
+    /** The voicemail is recorded: the worker fetches and transcribes it. */
+    async elksVoicemail(request: Request): Promise<Response> {
+      const refused = fromElks(request);
+      if (refused) return refused;
+      const recording = parseElksRecording(new URLSearchParams(await request.text()));
+      if (!recording) return Response.json({ error: "invalid_input" }, { status: 400 });
+      await saveVoicemail(deps.db(), {
+        to: recording.to,
+        from: recording.from,
+        callId: recording.callId,
+        wav: recording.wav,
+        seconds: recording.seconds,
+        now: deps.now(),
+      });
       return new Response(null, { status: 204 });
     },
   };

@@ -272,6 +272,15 @@ export const messages = {
       "Hej {firstName}! Ett akut haveri gör att vi behöver flytta din tid {date}. Förlåt! Ny tid: {newDate} kl {window} med 10 % rabatt. Svara JA eller ANNAN.",
     f15_type_plate:
       "Hej! Skicka gärna en bild på motorns typskylt (och felet om det går) här: {link} – så tar vi med rätt delar direkt. /{firm}",
+    voice_booking_link: "Här är din bokning. Där kan du också boka om eller avboka: {link} /{firm}",
+    voice_access_link:
+      "Här lägger du in koden och var nyckeln finns. Den krypteras och visas bara för mekanikern: {link} /{firm}",
+    voice_pictures_link: "Här kan du skicka bilder på båten och felet till oss: {link} /{firm}",
+    voice_message_soon: "Tack för samtalet! Vi ringer upp dig inom 30 minuter. /{firm}",
+    voice_message_promise: "Tack för samtalet! Vi återkommer {promise}. /{firm}",
+    voice_first_time:
+      "Förlåt att ingen har hunnit ringa upp dig. Boka första lediga tid här: {link} eller ring oss igen. /{firm}",
+    staff_alert: "Bojen: {title}. {note} Svara här: {link}",
   },
   push: {
     f3_unconfirmed:
@@ -386,11 +395,17 @@ export const customerPage = {
   keyLocation: "Var finns nyckeln?",
   accessSave: "Spara uppgifterna",
   noBoat: "Det finns ingen båt kopplad till bokningen. Ring oss om du vill lämna koder.",
+  pictures: "Bilder och typskylt",
+  picturesIntro:
+    "Skicka gärna en bild på motorns typskylt och på felet, så tar mekanikern med rätt delar. Högst 5 bilder, jpg, png, webp eller heic.",
+  picturesField: "Välj eller ta bilder",
+  picturesSave: "Skicka bilderna",
   done: {
     rescheduled: "Klart, besöket är ombokat. Du får ett nytt sms med den nya tiden och en ny länk.",
     cancelled: "Klart, besöket är avbokat.",
     access: "Tack! Uppgifterna är sparade och krypterade.",
     accepted: "Klart, tiden är bokad. Du får en bekräftelse strax.",
+    pictures: "Tack! Bilderna är skickade till mekanikern.",
   },
   errors: {
     missing: "Länken finns inte. Kontrollera att du har skrivit av den rätt.",
@@ -412,6 +427,7 @@ export const crm = {
   nav: {
     label: "Meny",
     today: "Idag",
+    tasks: "Ärenden",
     requests: "Förfrågningar",
     pipeline: "Pipeline",
     customers: "Kunder",
@@ -548,6 +564,25 @@ export const crm = {
   },
   /** The boat card (step 5.2). */
   boat: {
+    nameplate: "Förslag från typskylt",
+    nameplateIntro:
+      "Läst av AI från en bild som kunden skickade. Kontrollera mot bilden innan du använder förslaget.",
+    nameplateRead: (make: string, confidence: number) =>
+      `${make}, säkerhet ${String(Math.round(confidence * 100))} %`,
+    nameplatePicture: "Visa bilden",
+    nameplateEngine: "Till motor",
+    nameplateNewEngine: "Ny motor",
+    nameplateUse: "Använd på motorn",
+    nameplateDismiss: "Avfärda",
+    nameplateDone: {
+      confirmed: "Motorn är uppdaterad från typskylten.",
+      dismissed: "Förslaget är avfärdat.",
+    } as Record<string, string>,
+    nameplateErrors: {
+      not_found: "Förslaget eller motorn finns inte.",
+      decided: "Förslaget är redan hanterat.",
+      failed: "Något gick fel. Försök igen.",
+    } as Record<string, string>,
     title: "Båtkort",
     unnamed: "Båt utan namn",
     about: "Om båten",
@@ -895,6 +930,37 @@ export const crm = {
     cancelled: "Avbokad",
     no_access: "Båten ej tillgänglig",
   },
+  tasks: {
+    title: "Ärenden",
+    none: "Inga öppna ärenden.",
+    take: "Jag tar det",
+    done: "Klart",
+    takenBy: (name: string) => `${name} har tagit det`,
+    callBack: "Ring upp",
+    due: (time: string) => `Svar senast ${time}`,
+    urgent: "Brådskande",
+    open: (n: number) => (n === 1 ? "1 öppet ärende" : `${String(n)} öppna ärenden`),
+    call: "Samtalet",
+    gone: "Ärendet är redan klart eller finns inte.",
+    push: {
+      on: "Slå på aviseringar",
+      active: "Aviseringar är på för den här telefonen.",
+      blocked: "Aviseringar är avstängda i webbläsarens inställningar.",
+      unsupported:
+        "Den här webbläsaren kan inte ta emot aviseringar. Lägg Bojen på hemskärmen först.",
+      failed: "Det gick inte att slå på aviseringar.",
+    },
+    /** Titles of the tasks the receptionist leaves (spec 8.4). */
+    called: (label: string | null, who: string) => `${label ? `${label}: ` : ""}${who} ringde`,
+    voicemail: (who: string) => `Röstmeddelande från ${who}`,
+    unknownCaller: "Okänt nummer",
+    customer: "Kund",
+    wanted: (reason: string) => `Ville kopplas: ${reason}`,
+    transferred: (name: string) => `Kopplad till ${name}`,
+    notTransferred: "Ingen svarade när samtalet kopplades.",
+    emptyVoicemail: "(Inget hördes i röstmeddelandet.)",
+    untranscribed: "(Röstmeddelandet kunde inte skrivas ut. Ring upp kunden.)",
+  },
   message: {
     channel: { sms: "Sms", email: "E-post", push: "Push" },
     direction: { inbound: "Från kunden", outbound: "Till kunden" },
@@ -955,6 +1021,13 @@ export const crm = {
       f14_none_available: "Ingen mekaniker ledig",
       f14_moved: "Akutärende flyttat",
       f15_type_plate: "Be om bild på typskylt",
+      voice_booking_link: "Länk till bokningen",
+      voice_access_link: "Länk för koder",
+      voice_pictures_link: "Länk för bilder",
+      voice_message_soon: "Svar inom 30 minuter",
+      voice_message_promise: "Svarslöfte",
+      voice_first_time: "Första lediga tid",
+      staff_alert: "Avisering till mekaniker",
       stop_receipt: "Kvitto på STOPP",
     } as Record<string, string>,
     inboundFallback: "Svar",

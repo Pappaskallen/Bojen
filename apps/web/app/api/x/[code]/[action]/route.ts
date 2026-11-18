@@ -7,6 +7,7 @@ const POSTS = {
   avbokning: customerPage.cancel,
   atkomst: customerPage.access,
   boka: customerPage.accept,
+  bilder: customerPage.pictures,
 } as const;
 
 /** The forms on the customer's page, `/x/{code}` (step 3.4). */

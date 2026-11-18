@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatPhone } from "@bojen/core";
 import { crm, sv } from "@bojen/core/i18n/sv";
-import { boatCard } from "@bojen/db";
+import { boatCard, nameplateSuggestions } from "@bojen/db";
 import { db, requireStaff, storage } from "../../../../lib/server";
 import { showDate, showDateTime, word } from "../../kunder/format";
 import { AdminNav } from "../../nav";
@@ -23,7 +23,11 @@ const none = crm.card.unknown;
 /** Signed picture links last long enough to look at the page, no longer. */
 const PICTURE_SECONDS = 600;
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 const isoDay = (iso: string | null) => (iso ? showDate(new Date(`${iso}T12:00:00Z`)) : null);
 
@@ -32,12 +36,27 @@ const isoDay = (iso: string | null) => (iso ? showDate(new Date(`${iso}T12:00:00
  * signed-in staff may read it; the codes are not on the page, only behind the button, which
  * follows the access rule and logs every view.
  */
-export default async function BoatCardPage({ params }: Props) {
+export default async function BoatCardPage({ params, searchParams }: Props) {
   const { id } = await params;
   const staff = await requireStaff(`/batar/${id}`);
   if (!UUID.test(id)) notFound();
   const card = await boatCard(db(), staff.context.tenantId, id, new Date());
   if (!card) notFound();
+
+  const query = await searchParams;
+  const plateDone = first(query.typskylt);
+  const plateProblem = first(query.typskyltfel);
+  const suggestions = await Promise.all(
+    (await nameplateSuggestions(db(), staff.context.tenantId, id)).map(async (s) => {
+      const picture = card.pictures.find((p) => p.id === s.attachmentId);
+      const url = picture
+        ? await storage()
+            .signedUrl(picture.storageKey, PICTURE_SECONDS)
+            .catch(() => null)
+        : null;
+      return { ...s, url };
+    }),
+  );
 
   const pictures = (
     await Promise.all(
@@ -133,8 +152,59 @@ export default async function BoatCardPage({ params }: Props) {
         )}
       </section>
 
-      <section aria-labelledby="engines">
+      <section aria-labelledby="engines" id="motorer">
         <h2 id="engines">{t.engines}</h2>
+        {plateDone && t.nameplateDone[plateDone] ? (
+          <p role="status">{t.nameplateDone[plateDone]}</p>
+        ) : null}
+        {plateProblem ? (
+          <p className="error" role="alert">
+            {t.nameplateErrors[plateProblem] ?? t.nameplateErrors.failed}
+          </p>
+        ) : null}
+        {suggestions.length > 0 ? (
+          <div className="nameplates" role="group" aria-label={t.nameplate}>
+            <h3>{t.nameplate}</h3>
+            <p className="help">{t.nameplateIntro}</p>
+            {suggestions.map((s) => (
+              <form key={s.id} method="post" action={`/api/batar/${id}/typskylt/${s.id}`}>
+                <p>
+                  <strong>{[s.make, s.model].filter(Boolean).join(" ") || none}</strong>
+                  {s.serialNumber ? ` · ${t.serial} ${s.serialNumber}` : ""}
+                  <br />
+                  <span className="help">{t.nameplateRead(s.make ?? none, s.confidence)}</span>
+                  {s.url ? (
+                    <>
+                      {" "}
+                      <a href={s.url} target="_blank" rel="noreferrer">
+                        {t.nameplatePicture}
+                      </a>
+                    </>
+                  ) : null}
+                </p>
+                <label className="field">
+                  <span>{t.nameplateEngine}</span>
+                  <select name="engineId" defaultValue={card.engines[0]?.id ?? "ny"}>
+                    {card.engines.map((e, i) => (
+                      <option key={e.id} value={e.id}>
+                        {engineName(e, i)}
+                      </option>
+                    ))}
+                    <option value="ny">{t.nameplateNewEngine}</option>
+                  </select>
+                </label>
+                <div className="actions">
+                  <button type="submit" name="do" value="confirm">
+                    {t.nameplateUse}
+                  </button>
+                  <button type="submit" name="do" value="dismiss" className="secondary">
+                    {t.nameplateDismiss}
+                  </button>
+                </div>
+              </form>
+            ))}
+          </div>
+        ) : null}
         {card.engines.length === 0 ? (
           <p>{t.noEngines}</p>
         ) : (

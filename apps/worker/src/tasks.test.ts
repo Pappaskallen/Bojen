@@ -1,8 +1,11 @@
 import {
   createFakeEmail,
+  createFakeNameplateReader,
+  createFakePush,
   createFakeReportWriter,
   createFakeSms,
   createFakeStorage,
+  createFakeSummarizer,
 } from "@bojen/adapters";
 import type { Database } from "@bojen/db";
 import type { JobHelpers } from "graphile-worker";
@@ -35,6 +38,23 @@ describe("worker tasks", () => {
     );
   });
 
+  it("has the work after a call and the type plates of step 6.3 when it has the readers", () => {
+    const all = taskList({
+      db: {} as Database,
+      sms: createFakeSms(),
+      now: () => new Date(),
+      optOutKey: "k",
+      email: createFakeEmail(),
+      link: () => "bojen.se/boka/test",
+      postCall: {
+        summarizer: createFakeSummarizer(),
+        reader: createFakeNameplateReader(),
+        storage: createFakeStorage(),
+      },
+    });
+    expect(Object.keys(all)).toEqual(expect.arrayContaining(["post_call", "nameplate_read"]));
+  });
+
   it("has the report draft of step 5.5d when it has a writer, also on its own", () => {
     const reports = {
       storage: createFakeStorage(),
@@ -54,6 +74,26 @@ describe("worker tasks", () => {
     expect(
       Object.keys(reportTasks({ db: {} as Database, now: () => new Date(), ...reports })),
     ).toEqual(["report_draft"]);
+  });
+
+  it("has the alerts, follow-up and voicemail of step 6.4 when it has push", () => {
+    const all = taskList({
+      db: {} as Database,
+      sms: createFakeSms(),
+      now: () => new Date(),
+      optOutKey: "k",
+      email: createFakeEmail(),
+      link: () => "bojen.se/boka/test",
+      escalation: {
+        push: createFakePush(),
+        recordings: { fetch: () => Promise.reject(new Error("not used")) },
+        transcriber: null,
+        appBase: "https://bojen.se",
+      },
+    });
+    expect(Object.keys(all)).toEqual(
+      expect.arrayContaining(["alert_staff", "escalation_follow_up", "voicemail"]),
+    );
   });
 
   it("refuses a payload without a message id", async () => {

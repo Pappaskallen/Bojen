@@ -10,6 +10,7 @@ import {
   createSupabaseStorage,
   createClaudeClassifier,
   createFakeClassifier,
+  createAgentHealth,
   elksFromEnv,
   kmsFromEnv,
 } from "@bojen/adapters";
@@ -21,6 +22,7 @@ import type {
   ReplyClassifier,
   SmsSender,
   StaffAuth,
+  VoiceToolName,
 } from "@bojen/core";
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
@@ -37,6 +39,7 @@ import {
   changeBooking,
   connect,
   createSpringCampaign,
+  decideNameplate,
   moveCard,
   onceOnly,
   passkeyOwner,
@@ -52,9 +55,35 @@ import {
   visitBoatPicture,
   visitDayFor,
   type DbConnection,
+  avbokaBokning,
+  avslutaSamtal,
+  bekraftaKund,
+  callContext,
+  decideTask,
+  deletePushSubscription,
+  savePushSubscription,
+  kopplingsutfall,
+  foreslaTider,
+  hamtaBokningar,
+  hittaKund,
+  kopplaTillMekaniker,
+  ombokaBokning,
+  openCall,
+  receptionistFacts,
+  saveTranscript,
+  tenantOfCall,
+  sattVantelista,
+  skapaBokning,
+  skapaMeddelande,
+  skickaLank,
+  startCall,
+  stoppaInspelning,
+  type CallRow,
+  type VoiceDeps,
 } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createBoatAccessRoute } from "./boat-access";
+import { createNameplateRoute } from "./nameplate-route";
 import { createCampaignRoutes } from "./campaign-routes";
 import { createBoatPictureRoute } from "./boat-picture-route";
 import { createCustomerPage } from "./customer-page";
@@ -62,6 +91,8 @@ import { createCodesRoute } from "./codes-route";
 import { createDayRoute } from "./day-route";
 import { createPasskeyRoutes } from "./passkey-routes";
 import { createPipelineRoute } from "./pipeline-route";
+import { createTasksRoute } from "./tasks-route";
+import { createVoiceToolsRoute } from "./voice-tools-route";
 import { createReportRoute } from "./report-route";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
@@ -298,6 +329,13 @@ export const boatPictureRoute = createBoatPictureRoute({
   picture: (actor, visitId) => visitBoatPicture({ db: db(), storage: storage() }, actor, visitId),
 });
 
+/** The mechanic's decision on a type plate suggestion (step 6.3). */
+export const nameplateRoute = createNameplateRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  decide: (actor, readingId, decision, engineId) =>
+    decideNameplate(db(), actor, readingId, decision, engineId),
+});
+
 /** The service report and the invoice basis (step 5.5d). */
 export const reportRoute = createReportRoute({
   session: (request) => sessionFromRequest(staffAuth(), request),
@@ -330,6 +368,7 @@ export const customerPage = createCustomerPage({
   kms,
   now: () => new Date(),
   linkKey,
+  storage,
 });
 
 export const publicRoutes = createPublicRoutes({
@@ -394,4 +433,83 @@ export const webhookRoutes = createWebhookRoutes({
   elksIps,
   classifier,
   optOutKey,
+  // K10 (step 6.4): the agent's SIP address and health check; without them, calls go
+  // straight to the mechanic's mobile.
+  voiceAgent: {
+    sip: () => process.env.VOICE_AGENT_SIP ?? null,
+    up: createAgentHealth({ url: process.env.VOICE_AGENT_HEALTH_URL ?? null }),
+  },
+  appUrl: () => appUrl(),
+});
+
+/** `VOICE_TOOLS_SECRET`: signs the calls' tokens and the times offered in them (step 6.1). */
+const voiceSecret = once(() => {
+  const secret = process.env.VOICE_TOOLS_SECRET;
+  if (secret && secret.length >= 32) return secret;
+  if (production) throw new Error("VOICE_TOOLS_SECRET must be at least 32 characters");
+  // Development only: a new secret per server start ends every call's token, which is fine.
+  return randomBytes(32).toString("base64url");
+});
+
+const voiceDeps = (): VoiceDeps => ({
+  db: db(),
+  now: () => new Date(),
+  optOutKey: optOutKey(),
+  maps: maps(),
+  geocoder: geocoder(),
+  storage: storage(),
+  linkKey: linkKey(),
+  secret: voiceSecret(),
+  appBase: appUrl() || "bojen.se",
+});
+
+const VOICE_TOOL_RUNNERS: Record<
+  VoiceToolName,
+  (deps: VoiceDeps, call: CallRow, input: unknown) => Promise<unknown>
+> = {
+  hitta_kund: hittaKund,
+  bekrafta_kund: bekraftaKund,
+  foresla_tider: foreslaTider,
+  skapa_bokning: skapaBokning,
+  hamta_bokningar: (deps, call) => hamtaBokningar(deps, call),
+  omboka_bokning: ombokaBokning,
+  avboka_bokning: avbokaBokning,
+  skicka_lank: skickaLank,
+  satt_vantelista: sattVantelista,
+  koppla_till_mekaniker: kopplaTillMekaniker,
+  skapa_meddelande: skapaMeddelande,
+  stoppa_inspelning: (deps, call) => stoppaInspelning(deps, call),
+  avsluta_samtal: avslutaSamtal,
+};
+
+/** The receptionist's messages and push (step 6.4). */
+export const tasksRoute = createTasksRoute({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  decide: (actor, taskId, decision) => decideTask(db(), actor, taskId, decision, new Date()),
+  subscribe: (actor, input) => savePushSubscription(db(), actor, input),
+  unsubscribe: (actor, endpoint) => deletePushSubscription(db(), actor, endpoint),
+});
+
+/** The receptionist's tools (step 6.1), for the voice agent of step 6.2. */
+export const voiceToolsRoute = createVoiceToolsRoute({
+  serviceSecret: () => {
+    const secret = process.env.VOICE_SERVICE_SECRET;
+    return secret && secret.length >= 32 ? secret : null;
+  },
+  tokenSecret: voiceSecret,
+  now: () => new Date(),
+  start: (input) => startCall(db(), { ...input, now: new Date() }),
+  openCall: (tenantId, callId) => openCall(db(), tenantId, callId),
+  context: (call) => callContext(voiceDeps(), call),
+  facts: (tenantId) => receptionistFacts(db(), tenantId),
+  run: (tool, call, input) =>
+    tool === "kopplingsutfall"
+      ? kopplingsutfall(voiceDeps(), call, input)
+      : VOICE_TOOL_RUNNERS[tool](voiceDeps(), call, input),
+  saveTranscript: async (callId, transcript) => {
+    const tenantId = await tenantOfCall(db(), callId);
+    return tenantId
+      ? saveTranscript(db(), { tenantId, callId, transcript, now: new Date() })
+      : false;
+  },
 });

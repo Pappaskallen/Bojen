@@ -36,3 +36,5 @@ export * from "./customer_search";
 export * from "./location_contact";
 export * from "./staff_passkey";
 export * from "./service_report";
+export * from "./nameplate_reading";
+export * from "./push_subscription";

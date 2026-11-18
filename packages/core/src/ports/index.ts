@@ -73,6 +73,18 @@ export interface ReportWriter {
   draft(facts: ReportFacts): Promise<unknown>;
 }
 
+/** The call's summary in five points from its transcript (step 6.3): Sonnet 5.5, or a fake. */
+export interface CallSummarizer {
+  readonly name: string;
+  summarize(transcript: string): Promise<unknown>;
+}
+
+/** A type plate read from a picture (step 6.3): Sonnet 5.5 with vision, or a fake. */
+export interface NameplateReader {
+  readonly name: string;
+  read(picture: { bytes: Uint8Array; contentType: string }): Promise<unknown>;
+}
+
 /** Speech to text in Swedish (step 5.5d): Azure sv-SE later, a fake until the account exists. */
 export interface Transcriber {
   transcribe(audio: { bytes: Uint8Array; contentType: string }): Promise<string>;
@@ -136,4 +148,31 @@ export interface StaffAuth {
   removeFactors(authUserId: string): Promise<void>;
   /** Whether the user has a verified second factor, with the service key. */
   hasFactor(authUserId: string): Promise<boolean>;
+}
+
+/** A staff member's browser that takes web push (`push_subscription`). */
+export interface PushTarget {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+}
+
+/** What the push shows: the service worker turns it into a notification. */
+export interface PushPayload {
+  title: string;
+  body: string;
+  /** Opened when the notification is tapped, for example `/idag/arenden`. */
+  url: string;
+  /** Kept on screen until it is tapped, and with vibration, for urgent calls. */
+  urgent: boolean;
+  /** One notification per message: a newer one with the same tag replaces it. */
+  tag: string;
+}
+
+/**
+ * Web push to staff (byggplan step 6.4). VAPID through the browsers' push services in
+ * production, a fake in tests. `gone` means the subscription no longer exists.
+ */
+export interface PushSender {
+  send(target: PushTarget, payload: PushPayload): Promise<{ gone: boolean }>;
 }

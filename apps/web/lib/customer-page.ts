@@ -6,17 +6,20 @@
  *   POST /api/x/{code}/avbokning                                → 303 /x/{code}?klart=avbokad
  *   POST /api/x/{code}/atkomst          code, keyLocation       → 303 /x/{code}?klart=atkomst
  *   POST /api/x/{code}/boka                                     → 303 /x/{code}?klart=bokad
+ *   POST /api/x/{code}/bilder           photos (up to 5 files)  → 303 /x/{code}?klart=bilder
+ *     (pictures of the boat and its type plate, step 6.1)
  *     (a campaign's held time, from the spring campaign's e-mail, step 5.6)
  *
  * Plain forms that post and redirect, so the page works without JavaScript. The code in the
  * address is the only key, so it is never logged, and the access fields are only written,
  * never read back.
  */
-import type { MapsProvider } from "@bojen/core";
+import type { MapsProvider, ObjectStorage } from "@bojen/core";
 import type { Kms } from "@bojen/core/crypto";
 import {
   BookingError,
   acceptByLink,
+  addPicturesByLink,
   cancelByLink,
   managePage,
   publicSuggestions,
@@ -33,9 +36,10 @@ export interface CustomerPageDeps {
   kms: () => Kms;
   now: () => Date;
   linkKey: () => string;
+  storage: () => ObjectStorage;
 }
 
-export type Done = "ombokad" | "avbokad" | "atkomst" | "bokad";
+export type Done = "ombokad" | "avbokad" | "atkomst" | "bokad" | "bilder";
 export type Problem = "missing" | "expired" | "used" | "closed" | "taken" | "invalid" | "failed";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -121,6 +125,25 @@ export function createCustomerPage(deps: CustomerPageDeps) {
         if (!slot) throw new BookingError("invalid_input", "slot");
         await rescheduleByLink({ ...linkDeps(), db: deps.db() }, code, slot);
         return "ombokad";
+      }),
+
+    pictures: async (request: Request, code: string) =>
+      act(request, code, async () => {
+        const files = ((await form(request))?.getAll("photos") ?? []).filter(
+          (f): f is File => f instanceof File && f.size > 0,
+        );
+        const pictures = await Promise.all(
+          files.map(async (f) => ({
+            bytes: new Uint8Array(await f.arrayBuffer()),
+            contentType: f.type,
+          })),
+        );
+        await addPicturesByLink(
+          { ...linkDeps(), db: deps.db(), storage: deps.storage() },
+          code,
+          pictures,
+        );
+        return "bilder";
       }),
 
     accept: async (request: Request, code: string) =>

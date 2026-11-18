@@ -600,6 +600,9 @@ export interface PublicBookingInput {
   changeDate?: string | null;
   notes?: string | null;
   photos?: Photo[];
+  /** Booked by phone through the receptionist (step 6.1) rather than on the web. */
+  channel?: "web" | "phone";
+  urgency?: "planned" | "soon" | "emergency";
 }
 
 export interface PublicBookingDeps {
@@ -681,7 +684,7 @@ export async function submitPublicBooking(
           name: clean(input.customer.name) ?? "",
           phone: newPhone,
           email: clean(input.customer.email, 200),
-          acquisitionChannel: "web",
+          acquisitionChannel: input.channel ?? "web",
         })
         .returning({ id: customer.id });
       if (!created) throw new Error("customer not created");
@@ -782,11 +785,13 @@ export async function submitPublicBooking(
         serviceTypeId: input.serviceTypeId,
         mechanicId: input.mechanicId,
         start: input.start,
-        channel: "web",
+        channel: input.channel ?? "web",
         needsApproval: await approvalNeeded(tx, tenantId, {
           serviceTypeId: input.serviceTypeId,
           customerId,
+          ...(input.urgency ? { urgency: input.urgency } : {}),
         }),
+        ...(input.urgency ? { urgency: input.urgency } : {}),
         partsMissing: false,
         description: clean(input.notes, 2000),
       },

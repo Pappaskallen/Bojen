@@ -1,11 +1,21 @@
 import {
+  createClaudeNameplateReader,
   createClaudeReportWriter,
+  createClaudeSummarizer,
+  createFakeNameplateReader,
+  createFakeSummarizer,
   createFakeReportWriter,
   createFakeStorage,
   createFakeTranscriber,
   createSupabaseStorage,
 } from "@bojen/adapters";
-import type { ObjectStorage, ReportWriter, Transcriber } from "@bojen/core";
+import type {
+  CallSummarizer,
+  NameplateReader,
+  ObjectStorage,
+  ReportWriter,
+  Transcriber,
+} from "@bojen/core";
 
 /**
  * What the report draft needs (step 5.5d), from the environment. In production Claude and
@@ -31,4 +41,20 @@ export function reportDeps(
   else writer = createFakeReportWriter();
 
   return { storage, writer, transcriber: production ? null : createFakeTranscriber() };
+}
+
+/**
+ * What the work after a call needs (step 6.3): Claude Sonnet 5.5 for the summary and the
+ * type plates, and the pictures' storage. In production Claude must be configured.
+ */
+export function postCallDeps(
+  production: boolean,
+  storage: ObjectStorage,
+  env: NodeJS.ProcessEnv = process.env,
+): { summarizer: CallSummarizer; reader: NameplateReader; storage: ObjectStorage } {
+  if (env.ANTHROPIC_API_KEY) {
+    return { summarizer: createClaudeSummarizer(), reader: createClaudeNameplateReader(), storage };
+  }
+  if (production) throw new Error("ANTHROPIC_API_KEY is not set, so no call summaries");
+  return { summarizer: createFakeSummarizer(), reader: createFakeNameplateReader(), storage };
 }
