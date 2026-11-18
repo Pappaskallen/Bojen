@@ -54,16 +54,14 @@ describe("erasing a customer (the right to erasure)", () => {
         })
         .where(eq(call.id, c?.id ?? ""));
       await f.storage.put(`${f.tenantId}/calls/a.wav`, new Uint8Array([1]), "audio/wav");
-      await tx
-        .insert(attachment)
-        .values({
-          tenantId: f.tenantId,
-          ownerType: "call",
-          ownerId: c?.id ?? "",
-          storageKey: `${f.tenantId}/calls/vm.wav`,
-          contentType: "audio/wav",
-          sizeBytes: 1,
-        });
+      await tx.insert(attachment).values({
+        tenantId: f.tenantId,
+        ownerType: "call",
+        ownerId: c?.id ?? "",
+        storageKey: `${f.tenantId}/calls/vm.wav`,
+        contentType: "audio/wav",
+        sizeBytes: 1,
+      });
       await f.storage.put(`${f.tenantId}/calls/vm.wav`, new Uint8Array([2]), "audio/wav");
       await f.storage.put(`${f.tenantId}/jobs/x/drev.jpg`, new Uint8Array([3]), "image/jpeg");
       await tx.update(survey).set({ comment: "Anna var nöjd" });
@@ -163,14 +161,12 @@ describe("erasing a customer (the right to erasure)", () => {
         .values({ tenantId: f.tenantId, name: "Delägaren", phone: "+46701230044" })
         .returning();
       const { boatOwnership } = await import("../src/schema");
-      await tx
-        .insert(boatOwnership)
-        .values({
-          tenantId: f.tenantId,
-          boatId: f.boatId,
-          customerId: partner?.id ?? "",
-          role: "co_owner",
-        });
+      await tx.insert(boatOwnership).values({
+        tenantId: f.tenantId,
+        boatId: f.boatId,
+        customerId: partner?.id ?? "",
+        role: "co_owner",
+      });
 
       // Another firm's customer id does not erase anything here.
       expect(await eraseCustomer(f.deps, f.tenantId, other.customerId, null)).toBe(false);
@@ -268,14 +264,12 @@ describe("the nightly clean-up (spec 10.3)", () => {
           createdAt: ago(760),
         })
         .returning();
-      await tx
-        .insert(auditLog)
-        .values({
-          tenantId: f.tenantId,
-          action: "access_code_viewed",
-          subjectType: "visit",
-          occurredAt: ago(760),
-        });
+      await tx.insert(auditLog).values({
+        tenantId: f.tenantId,
+        action: "access_code_viewed",
+        subjectType: "visit",
+        occurredAt: ago(760),
+      });
       // Access information that ran out yesterday.
       await tx
         .update(accessInfo)
