@@ -70,9 +70,12 @@ export function chainWorker(db: Database, visitId: string, appBase: string) {
   /** Runs this visit's jobs due by `until` (default: the worker's time), until none are left. */
   async function run(until?: Date): Promise<string[]> {
     if (clock.getTime() < Date.now()) clock = new Date();
-    const limit = new Date(Math.max(until?.getTime() ?? 0, clock.getTime()));
     const ran: string[] = [];
     for (let round = 0; round < 20; round++) {
+      // Again each round: a job one of the tasks just added has the database's time, which can
+      // be a moment after the limit was first worked out (and the database's clock may run a
+      // little ahead of this process's). Two seconds are far less than any planned job's delay.
+      const limit = new Date(Math.max(until?.getTime() ?? 0, clock.getTime(), Date.now() + 2_000));
       const due = await jobs(limit);
       if (due.length === 0) return ran;
       for (const job of due) {
