@@ -10,10 +10,16 @@ export const SUMMARY_POINTS = 5;
 export const CALL_OUTCOMES = ["booked", "message", "transferred", "spam"] as const;
 export type CallOutcome = (typeof CALL_OUTCOMES)[number];
 
+/** What the caller wanted (KPI 22): to book, an emergency, a question, or something else. */
+export const CALL_INTENTS = ["book", "emergency", "question", "other"] as const;
+export type CallIntent = (typeof CALL_INTENTS)[number];
+
 export interface CallSummary {
   points: string[];
   /** What the call came to, when the summary can tell; the agent's own outcome wins. */
   outcome: CallOutcome | null;
+  /** What the caller wanted, when the summary can tell; the agent's own wins. */
+  intent: CallIntent | null;
 }
 
 /**
@@ -49,7 +55,8 @@ export function normaliseSummary(raw: unknown): CallSummary {
     )
     .slice(0, SUMMARY_POINTS);
   const outcome = CALL_OUTCOMES.find((o) => o === r.outcome) ?? null;
-  return { points, outcome };
+  const intent = CALL_INTENTS.find((o) => o === r.intent) ?? null;
+  return { points, outcome, intent };
 }
 
 /** The summary as the text kept on the call, a point per line. */

@@ -172,13 +172,15 @@ export const VOICE_TOOLS: { name: VoiceToolName; description: string; input_sche
   },
   {
     name: "avsluta_samtal",
-    description: "End the call with a summary and its outcome. The call's token stops working.",
+    description:
+      "End the call with a summary, its outcome and what the caller wanted (arende: boka = wanted a time, akut = an emergency, fraga = a question about prices, bookings or the firm, annat = anything else). The call's token stops working.",
     input_schema: obj(
       {
         sammanfattning: str("What the call was about and what happens next"),
         utfall: { type: "string", enum: ["booked", "message", "transferred", "spam"] },
+        arende: { type: "string", enum: ["boka", "akut", "fraga", "annat"] },
       },
-      ["sammanfattning", "utfall"],
+      ["sammanfattning", "utfall", "arende"],
     ),
   },
 ];

@@ -12,7 +12,7 @@ import {
   webPushFromEnv,
 } from "@bojen/adapters";
 import type { EmailSender, PushSender, SmsSender } from "@bojen/core";
-import { connect, databaseUrl } from "@bojen/db";
+import { connect, databaseUrl, KPI_CRONTAB } from "@bojen/db";
 import { run } from "graphile-worker";
 import { customerLinks } from "./flows/deps";
 import { postCallDeps, reportDeps } from "./report-deps";
@@ -112,6 +112,7 @@ async function main() {
     concurrency: 4,
     noHandleSignals: false,
     pollInterval: 2000,
+    crontab: KPI_CRONTAB,
     taskList: taskList({
       db,
       sms: smsSender(),

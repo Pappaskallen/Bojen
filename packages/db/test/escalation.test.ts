@@ -3,6 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import {
   ALERT_TASK,
+  alertJobKey,
   FOLLOW_UP_TASK,
   VOICEMAIL_TASK,
   decideTask,
@@ -145,7 +146,7 @@ describe("an urgent message on call (K2 without an answer)", () => {
         callId: f.call.id,
         dueAt: new Date(NOW.getTime() + 30 * 60_000),
       });
-      expect(await job(tx, `alert:${taskId}:${f.mechanicId}`)).toMatchObject({
+      expect(await job(tx, alertJobKey(taskId, [f.mechanicId]))).toMatchObject({
         task: ALERT_TASK,
         payload: { users: f.mechanicId, channels: "push,sms" },
       });
@@ -215,7 +216,7 @@ describe("an urgent message on call (K2 without an answer)", () => {
       expect(
         await runFollowUp(later, { tenantId: f.tenantId, taskId, alerted: [f.mechanicId] }),
       ).toEqual({ do: "alert_next", userId: f.boId });
-      expect(await job(tx, `alert:${taskId}:${f.boId}`)).toMatchObject({
+      expect(await job(tx, alertJobKey(taskId, [f.boId]))).toMatchObject({
         payload: { channels: "push,sms" },
       });
       // Nor Bo: the caller gets the link to the first ordinary time.
@@ -280,7 +281,7 @@ describe("other messages", () => {
         skal: "akut",
         text: "Startar inte.",
       })) as { arende_id: string };
-      expect(await job(tx, `alert:${taskId}:${f.mechanicId},${f.boId}`)).toMatchObject({
+      expect(await job(tx, alertJobKey(taskId, [f.mechanicId, f.boId]))).toMatchObject({
         payload: { channels: "push" },
       });
       expect(await job(tx, `follow-up:${taskId}`)).toBeNull();
@@ -296,6 +297,38 @@ describe("other messages", () => {
     });
   });
 
+  it("reaches a firm with many people, whose ids are more than a job key holds", async () => {
+    await withRollback(async (tx) => {
+      const f = await setUp(tx, "Storfirman", "+46701119817", false);
+      // No on-call list: outside on-call everyone gets the push.
+      await tx
+        .update(tenant)
+        .set({ settings: { sms: { from: FIRM } } })
+        .where(eq(tenant.id, f.tenantId));
+      // 2 + 20 people: their ids alone are 22 × 37 characters, over Graphile's 512.
+      const more = await tx
+        .insert(appUser)
+        .values(
+          Array.from({ length: 20 }, (_, i) => ({
+            tenantId: f.tenantId,
+            name: `Mekaniker ${String(i)}`,
+            role: "mechanic" as const,
+          })),
+        )
+        .returning({ id: appUser.id });
+      const answer = (await skapaMeddelande(f.deps, f.call, {
+        skal: "ring_upp",
+        text: "Ring om vinterförvaringen.",
+      })) as { arende_id: string };
+      expect(answer.arende_id).toMatch(/^[0-9a-f-]{36}$/);
+      const [queued] = await tx.execute<{ key: string; users: string }>(sql`
+        select j.key, j.payload ->> 'users' as users from graphile_worker._private_jobs j
+         where j.payload ->> 'taskId' = ${answer.arende_id}`);
+      expect(queued?.key.length).toBeLessThanOrEqual(512);
+      expect(queued?.users.split(",")).toHaveLength(2 + more.length);
+    });
+  });
+
   it("K1: danger is critical for the mechanic, with no sms to the caller who has 112", async () => {
     await withRollback(async (tx) => {
       const f = await setUp(tx, "Farafirman", "+46701119817");
@@ -303,7 +336,7 @@ describe("other messages", () => {
         skal: "fara",
         text: "Båten tar in vatten. Hänvisad till 112.",
       })) as { arende_id: string };
-      expect(await job(tx, `alert:${taskId}:${f.mechanicId}`)).toMatchObject({
+      expect(await job(tx, alertJobKey(taskId, [f.mechanicId]))).toMatchObject({
         payload: { channels: "push,sms" },
       });
       const [t] = await tx.select({ title: task.title }).from(task).where(eq(task.id, taskId));

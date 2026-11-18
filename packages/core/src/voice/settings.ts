@@ -34,6 +34,8 @@ export interface ReceptionistSettings {
   notServed: string[];
   /** When the phone is answered by people, and when there is someone on call. */
   openingHours: string;
+  /** The same as windows, for the calls outside office hours (KPI 24). */
+  officeHours: OnCallWindow[];
   onCallHours: string;
   /** When a message gets an answer, for example "inom 30 minuter". */
   answerPromise: string;
@@ -52,6 +54,7 @@ export const DEFAULT_RECEPTIONIST: ReceptionistSettings = {
   serviceArea: "Stockholms skärgård",
   notServed: [],
   openingHours: "vardagar 07–17",
+  officeHours: [{ days: [1, 2, 3, 4, 5], from: "07:00", to: "17:00" }],
   onCallHours: "ingen jour",
   answerPromise: "nästa vardag före klockan tio",
   onCall: { windows: [], mechanicIds: [], weekendEmergency: false },
@@ -123,6 +126,12 @@ export function receptionistSettings(tenantSettings: unknown): ReceptionistSetti
       : {};
   const d = DEFAULT_RECEPTIONIST;
   const call = onCall(raw.onCall);
+  const office = Array.isArray(raw.officeHours)
+    ? raw.officeHours
+        .map(window)
+        .filter((w): w is OnCallWindow => w !== null)
+        .slice(0, 14)
+    : [];
   return {
     assistantName: str(raw.assistantName, d.assistantName, 40),
     greeting: typeof raw.greeting === "string" && raw.greeting.trim() ? raw.greeting.trim() : null,
@@ -130,7 +139,12 @@ export function receptionistSettings(tenantSettings: unknown): ReceptionistSetti
     notServed: Array.isArray(raw.notServed)
       ? raw.notServed.filter((x): x is string => typeof x === "string").slice(0, 20)
       : d.notServed,
-    openingHours: str(raw.openingHours, d.openingHours),
+    // The firm's own words win; else its office hours as they are.
+    openingHours: str(
+      raw.openingHours,
+      office.length > 0 ? describeOnCall(office) : d.openingHours,
+    ),
+    officeHours: office.length > 0 ? office : d.officeHours,
     // The firm's own words win; else the windows are said as they are.
     onCallHours: str(raw.onCallHours, describeOnCall(call.windows)),
     answerPromise: str(raw.answerPromise, d.answerPromise),

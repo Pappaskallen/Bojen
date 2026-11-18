@@ -426,6 +426,7 @@ export const customerPage = {
 export const crm = {
   nav: {
     label: "Meny",
+    overview: "Översikt",
     today: "Idag",
     tasks: "Ärenden",
     requests: "Förfrågningar",
@@ -434,6 +435,107 @@ export const crm = {
     places: "Marinor",
     campaigns: "Kampanjer",
     security: "Säkerhet",
+  },
+  /** The dashboard in the phone (step 7.2, spec 9.2). */
+  dashboard: {
+    title: "Översikt",
+    month: "Månad",
+    previousMonth: "Föregående månad",
+    nextMonth: "Nästa månad",
+    today: "Idag",
+    jobsToday: (jobs: number, places: number) =>
+      `${String(jobs)} jobb · ${String(places)} ${places === 1 ? "marina" : "marinor"}`,
+    confirmed: (n: number) => `${String(n)} bekräftade`,
+    drive: (text: string) => `${text} körning`,
+    openRoute: "Öppna dagens rutt →",
+    noJobsToday: "Inga jobb idag.",
+    revenueIn: (month: string) => `Intäkt ${month}`,
+    against: (change: string, month: string) => `${change} mot ${month}`,
+    weeks: (first: number, last: number) =>
+      first === last ? `v.${String(first)}` : `v.${String(first)}–v.${String(last)}`,
+    prebooked: (season: string) => `${season} förbokad`,
+    sameDayLastYear: (value: string, change: string | null) =>
+      `samma dag förra året: ${value}${change ? `  ${change}` : ""}`,
+    /** A change in percentage points, as in the sketch ("▲17 pe"). */
+    points: (share: number) =>
+      `${share >= 0 ? "▲" : "▼"} ${String(Math.round(Math.abs(share) * 100))} pe`,
+    noSnapshotYet: "Jämförelsen med förra året kommer när det finns ett år av ögonblicksbilder.",
+    seasons: { spring: "Våren", autumn: "Hösten" } as Record<"spring" | "autumn", string>,
+    customers: "Kunder",
+    csat: (value: string) => `CSAT ${value}`,
+    reviewClicks: (n: number) => `${String(n)} till recension`,
+    todo: (n: number) => `Att göra (${String(n)})`,
+    noTodo: "Inget att göra.",
+    allTasks: "Alla ärenden →",
+    level: { green: "målet nått", yellow: "nära målet", red: "långt från målet" } as Record<
+      "green" | "yellow" | "red",
+      string
+    >,
+    target: (text: string) => `Mål: ${text}`,
+    kpis: {
+      revenue: "Intäkt",
+      revenuePerWorkDay: "Intäkt per arbetsdag",
+      averageOrder: "Snittordervärde",
+      occupancy: "Beläggning",
+      billableShare: "Fakturerbar andel",
+      driveShare: "Körandel",
+      visitsPerMarinaStop: "Jobb/marina",
+      noAccess: "Ej tillgänglig",
+      confirmation: "Bekräftelsegrad",
+      refill: "Återfyllnad",
+      hoursToBooking: "Förfrågan → bokning",
+      prebooking: "Förbokning",
+      csat: "CSAT",
+    },
+    back: "← Översikt",
+    perWeek: "Per vecka",
+    perMechanic: "Per mekaniker",
+    perService: "Per tjänst",
+    snapshots: "Senaste ögonblicksbilderna",
+    week: (n: number) => `v.${String(n)}`,
+    nothing: "–",
+    ownersOnly: "Översikten är för ägare och administratörer.",
+    /** The receptionist's card and the call list (step 7.3, KPI 21–24). */
+    receptionist: "Receptionisten (30 dagar)",
+    callsAndBookings: (calls: number, bookings: number) =>
+      `${String(calls)} samtal · ${String(bookings)} bokningar`,
+    outsideHours: (share: string) => `${share} utanför kontorstid`,
+    transferredAndConversion: (n: number, conversion: string) =>
+      `${String(n)} kopplade · ${conversion} till bokning`,
+    calls: {
+      title: "Samtal",
+      period: "Senaste 30 dagarna",
+      kpis: {
+        calls: "Antal samtal",
+        conversion: "Konvertering till bokning",
+        transferShare: "Kopplade vidare",
+        outsideHours: "Utanför kontorstid",
+      },
+      filter: "Utfall",
+      all: "Alla",
+      filters: {
+        booked: "Bokade",
+        message: "Meddelanden",
+        transferred: "Kopplade",
+        spam: "Spam",
+        none: "Utan utfall",
+      } as Record<"booked" | "message" | "transferred" | "spam" | "none", string>,
+      outcome: {
+        booked: "Bokad",
+        message: "Meddelande",
+        transferred: "Kopplad",
+        spam: "Spam",
+      } as Record<string, string>,
+      intent: {
+        book: "ville boka",
+        emergency: "akut",
+        question: "fråga",
+        other: "annat",
+      } as Record<string, string>,
+      noOutcome: "Utan utfall",
+      unknownCaller: "Dolt nummer",
+      none: "Inga samtal.",
+    },
   },
   /** The campaigns (step 5.6). */
   campaigns: {

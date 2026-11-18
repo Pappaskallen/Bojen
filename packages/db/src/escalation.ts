@@ -4,6 +4,7 @@
  * minutes, the voicemail when the agent is down, and the list of messages the mechanic takes.
  * The rules themselves are in `@bojen/core` (`voice/escalation.ts`).
  */
+import { createHash } from "node:crypto";
 import {
   alertChannels,
   firstName,
@@ -102,6 +103,15 @@ export async function onCallNow(db: Db, tenantId: string, now: Date): Promise<On
 // --- Alerts to staff ----------------------------------------------------------------------
 
 /** Queues the alert for a message: push, and an sms too when it is critical. */
+/**
+ * The alert job's key: one job per message and set of people, whatever their number.
+ * Graphile Worker allows at most 512 characters, so the people are hashed, not listed.
+ */
+export function alertJobKey(taskId: string, userIds: readonly string[]): string {
+  const users = createHash("sha256").update(userIds.join(",")).digest("hex").slice(0, 32);
+  return `alert:${taskId}:${users}`;
+}
+
 export async function queueAlert(
   db: Pick<Database, "execute">,
   input: {
@@ -119,7 +129,7 @@ export async function queueAlert(
     ALERT_TASK,
     { tenantId: input.tenantId, taskId: input.taskId, users, channels: input.channels.join(",") },
     at,
-    `alert:${input.taskId}:${users}`,
+    alertJobKey(input.taskId, input.userIds),
     5,
   );
 }

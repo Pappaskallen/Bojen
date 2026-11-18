@@ -205,6 +205,57 @@ export {
 } from "./reports/invoice";
 export { reportContent, type ReportContent } from "./reports/content";
 export {
+  computeKpis,
+  DEFAULT_SEASONS,
+  KPI_KEYS,
+  KPI_TARGETS,
+  kpiLevel,
+  kpiSeasons,
+  levelAgainst,
+  median,
+  nextSeason,
+  prebookingSnapshotKey,
+  type KpiKey,
+  type KpiLevel,
+  type KpiTarget,
+  type KpiTotals,
+  type KpiValues,
+  type Prebooking,
+  type Season,
+  type SeasonWindow,
+} from "./reports/kpi";
+export {
+  change,
+  DASHBOARD_TILES,
+  DETAIL_KPIS,
+  formatChange,
+  formatKpi,
+  formatMinutes,
+  isoWeek,
+  KPI_SLUGS,
+  kpiFromSlug,
+  lastWeeks,
+  monthLabel,
+  monthOf,
+  monthPeriod,
+  shiftMonth,
+  sparkline,
+  weeksIn,
+  yearBefore,
+  type DetailKpi,
+  type Period,
+  type Week,
+} from "./reports/dashboard";
+export {
+  CALL_FILTERS,
+  callFilter,
+  RECEPTIONIST_TARGETS,
+  receptionistKpis,
+  type CallFilter,
+  type CallRecord,
+  type ReceptionistKpis,
+} from "./reports/receptionist";
+export {
   autumnBefore,
   looksLikeLayUp,
   looksLikeSpringService,
@@ -277,6 +328,7 @@ export {
   followUp,
   incomingRoute,
   isOnCall,
+  withinWindows,
   onCallOrder,
   planMessage,
   planTransfer,
@@ -290,11 +342,13 @@ export {
 } from "./voice/escalation";
 export { CARD_MARK, PERSONAL_NUMBER_MARK, luhn, scrubSensitive } from "./voice/scrub";
 export {
+  CALL_INTENTS,
   CALL_OUTCOMES,
   SUMMARY_POINTS,
   normaliseSummary,
   summaryText,
   transcriptText,
+  type CallIntent,
   type CallOutcome,
   type CallSummary,
 } from "./voice/summarize";

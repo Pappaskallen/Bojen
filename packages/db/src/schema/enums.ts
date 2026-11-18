@@ -125,6 +125,9 @@ export const messageIntent = pgEnum("message_intent", [
 
 export const callOutcome = pgEnum("call_outcome", ["booked", "message", "transferred", "spam"]);
 
+/** What the caller wanted (KPI 22, step 7.3). */
+export const callIntent = pgEnum("call_intent", ["book", "emergency", "question", "other"]);
+
 export const taskType = pgEnum("task_type", [
   "call_back",
   "change_request",

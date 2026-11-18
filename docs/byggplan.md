@@ -45,9 +45,9 @@ Bocka av ett steg här (`- [x]`) först när stegets *Klart när* är uppfyllt o
 - [ ] Steg 6.3 – Efterbearbetning (1,5 dagar)
 - [x] Steg 6.4 – Kopplingsregler och reservrutin (1,5 dagar)
 - [ ] Steg 6.5 – Testsvit för samtal (2 dagar)
-- [ ] Steg 7.1 – KPI-vyer (2 dagar)
-- [ ] Steg 7.2 – Dashboard i mobilen (2 dagar)
-- [ ] Steg 7.3 – Statistik för receptionisten (0,5 dag)
+- [x] Steg 7.1 – KPI-vyer (2 dagar)
+- [x] Steg 7.2 – Dashboard i mobilen (2 dagar)
+- [x] Steg 7.3 – Statistik för receptionisten (0,5 dag)
 - [ ] Steg 8 – Fortnox (2–3 dagar, när partneravtalet är klart)
 - [ ] Avslutande kontroll före piloten
 
@@ -397,13 +397,16 @@ ett alternativ i stället för att byta tyst.
 #### Steg 7.1 – KPI-vyer (2 dagar)
 - **Berör:** `packages/db/views/kpi_*.sql`, `apps/worker/tasks/refreshKpis.ts`, `kpi_snapshot`.
 - **Gör:** Skapa materialiserade vyer för KPI:erna i MVP:n (se 12.1) och dagliga ögonblicksbilder.
+  - (Byggt 2026-11-18: vyerna ligger i migrering 0029 i schemat `kpi`, som inloggade användare inte når eftersom materialiserade vyer saknar RLS. Arbetaren uppdaterar dem i `refresh_kpis`. Det finns inga fakturor före Fortnox, så intäkten är det godkända fakturaunderlaget. Körtiden tas ur restidscachen mellan mekanikerns besök samma dag, eftersom `route_stop` inte finns. Arbetsdagen i KPI 5 är schemats arbetstid. KPI 21–24 kommer i steg 7.3.)
 - **Klart när:** Varje KPI har ett test mot testdatan med ett förväntat värde som räknats ut för hand.
 
 #### Steg 7.2 – Dashboard i mobilen (2 dagar)
 - **Berör:** `apps/web/app/(admin)/oversikt/*`.
+  - (Byggt 2026-11-18: Receptionistens kort kommer med KPI 21–24 i steg 7.3. Återkommande kunder (KPI 20) ingår inte i MVP:n och visas inte. Recensioner räknas som klick till recensionen. Skärmdumpen sparas i testrapporten men jämförs inte mot en referensbild, eftersom en sådan bara blir stabil om den skapas i CI.)
 - **Klart när:** Layouten följer skissen i 9.2 vid 360 px bredd, färgerna följer målen, korten går att trycka på och listan *Att göra* visar de öppna ärendena. Ett Playwright-test med skärmdump på mobil går igenom.
 
 #### Steg 7.3 – Statistik för receptionisten (0,5 dag)
+- (Byggt 2026-11-18: KPI 22 behöver veta vad den som ringde ville, så samtalet har fått `intent` (migrering 0030). Agenten anger det i `avsluta_samtal` (`arende`), annars sammanfattningen. KPI 24 behöver öppettider som går att räkna på, så `tenant.settings.receptionist.officeHours` har fönster som jouren, med vardagar 07–17 som standard.)
 - **Klart när:** KPI 21–24 visas och samtalslistan kan filtreras på utfall.
 
 ### Steg 8 – Fortnox (2–3 dagar, när partneravtalet är klart)

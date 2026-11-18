@@ -374,3 +374,212 @@
   gap: 8px;
   min-height: 44px;
 }
+
+/* The dashboard in the phone (byggplan step 7.2, spec 9.2): one column of cards at 360 px,
+   the four KPIs two by two, and the colour against the target as a dot with its words. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.dashboard {
+  --green: #1a7f37;
+  --yellow: #b08800;
+  --red: #b3261e;
+}
+
+.dashboard-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dashboard-head h1 {
+  margin: 0;
+}
+
+.month-pager {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.month-pager a {
+  padding: 4px 8px;
+  text-decoration: none;
+}
+
+.dash-card,
+.kpi-card {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  color: inherit;
+  background: var(--bg);
+}
+
+a.dash-card,
+a.kpi-card {
+  text-decoration: none;
+}
+
+a.dash-card:hover,
+a.kpi-card:hover,
+a.dash-card:focus-visible,
+a.kpi-card:focus-visible {
+  border-color: var(--brand);
+}
+
+.dash-card h2 {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.dash-card p {
+  margin: 2px 0;
+}
+
+.dash-big {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.dash-action {
+  display: inline-block;
+  margin-top: 6px;
+}
+
+.sparkline {
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+}
+
+.sparkline span {
+  font-size: 0.8rem;
+  letter-spacing: normal;
+  color: var(--muted);
+}
+
+.dash-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.dash-tiles .kpi-card {
+  margin: 0;
+  min-height: 64px;
+}
+
+.kpi-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.kpi-value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.level {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.level-green {
+  background: var(--green);
+}
+
+.level-yellow {
+  background: var(--yellow);
+}
+
+.level-red {
+  background: var(--red);
+}
+
+.meter {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--soft);
+  overflow: hidden;
+  margin: 6px 0 2px;
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  background: var(--brand);
+}
+
+.dash-todo ul {
+  margin: 4px 0;
+  padding-left: 1.2em;
+}
+
+.kpi-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.kpi-table th,
+.kpi-table td {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-weight: normal;
+}
+
+.kpi-table td {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* The call list (step 7.3), filtered on outcome. */
+.call-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 14px 0 6px;
+}
+
+.call-filters [aria-current="page"] {
+  font-weight: 600;
+}
+
+.call-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.call-list li {
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+.call-list p {
+  margin: 2px 0;
+}
+
+.call-summary {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}

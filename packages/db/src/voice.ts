@@ -910,16 +910,20 @@ export async function stoppaInspelning(deps: VoiceDeps, c: CallRow) {
 }
 
 const OUTCOMES = ["booked", "message", "transferred", "spam"] as const;
+const INTENTS = { boka: "book", akut: "emergency", fraga: "question", annat: "other" } as const;
 
-/** avsluta_samtal: summary and outcome; the call's token stops working. */
+/** avsluta_samtal: summary, outcome and what the caller wanted; the call's token stops working. */
 export async function avslutaSamtal(deps: VoiceDeps, c: CallRow, input: unknown) {
   const i = record(input);
   const outcome = OUTCOMES.find((o) => o === i.utfall) ?? null;
+  const arende = typeof i.arende === "string" ? i.arende : "";
+  const intent = Object.hasOwn(INTENTS, arende) ? INTENTS[arende as keyof typeof INTENTS] : null;
   await deps.db
     .update(call)
     .set({
       endedAt: deps.now(),
       outcome,
+      intent,
       summary: sql`coalesce(${call.summary} || E'\n', '') || ${text(i.sammanfattning, 2000) ?? ""}`,
     })
     .where(and(eq(call.tenantId, c.tenantId), eq(call.id, c.id)));
