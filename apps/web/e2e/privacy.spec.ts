@@ -8,6 +8,8 @@ import { signInOwner } from "./staff-login";
 /** Export and erasure from the customer card (byggplan step 7.4), for a customer of its own. */
 const tenantId = DEMO_TENANT_ID;
 const OWNER = "radera@jonas-batservice.test";
+// A second owner: Supabase gives one sign-in code per address and minute.
+const AUDIO_OWNER = "ljud@jonas-batservice.test";
 const NAME = "Radera Kundsson";
 // Outside the demo data's numbers (fictionalMobile: 0605–0644 and 0695–0699).
 const PHONE = "+46701740681";
@@ -16,9 +18,10 @@ let customerId = "";
 test.beforeAll(async () => {
   const { db, close } = connect();
   try {
-    await db
-      .insert(appUser)
-      .values({ tenantId, name: "Radera Ägare", role: "owner", email: OWNER });
+    await db.insert(appUser).values([
+      { tenantId, name: "Radera Ägare", role: "owner", email: OWNER },
+      { tenantId, name: "Ljud Ägare", role: "owner", email: AUDIO_OWNER },
+    ]);
     const [c] = await db
       .insert(customer)
       .values({ tenantId, name: NAME, phone: PHONE, email: "radera@example.se" })
@@ -85,7 +88,7 @@ test("the owner exports a customer's data and then erases the customer", async (
 
 test("the owner chooses 30 days of call audio, and back to 90", async ({ page }) => {
   test.setTimeout(90_000);
-  await signInOwner(page, OWNER, "/sakerhet");
+  await signInOwner(page, AUDIO_OWNER, "/sakerhet");
   // Nothing on the page is wider than the phone, or taps land beside what they aim at.
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
