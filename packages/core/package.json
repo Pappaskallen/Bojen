@@ -13,7 +13,7 @@
     "./pipeline": "./src/pipeline/pipeline.ts",
     "./logging": "./src/logging/safeError.ts",
     "./onboarding": "./src/onboarding/customerImport.ts",
-    "./privacy": "./src/privacy/retention.ts"
+    "./privacy": "./src/privacy/index.ts"
   },
   "scripts": {
     "lint": "eslint .",

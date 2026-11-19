@@ -91,7 +91,7 @@ Bojen hjälper Firman, så långt det är rimligt, att
 - **svara på registrerades begäran** om tillgång, rättelse, radering, begränsning,
   dataportabilitet och invändning. Bojen svarar på Firmans begäran inom **5 arbetsdagar**, så
   att Firman kan hålla lagens frist på en månad. Firmans ägare och administratörer kan själva
-  exportera en kunds uppgifter (JSON) och radera en kund från kundkortet. Varje export och
+  exportera en kunds uppgifter (JSON eller pdf) och radera en kund från kundkortet. Varje export och
   radering loggas.
 - göra konsekvensbedömningar och samråd med IMY;
 - uppfylla kraven på säkerhet.

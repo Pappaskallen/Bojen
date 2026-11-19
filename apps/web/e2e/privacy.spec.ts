@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { customer, connect, appUser, auditLog } from "@bojen/db";
 import { DEMO_TENANT_ID } from "@bojen/db/seed";
 import { expect, test } from "@playwright/test";
@@ -42,6 +43,14 @@ test("the owner exports a customer's data and then erases the customer", async (
   };
   expect(exported.customer).toMatchObject({ name: NAME, phone: PHONE });
 
+  // The same as a pdf to read.
+  const pdfDownload = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Exportera kundens uppgifter (pdf)" }).click();
+  const pdfFile = await pdfDownload;
+  expect(pdfFile.suggestedFilename()).toBe(`kund-${customerId}.pdf`);
+  const pdfPath = await pdfFile.path();
+  expect(readFileSync(pdfPath).subarray(0, 5).toString("latin1")).toBe("%PDF-");
+
   // Without the word nothing happens.
   await page.getByLabel("Skriv RADERA för att bekräfta").fill("ja");
   await page.getByRole("button", { name: "Radera kunden" }).click();
@@ -65,6 +74,7 @@ test("the owner exports a customer's data and then erases the customer", async (
       .where(and(eq(auditLog.tenantId, tenantId), eq(auditLog.subjectId, customerId)));
     expect(logged.map((l) => l.action).sort()).toEqual([
       "customer.erased",
+      "customer.exported",
       "customer.exported",
       "customer.exported",
     ]);
