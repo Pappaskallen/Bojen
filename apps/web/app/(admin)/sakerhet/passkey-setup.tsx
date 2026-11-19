@@ -44,13 +44,17 @@ export function PasskeySetup({ count }: { count: number }) {
       <h2 id="passkeys">{t.title}</h2>
       <p>{t.intro}</p>
       <p className="help">{t.count(count)}</p>
-      {supported ? (
-        <button type="button" onClick={() => void add()} disabled={busy}>
-          {t.add}
-        </button>
-      ) : (
-        <p className="help">{t.unsupported}</p>
-      )}
+      {/* The same height either way: the button replaces the text only after loading, and
+          the page below must not move when it does. */}
+      <div className="passkey-slot">
+        {supported ? (
+          <button type="button" onClick={() => void add()} disabled={busy}>
+            {t.add}
+          </button>
+        ) : (
+          <p className="help">{t.unsupported}</p>
+        )}
+      </div>
       {state ? (
         <p role={state.error ? "alert" : "status"} className={state.error ? "error" : undefined}>
           {state.text}

@@ -40,6 +40,7 @@ function routes(over: Partial<PrivacyRouteDeps> = {}) {
     session: () => Promise.resolve(owner),
     exportCustomer: vi.fn(() => Promise.resolve(DATA)),
     erase: vi.fn(() => Promise.resolve(true)),
+    setAudioDays: vi.fn(() => Promise.resolve()),
     ...over,
   };
   return { deps, routes: createPrivacyRoutes(deps) };
@@ -131,5 +132,41 @@ describe("export and erasure of a customer", () => {
       (await routes({ erase: () => Promise.resolve(false) }).routes.erase(post("RADERA"), CUSTOMER))
         .status,
     ).toBe(404);
+  });
+
+  it("saves the firm's audio choice for an owner, and only 30 or 90", async () => {
+    const audio = (days?: string) => {
+      const body = new FormData();
+      if (days !== undefined) body.set("days", days);
+      return new Request("http://bojen.test/api/staff/inspelningar", { method: "POST", body });
+    };
+    const { routes: r, deps } = routes();
+    const saved = await r.audioDays(audio("30"));
+    expect(saved.status).toBe(303);
+    expect(saved.headers.get("location")).toBe("/sakerhet?ljud=30#ljud");
+    expect(deps.setAudioDays).toHaveBeenCalledWith("t1", 30, "u1");
+
+    for (const wrong of ["45", "", undefined]) {
+      expect((await r.audioDays(audio(wrong))).headers.get("location")).toBe(
+        "/sakerhet?ljudfel=failed",
+      );
+    }
+    expect(deps.setAudioDays).toHaveBeenCalledTimes(1);
+
+    const m = routes({ session: () => Promise.resolve(mechanic) });
+    expect((await m.routes.audioDays(audio("30"))).headers.get("location")).toBe(
+      "/sakerhet?ljudfel=forbidden",
+    );
+    expect(m.deps.setAudioDays).not.toHaveBeenCalled();
+    expect(
+      (await routes({ session: () => Promise.resolve(null) }).routes.audioDays(audio("30"))).status,
+    ).toBe(401);
+
+    const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const failing = routes({ setAudioDays: () => Promise.reject(new Error("db down")) });
+    expect((await failing.routes.audioDays(audio("90"))).headers.get("location")).toBe(
+      "/sakerhet?ljudfel=failed",
+    );
+    errors.mockRestore();
   });
 });

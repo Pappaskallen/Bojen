@@ -30,53 +30,56 @@ export function StaffTable({ rows, isOwner }: { rows: StaffRow[]; isOwner: boole
   const own = rows.find((r) => r.self);
   return (
     <>
-      <table className="staff-table">
-        <thead>
-          <tr>
-            <th scope="col">{t.name}</th>
-            <th scope="col">{t.role}</th>
-            <th scope="col">{t.secondFactor}</th>
-            {isOwner ? <th scope="col" /> : null}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id}>
-              <td>{r.name}</td>
-              <td>{t.roles[r.role]}</td>
-              <td>{r.signedInBefore ? (r.hasFactor ? t.on : t.off) : t.notSignedIn}</td>
-              {isOwner ? (
-                <td>
-                  {r.self ? null : status[r.id] ? (
-                    <span role="status">{status[r.id]}</span>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        title={t.revokeHelp}
-                        aria-label={`${t.revoke}: ${r.name}`}
-                        onClick={() => void act(r.id, "revoke")}
-                      >
-                        {t.revoke}
-                      </button>{" "}
-                      {r.hasFactor ? (
+      {/* Wider than a phone with the owner's buttons: it scrolls, the page does not. */}
+      <div className="staff-table-scroll">
+        <table className="staff-table">
+          <thead>
+            <tr>
+              <th scope="col">{t.name}</th>
+              <th scope="col">{t.role}</th>
+              <th scope="col">{t.secondFactor}</th>
+              {isOwner ? <th scope="col" /> : null}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td>{r.name}</td>
+                <td>{t.roles[r.role]}</td>
+                <td>{r.signedInBefore ? (r.hasFactor ? t.on : t.off) : t.notSignedIn}</td>
+                {isOwner ? (
+                  <td>
+                    {r.self ? null : status[r.id] ? (
+                      <span role="status">{status[r.id]}</span>
+                    ) : (
+                      <>
                         <button
                           type="button"
-                          className="secondary"
-                          aria-label={`${t.reset}: ${r.name}`}
-                          onClick={() => void act(r.id, "reset-factor")}
+                          title={t.revokeHelp}
+                          aria-label={`${t.revoke}: ${r.name}`}
+                          onClick={() => void act(r.id, "revoke")}
                         >
-                          {t.reset}
-                        </button>
-                      ) : null}
-                    </>
-                  )}
-                </td>
-              ) : null}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                          {t.revoke}
+                        </button>{" "}
+                        {r.hasFactor ? (
+                          <button
+                            type="button"
+                            className="secondary"
+                            aria-label={`${t.reset}: ${r.name}`}
+                            onClick={() => void act(r.id, "reset-factor")}
+                          >
+                            {t.reset}
+                          </button>
+                        ) : null}
+                      </>
+                    )}
+                  </td>
+                ) : null}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {own && !own.hasFactor ? (
         <p>
           <a href="/sakerhet/tvafaktor">{t.addOwn}</a>

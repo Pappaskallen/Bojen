@@ -5,10 +5,11 @@
  *   GET  /api/kunder/{id}/export   → the customer's data as a JSON file
  *   GET  /api/kunder/{id}/export?format=pdf → the same as a document to read
  *   POST /api/kunder/{id}/radera   confirm=RADERA → 303 to /kunder?raderad=1, or back with fel=…
+ *   POST /api/staff/inspelningar   days=30|90 → 303 to /sakerhet?ljud=30, or ?ljudfel=…
  */
 import { crm } from "@bojen/core/i18n/sv";
 import { safeError } from "@bojen/core/logging";
-import { exportDocument, type CustomerExportData } from "@bojen/core/privacy";
+import { AUDIO_DAY_CHOICES, exportDocument, type CustomerExportData } from "@bojen/core/privacy";
 import { exportPdf } from "./export-pdf";
 import type { StaffSession } from "./staff-auth";
 
@@ -20,6 +21,7 @@ export interface PrivacyRouteDeps {
     actorId: string,
   ) => Promise<CustomerExportData | null>;
   erase: (tenantId: string, customerId: string, actorId: string) => Promise<boolean>;
+  setAudioDays: (tenantId: string, days: number, actorId: string) => Promise<void>;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -82,6 +84,24 @@ export function createPrivacyRoutes(deps: PrivacyRouteDeps) {
       } catch (error) {
         console.error("[radera] erasure failed", safeError(error));
         return back(`${card}?fel=failed`);
+      }
+    },
+
+    /** The firm's choice of how long call audio is kept (spec 10.5). */
+    async audioDays(request: Request): Promise<Response> {
+      const session = await deps.session(request);
+      if (session?.step !== "none") return new Response(null, { status: 401 });
+      if (session.role === "mechanic") return back("/sakerhet?ljudfel=forbidden");
+      const form = await request.formData().catch(() => null);
+      const days = Number(form?.get("days"));
+      if (!AUDIO_DAY_CHOICES.includes(days as 30 | 90)) return back("/sakerhet?ljudfel=failed");
+      try {
+        const { tenantId, actor } = session.context;
+        await deps.setAudioDays(tenantId, days, actor.id);
+        return back(`/sakerhet?ljud=${String(days)}#ljud`);
+      } catch (error) {
+        console.error("[inspelningar] saving failed", safeError(error));
+        return back("/sakerhet?ljudfel=failed");
       }
     },
   };

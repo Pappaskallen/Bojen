@@ -2,9 +2,16 @@ import { createFakeStorage } from "@bojen/adapters";
 import { exportDocument } from "@bojen/core/privacy";
 import { and, eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
-import { eraseCustomer, exportCustomer, runRetention } from "../src/privacy";
+import {
+  eraseCustomer,
+  exportCustomer,
+  firmAudioDays,
+  runRetention,
+  setFirmAudioDays,
+} from "../src/privacy";
 import {
   accessInfo,
+  appUser,
   attachment,
   auditLog,
   boat,
@@ -426,6 +433,48 @@ describe("the nightly clean-up (spec 10.3)", () => {
       expect(
         (await one(tx.select().from(customer).where(eq(customer.id, f.customerId))))?.name,
       ).toBe("Raderingsfirman kund");
+    });
+  });
+});
+
+describe("the firm's choice of audio retention (spec 10.5)", () => {
+  it("is 90 days until the firm chooses 30, keeps the other settings and is logged", async () => {
+    await withRollback(async (tx) => {
+      const f = await firm(tx);
+      await tx
+        .update(tenant)
+        .set({ settings: { reviewUrl: "https://g.page/x", privacy: { other: true } } })
+        .where(eq(tenant.id, f.tenantId));
+      expect(await firmAudioDays(tx, f.tenantId)).toBe(90);
+
+      const user = await one(
+        tx.select({ id: appUser.id }).from(appUser).where(eq(appUser.tenantId, f.tenantId)),
+      );
+      await setFirmAudioDays(tx, f.tenantId, 30, user?.id ?? "", NOW);
+      expect(await firmAudioDays(tx, f.tenantId)).toBe(30);
+      const row = await one(
+        tx.select({ settings: tenant.settings }).from(tenant).where(eq(tenant.id, f.tenantId)),
+      );
+      expect(row?.settings).toEqual({
+        reviewUrl: "https://g.page/x",
+        privacy: { other: true, audioDays: 30 },
+      });
+      const logged = await one(
+        tx
+          .select()
+          .from(auditLog)
+          .where(
+            and(eq(auditLog.tenantId, f.tenantId), eq(auditLog.action, "settings.audio_days")),
+          ),
+      );
+      expect(logged).toMatchObject({ userId: user?.id, details: { audioDays: 30 } });
+
+      // It can be changed back, and only to 30 or 90.
+      await setFirmAudioDays(tx, f.tenantId, 90, user?.id ?? "", NOW);
+      expect(await firmAudioDays(tx, f.tenantId)).toBe(90);
+      await expect(setFirmAudioDays(tx, f.tenantId, 45, user?.id ?? "", NOW)).rejects.toThrow(
+        /audio choice/,
+      );
     });
   });
 });

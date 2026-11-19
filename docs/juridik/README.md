@@ -16,8 +16,10 @@ Skrivna 2026-11-18 utifrån specifikationen (kapitel 10 och 13) och det som fakt
 ## Öppna frågor att avgöra före piloten
 
 1. **Automatisk radering och export:** *byggt 2026-11-18 i steg 7.4.* Det som återstår:
-   - Valet mellan 30 och 90 dagars ljud görs i `tenant.settings.privacy.audioDays`. Det finns
-     ingen knapp för det i administrationen ännu.
+   - Valet mellan 30 och 90 dagars ljud görs av ägare och administratörer under Säkerhet
+     (byggt 2026-11-19). Det tredje läget i specifikationen 10.5, *ljud bara vid samtycke*, är
+     inte byggt: receptionisten frågar inte om samtycke. Kundinformationen ska därför inte
+     använda det alternativet ännu.
    - Export av en hel firma när avtalet upphör görs av Bojen på begäran.
 2. **Anthropic och lagring.**
    - Specifikationen lovar att inga transkriberingar lagras hos amerikanska underbiträden.
