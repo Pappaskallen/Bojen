@@ -1,3 +1,5 @@
+import type { CustomerExportData } from "@bojen/core/privacy";
+import { PDFDocument } from "pdf-lib";
 import { describe, expect, it, vi } from "vitest";
 import { createPrivacyRoutes, type PrivacyRouteDeps } from "./privacy-routes";
 import type { StaffSession } from "./staff-auth";
@@ -12,12 +14,31 @@ const owner: StaffSession = {
   step: "none",
   accessToken: "token",
 };
+const DATA: CustomerExportData = {
+  exportedAt: "2027-01-15T09:00:00.000Z",
+  firm: { name: "Firman" },
+  customer: {
+    name: "Anna",
+    type: "private",
+    phone: null,
+    email: "anna@example.se",
+    billingAddress: null,
+    language: "sv",
+    acquisitionChannel: null,
+    createdAt: "2026-04-02T10:00:00.000Z",
+  },
+  consents: [],
+  boats: [],
+  jobs: [],
+  messages: [],
+  calls: [],
+};
 const mechanic: StaffSession = { ...owner, role: "mechanic", aal: "aal1" };
 
 function routes(over: Partial<PrivacyRouteDeps> = {}) {
   const deps: PrivacyRouteDeps = {
     session: () => Promise.resolve(owner),
-    exportCustomer: vi.fn(() => Promise.resolve({ customer: { name: "Anna" } })),
+    exportCustomer: vi.fn(() => Promise.resolve(DATA)),
     erase: vi.fn(() => Promise.resolve(true)),
     ...over,
   };
@@ -40,8 +61,25 @@ describe("export and erasure of a customer", () => {
       `attachment; filename="kund-${CUSTOMER}.json"`,
     );
     expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(await response.json()).toEqual({ customer: { name: "Anna" } });
+    expect(await response.json()).toEqual(DATA);
     expect(deps.exportCustomer).toHaveBeenCalledWith("t1", CUSTOMER, "u1");
+  });
+
+  it("gives the same data as a pdf when asked for one", async () => {
+    const { routes: r, deps } = routes();
+    const response = await r.export(
+      new Request(`http://bojen.test/api/kunder/${CUSTOMER}/export?format=pdf`),
+      CUSTOMER,
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("application/pdf");
+    expect(response.headers.get("content-disposition")).toBe(
+      `attachment; filename="kund-${CUSTOMER}.pdf"`,
+    );
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    const pdf = await PDFDocument.load(await response.arrayBuffer());
+    expect(pdf.getTitle()).toBe("Registerutdrag för Anna");
+    expect(deps.exportCustomer).toHaveBeenCalledTimes(1);
   });
 
   it("refuses a mechanic, a visitor and a malformed id, and says when there is no customer", async () => {

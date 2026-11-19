@@ -198,7 +198,8 @@ test("a booking on the web goes all the way to the review link (before the pilot
       .poll(
         async () => {
           await page.reload();
-          return page.getByRole("link", { name: "Granska rapporten" }).count();
+          // The link is there while the draft is written; wait for the draft itself.
+          return page.getByText("Rapportutkast klart").count();
         },
         { timeout: 45_000, intervals: [1_000] },
       )

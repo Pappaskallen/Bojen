@@ -1,4 +1,5 @@
 import { createFakeStorage } from "@bojen/adapters";
+import { exportDocument } from "@bojen/core/privacy";
 import { and, eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { eraseCustomer, exportCustomer, runRetention } from "../src/privacy";
@@ -203,6 +204,16 @@ describe("exporting a customer (the right of access)", () => {
       const json = JSON.stringify(data);
       expect(json).not.toContain("not-a-real-ciphertext");
       expect(json).not.toContain("codeEncrypted");
+      expect(data?.firm.name).toBe("Raderingsfirman");
+
+      // The same data as a document: the visit's window as the driver gives it is read.
+      if (!data) throw new Error("no export");
+      const doc = exportDocument(data);
+      const visit = doc.lines.find((l) => l.kind === "field" && l.label === "Besök");
+      expect(visit?.kind === "field" && visit.value).toMatch(
+        /^\d{4}-\d\d-\d\d \d\d:\d\d–(\d{4}-\d\d-\d\d )?\d\d:\d\d \(/,
+      );
+      expect(JSON.stringify(doc)).not.toContain("not-a-real-ciphertext");
       // No export for an unknown or erased customer.
       expect(
         await exportCustomer(tx, f.tenantId, "00000000-0000-4000-8000-000000000000", NOW),

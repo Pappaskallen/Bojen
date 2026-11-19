@@ -3,15 +3,22 @@
  * only the owner and administrators.
  *
  *   GET  /api/kunder/{id}/export   → the customer's data as a JSON file
+ *   GET  /api/kunder/{id}/export?format=pdf → the same as a document to read
  *   POST /api/kunder/{id}/radera   confirm=RADERA → 303 to /kunder?raderad=1, or back with fel=…
  */
 import { crm } from "@bojen/core/i18n/sv";
 import { safeError } from "@bojen/core/logging";
+import { exportDocument, type CustomerExportData } from "@bojen/core/privacy";
+import { exportPdf } from "./export-pdf";
 import type { StaffSession } from "./staff-auth";
 
 export interface PrivacyRouteDeps {
   session: (request: Request) => Promise<StaffSession | null>;
-  exportCustomer: (tenantId: string, customerId: string, actorId: string) => Promise<unknown>;
+  exportCustomer: (
+    tenantId: string,
+    customerId: string,
+    actorId: string,
+  ) => Promise<CustomerExportData | null>;
   erase: (tenantId: string, customerId: string, actorId: string) => Promise<boolean>;
 }
 
@@ -37,6 +44,16 @@ export function createPrivacyRoutes(deps: PrivacyRouteDeps) {
       const { tenantId, actor } = g.session.context;
       const data = await deps.exportCustomer(tenantId, customerId, actor.id);
       if (!data) return new Response(null, { status: 404, headers: NO_STORE });
+      if (new URL(request.url).searchParams.get("format") === "pdf") {
+        const pdf = await exportPdf(exportDocument(data), new Date(data.exportedAt));
+        return new Response(new Blob([new Uint8Array(pdf)], { type: "application/pdf" }), {
+          headers: {
+            ...NO_STORE,
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `attachment; filename="kund-${customerId}.pdf"`,
+          },
+        });
+      }
       return new Response(JSON.stringify(data, null, 2), {
         headers: {
           ...NO_STORE,

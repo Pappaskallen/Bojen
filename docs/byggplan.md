@@ -412,7 +412,7 @@ ett alternativ i stället för att byta tyst.
 
 #### Steg 7.4 – Radering och export (1,5 dagar)
 - (Tillagt 2026-11-18 efter genomgången av juridiken: specifikationen 10.3 lovar lagringstider som raderas automatiskt varje natt och export och radering med ett klick, men inget steg byggde det. Beslutat med Robert att det byggs före piloten.)
-- (Byggt 2026-11-18: en raderad kund anonymiseras i stället för att tas bort, så att jobb, besök och rapporter behåller sina rader. Åtkomstinformationen följer sitt slutdatum (`valid_until`), eftersom inget val av "30 dagar efter senaste besöket" finns. Exporten är JSON. Pdf enligt 10.3 återstår. Bilder på båten behålls som teknisk historik. Valet av 30 dagars ljud ligger i `tenant.settings.privacy.audioDays` och har ingen knapp än.)
+- (Byggt 2026-11-18: en raderad kund anonymiseras i stället för att tas bort, så att jobb, besök och rapporter behåller sina rader. Åtkomstinformationen följer sitt slutdatum (`valid_until`), eftersom inget val av "30 dagar efter senaste besöket" finns. Exporten finns som JSON och, sedan 2026-11-19, som pdf (registerutdrag att läsa). Bilder på båten behålls som teknisk historik. Valet av 30 dagars ljud ligger i `tenant.settings.privacy.audioDays` och har ingen knapp än.)
 - **Mål:** Lagringstiderna i 10.3 gäller av sig själva, och en registrerads begäran om export eller radering klaras med ett klick.
 - **Berör:** `packages/core/privacy/*`, `packages/db/src/privacy.ts`, `apps/worker/src/tasks.ts`, `apps/web/app/(admin)/kunder/[id]`, `apps/web/app/api/kunder/*`.
 - **Gör:**

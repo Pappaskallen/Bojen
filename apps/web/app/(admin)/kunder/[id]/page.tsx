@@ -189,6 +189,11 @@ export default async function CustomerCardPage({ params, searchParams }: Props) 
                 {crm.privacy.exportLabel}
               </a>
             </p>
+            <p>
+              <a href={`/api/kunder/${card.id}/export?format=pdf`} download>
+                {crm.privacy.exportPdfLabel}
+              </a>
+            </p>
             <p className="help">{crm.privacy.exportHelp}</p>
             <form method="post" action={`/api/kunder/${card.id}/radera`} className="erase">
               <p className="help" id="erase-help">

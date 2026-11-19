@@ -236,6 +236,7 @@ export async function exportCustomer(
       and(eq(customer.tenantId, tenantId), eq(customer.id, customerId), isNull(customer.deletedAt)),
     );
   if (!c) return null;
+  const [firm] = await db.select({ name: tenant.name }).from(tenant).where(eq(tenant.id, tenantId));
 
   const ownerships = await db
     .select({ boatId: boatOwnership.boatId, role: boatOwnership.role })
@@ -402,6 +403,7 @@ export async function exportCustomer(
   const withAccess = new Set(access.map((a) => a.boatId));
   return {
     exportedAt: now.toISOString(),
+    firm: { name: firm?.name ?? "" },
     customer: {
       name: c.name,
       type: c.type,
