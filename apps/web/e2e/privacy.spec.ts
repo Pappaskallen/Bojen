@@ -82,3 +82,21 @@ test("the owner exports a customer's data and then erases the customer", async (
     await close();
   }
 });
+
+test("the owner chooses 30 days of call audio, and back to 90", async ({ page }) => {
+  test.setTimeout(90_000);
+  await signInOwner(page, OWNER, "/sakerhet");
+  const section = page.getByRole("region", { name: "Inspelade samtal" });
+  await expect(section.getByText("Ljudet sparas i 90 dagar.")).toBeVisible();
+
+  await section.getByLabel("30 dagar").check();
+  await section.getByRole("button", { name: "Spara" }).click();
+  await expect(section.getByRole("status")).toHaveText(
+    "Sparat. Ljud äldre än 30 dagar tas bort i natt.",
+  );
+  await expect(section.getByLabel("30 dagar")).toBeChecked();
+
+  await section.getByLabel("90 dagar (standard)").check();
+  await section.getByRole("button", { name: "Spara" }).click();
+  await expect(section.getByText("Ljudet sparas i 90 dagar.")).toBeVisible();
+});

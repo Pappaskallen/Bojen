@@ -84,6 +84,7 @@ import {
   eraseCustomer as eraseCustomerData,
   exportCustomer as exportCustomerData,
   recordExport,
+  setFirmAudioDays,
 } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createBoatAccessRoute } from "./boat-access";
@@ -534,6 +535,8 @@ export const privacyRoutes = createPrivacyRoutes({
     if (data) await recordExport(db(), tenantId, customerId, actorId, now);
     return data;
   },
+  setAudioDays: (tenantId, days, actorId) =>
+    setFirmAudioDays(db(), tenantId, days, actorId, new Date()),
   erase: (tenantId, customerId, actorId) =>
     eraseCustomerData(
       { db: db(), storage: storage(), now: () => new Date() },

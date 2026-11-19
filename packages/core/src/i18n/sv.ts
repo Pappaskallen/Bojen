@@ -183,6 +183,19 @@ export const sv = {
     resetDone: "Tvåfaktor är återställd. Personen lägger till appen igen nästa gång.",
     addOwn: "Lägg till tvåfaktor för dig själv",
     failed: "Det gick inte. Försök igen.",
+    /** How long call audio is kept (spec 10.5, step 7.4). */
+    audio: {
+      heading: "Inspelade samtal",
+      intro:
+        "Hur länge ljudet från samtalen till receptionisten sparas. Sammanfattningen och utskriften sparas i 24 månader oavsett vad du väljer.",
+      choice: (days: number) => `${String(days)} dagar`,
+      standard: "(standard)",
+      save: "Spara",
+      saved: (days: number) => `Sparat. Ljud äldre än ${String(days)} dagar tas bort i natt.`,
+      current: (days: number) => `Ljudet sparas i ${String(days)} dagar.`,
+      onlyOwners: "Bara ägare och administratörer kan ändra hur länge ljudet sparas.",
+      failed: "Det gick inte att spara. Försök igen.",
+    },
   },
   requests: {
     title: "Förfrågningar",

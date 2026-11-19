@@ -12,7 +12,7 @@
  * anyway and the next night tries again; the other order could leave files no row points to.
  */
 import { crm } from "@bojen/core/i18n/sv";
-import { retentionCutoffs } from "@bojen/core/privacy";
+import { AUDIO_DAY_CHOICES, audioDays, retentionCutoffs } from "@bojen/core/privacy";
 import type { ObjectStorage } from "@bojen/core";
 import { and, eq, inArray, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import type { Database } from "./client";
@@ -667,6 +667,45 @@ export async function recordExport(
     action: "customer.exported",
     subjectType: "customer",
     subjectId: customerId,
+    occurredAt: now,
+  });
+}
+
+/** How many days the firm keeps call audio (spec 10.5): 90 unless it chose 30. */
+export async function firmAudioDays(db: Pick<Database, "select">, tenantId: string) {
+  const [row] = await db
+    .select({ settings: tenant.settings })
+    .from(tenant)
+    .where(eq(tenant.id, tenantId));
+  return audioDays(row?.settings ?? null);
+}
+
+/**
+ * The firm's choice of 30 or 90 days of call audio, in `tenant.settings.privacy.audioDays`.
+ * The next nightly clean-up follows it, so a shorter time removes older audio that night.
+ */
+export async function setFirmAudioDays(
+  db: Pick<Database, "update" | "insert">,
+  tenantId: string,
+  days: number,
+  userId: string,
+  now: Date,
+): Promise<void> {
+  if (!AUDIO_DAY_CHOICES.includes(days as 30 | 90)) throw new Error("not an audio choice");
+  await db
+    .update(tenant)
+    .set({
+      settings: sql`coalesce(${tenant.settings}, '{}'::jsonb) || jsonb_build_object('privacy',
+        coalesce(${tenant.settings} -> 'privacy', '{}'::jsonb) || jsonb_build_object('audioDays', ${days}::int))`,
+    })
+    .where(eq(tenant.id, tenantId));
+  await db.insert(auditLog).values({
+    tenantId,
+    userId,
+    action: "settings.audio_days",
+    subjectType: "tenant",
+    subjectId: tenantId,
+    details: { audioDays: days },
     occurredAt: now,
   });
 }
