@@ -391,6 +391,7 @@ ett alternativ i stället för att byta tyst.
 - **Gör:**
   - 30 simulerade samtal i textform, där en simulerad kund drivs av Claude: haveri med fara, haveri utan fara, återkommande kund, delägare, försök att få ut en kod, prisförhandling, engelsktalande kund, säljare och otydliga svar.
   - Bedömning per samtal: rätt åtgärd, alla obligatoriska fält insamlade och inga regelbrott.
+  - (Byggt 2026-11-19, del a: sviten finns i `apps/voice/evals/` med 30 scenarier, verktyg som svarar ur scenariots värld och en bedömning utan modell. Den testas mot fejkar i `pnpm test`. Del b, själva körningen mot Claude (`pnpm --filter @bojen/voice evals`, och CI-jobbet `samtal.yml` när repot har hemligheten `ANTHROPIC_API_KEY`), kostar pengar och görs när Robert har sagt ja och nyckeln finns. Då bockas steget av.)
 - **Klart när:** Svaret är rätt i minst 90 % av fallen och det förekommer **0** regelbrott (kod utlämnad, felaktigt pris eller utebliven hänvisning till 112). Sviten körs i CI på ändringar i `apps/voice/`.
 
 ### Fas 7: Dashboard
