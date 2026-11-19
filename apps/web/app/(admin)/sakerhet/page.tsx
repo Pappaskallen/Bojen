@@ -66,13 +66,15 @@ export default async function SecurityPage({
         {saved ? <p role="status">{audio.saved(days)}</p> : null}
         {canChange ? (
           <form method="post" action="/api/staff/inspelningar">
-            <fieldset>
+            <fieldset className="audio-choice">
               <legend>{audio.current(days)}</legend>
               {AUDIO_DAY_CHOICES.map((choice) => (
-                <label key={choice}>
-                  <input type="radio" name="days" value={choice} defaultChecked={choice === days} />{" "}
-                  {audio.choice(choice)}
-                  {choice === RETENTION.audioDays ? ` ${audio.standard}` : ""}
+                <label key={choice} className="choice">
+                  <input type="radio" name="days" value={choice} defaultChecked={choice === days} />
+                  <span>
+                    {audio.choice(choice)}
+                    {choice === RETENTION.audioDays ? ` ${audio.standard}` : ""}
+                  </span>
                 </label>
               ))}
             </fieldset>
