@@ -594,3 +594,14 @@ a.kpi-card:focus-visible {
 .audio-choice legend {
   margin-bottom: 8px;
 }
+
+/* The passkey button arrives after loading; this keeps its place so nothing below moves. */
+.passkey-slot {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+}
+
+.passkey-slot > p {
+  margin: 0;
+}
