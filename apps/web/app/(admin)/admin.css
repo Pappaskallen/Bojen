@@ -605,3 +605,8 @@ a.kpi-card:focus-visible {
 .passkey-slot > p {
   margin: 0;
 }
+
+.staff-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}

@@ -86,6 +86,10 @@ test("the owner exports a customer's data and then erases the customer", async (
 test("the owner chooses 30 days of call audio, and back to 90", async ({ page }) => {
   test.setTimeout(90_000);
   await signInOwner(page, OWNER, "/sakerhet");
+  // Nothing on the page is wider than the phone, or taps land beside what they aim at.
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+  ).toBeLessThanOrEqual(0);
   const section = page.getByRole("region", { name: "Inspelade samtal" });
   await expect(section.getByText("Ljudet sparas i 90 dagar.")).toBeVisible();
 
