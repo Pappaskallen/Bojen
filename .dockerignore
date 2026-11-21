@@ -1,0 +1,16 @@
+# Kept out of the image built by infra/app.Dockerfile: dependencies are installed inside it,
+# and secrets come from the server's environment, never from the build context.
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/test-results
+**/playwright-report
+.git
+.env
+.env.*
+!.env.example
+supabase/.temp
+supabase/.branches
+apps/voice/evals/results
+infra/data

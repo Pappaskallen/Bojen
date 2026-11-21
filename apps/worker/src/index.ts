@@ -6,7 +6,7 @@ import {
   createFakeEmail,
   createFakeSms,
   createFakeMaps,
-  createMailgunEmail,
+  sesEmailFromEnv,
   createOsrmMaps,
   elksFromEnv,
   systemClock,
@@ -40,16 +40,9 @@ function smsSender(): SmsSender {
 }
 
 function emailSender(): EmailSender {
-  const apiKey = process.env.MAILGUN_API_KEY;
-  const domain = process.env.MAILGUN_DOMAIN;
-  if (apiKey && domain) {
-    return createMailgunEmail({
-      apiKey,
-      domain,
-      from: process.env.MAILGUN_FROM ?? `Bojen <noreply@${domain}>`,
-    });
-  }
-  if (production) throw new Error("Mailgun is not configured (MAILGUN_API_KEY and MAILGUN_DOMAIN)");
+  const ses = sesEmailFromEnv();
+  if (ses) return ses;
+  if (production) throw new Error("Amazon SES is not configured (SES_FROM and the AWS keys)");
   const fake = createFakeEmail();
   return {
     async send(message) {

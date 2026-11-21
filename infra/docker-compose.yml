@@ -1,0 +1,320 @@
+# Bojen's server (byggplan step 9, docs/egen-drift.md): everything that runs on our own server,
+# one Hetzner AX41 in Helsinki. Started by infra/scripts/deploy.sh with the server's own
+# infra/.env (from infra/env.example; never committed).
+#
+# Only Caddy (80, 443) and, with the voice profile, LiveKit and its SIP service are reachable
+# from outside. Postgres and the other services talk on the internal network only.
+#
+#   docker compose -f infra/docker-compose.yml --env-file infra/.env up -d
+#   ... --profile voice up -d      # LiveKit, SIP and the voice agent, from step 6.2b
+#   sh infra/scripts/osrm-prepare.sh          # the road map, once and a few times a year
+
+name: bojen
+
+x-app: &app
+  image: bojen-app
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    NODE_ENV: production
+    DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres
+    NEXT_PUBLIC_SUPABASE_URL: https://${API_DOMAIN}
+    OSRM_URL: http://osrm:5000
+    PHOTON_URL: http://photon:2322
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  # --- Supabase: Postgres, Auth and Storage ------------------------------------------------
+  db:
+    build: ./postgres
+    image: bojen-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      PGPORT: 5432
+      POSTGRES_PORT: 5432
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: postgres
+      POSTGRES_DB: postgres
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXP: 3600
+      # WAL-G: the archive in Hetzner Object Storage, in another town than the server, and
+      # encrypted before it leaves the server.
+      WALG_S3_PREFIX: s3://${BACKUP_BUCKET}/postgres
+      AWS_ENDPOINT: ${BACKUP_ENDPOINT}
+      AWS_REGION: ${BACKUP_REGION}
+      AWS_ACCESS_KEY_ID: ${BACKUP_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${BACKUP_SECRET_KEY}
+      AWS_S3_FORCE_PATH_STYLE: "true"
+      WALG_LIBSODIUM_KEY: ${BACKUP_ENCRYPTION_KEY}
+      WALG_LIBSODIUM_KEY_TRANSFORM: hex
+      WALG_COMPRESSION_METHOD: zstd
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - log_min_messages=fatal
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_command=/usr/local/bin/wal-g wal-push %p
+      - -c
+      - archive_timeout=60
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - db-config:/etc/postgresql-custom
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  auth:
+    image: supabase/gotrue:v2.197.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: https://${API_DOMAIN}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      GOTRUE_SITE_URL: https://${APP_DOMAIN}
+      GOTRUE_URI_ALLOW_LIST: https://${APP_DOMAIN}
+      GOTRUE_DISABLE_SIGNUP: "true"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_ISSUER: https://${API_DOMAIN}/auth/v1
+      # The same as supabase/config.toml, which the tests run against.
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_MAILER_OTP_EXP: 600
+      GOTRUE_MAILER_OTP_LENGTH: 6
+      GOTRUE_MAILER_SUBJECTS_MAGIC_LINK: Din kod till Bojen
+      GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: http://caddy:8080/magic_link.html
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "true"
+      GOTRUE_SMS_AUTOCONFIRM: "true"
+      GOTRUE_SMS_OTP_EXP: 600
+      GOTRUE_SMS_OTP_LENGTH: 6
+      GOTRUE_SMS_TEMPLATE: "{{ .Code }} är din kod för att logga in i Bojen."
+      GOTRUE_SMS_PROVIDER: twilio
+      GOTRUE_SMS_TWILIO_ACCOUNT_SID: not-used-the-send-sms-hook-sends
+      GOTRUE_SMS_TWILIO_AUTH_TOKEN: not-used
+      GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID: not-used
+      GOTRUE_HOOK_SEND_SMS_ENABLED: "true"
+      GOTRUE_HOOK_SEND_SMS_URI: http://web:3000/api/webhooks/supabase/send-sms
+      GOTRUE_HOOK_SEND_SMS_SECRETS: ${SUPABASE_AUTH_SMS_HOOK_SECRET}
+      GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_ENABLED: "true"
+      GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_URI: pg-functions://postgres/public/custom_access_token_hook
+      GOTRUE_MFA_TOTP_ENROLL_ENABLED: "true"
+      GOTRUE_MFA_TOTP_VERIFY_ENABLED: "true"
+      GOTRUE_MFA_MAX_ENROLLED_FACTORS: 10
+      GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED: "true"
+      GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL: 10
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: 2
+      # E-mail through Amazon SES's SMTP interface in Stockholm.
+      GOTRUE_SMTP_HOST: email-smtp.eu-north-1.amazonaws.com
+      GOTRUE_SMTP_PORT: 587
+      GOTRUE_SMTP_USER: ${SES_SMTP_USER}
+      GOTRUE_SMTP_PASS: ${SES_SMTP_PASSWORD}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${MAIL_FROM_ADDRESS}
+      GOTRUE_SMTP_SENDER_NAME: Bojen
+
+  rest:
+    image: postgrest/postgrest:v14.18
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_DB_SCHEMAS: storage
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+
+  storage:
+    image: supabase/storage-api:v1.89.12
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_started
+    environment:
+      ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      SERVICE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      POSTGREST_URL: http://rest:3000
+      AUTH_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      STORAGE_PUBLIC_URL: https://${API_DOMAIN}
+      REQUEST_ALLOW_X_FORWARDED_PATH: "true"
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: local
+      GLOBAL_S3_BUCKET: stub
+      ENABLE_IMAGE_TRANSFORMATION: "false"
+    volumes:
+      - storage-data:/var/lib/storage
+
+  # --- Bojen ---------------------------------------------------------------------------------
+  migrate:
+    <<: *app
+    restart: "no"
+    profiles: ["deploy"]
+    command: ["pnpm", "db:migrate"]
+
+  web:
+    <<: *app
+    command: ["pnpm", "--filter", "@bojen/web", "start", "-p", "3000"]
+
+  worker:
+    <<: *app
+    command: ["pnpm", "--filter", "@bojen/worker", "start"]
+
+  # --- Maps: OSRM and Photon on OpenStreetMap ------------------------------------------------
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:v26.10.0
+    restart: unless-stopped
+    command: ["osrm-routed", "--algorithm", "mld", "/data/sweden-latest.osrm"]
+    volumes:
+      - ./data/osrm:/data:ro
+
+  photon:
+    build: ./photon
+    image: bojen-photon
+    restart: unless-stopped
+    volumes:
+      - photon-data:/photon/data
+
+  # --- Errors and uptime: GlitchTip ----------------------------------------------------------
+  glitchtip-db:
+    image: postgres:17.7-bookworm
+    restart: unless-stopped
+    command: ["postgres", "-c", "max_locks_per_transaction=512"]
+    environment:
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: ${GLITCHTIP_DB_PASSWORD}
+      POSTGRES_DB: glitchtip
+    volumes:
+      - glitchtip-db:/var/lib/postgresql/data
+
+  glitchtip:
+    image: glitchtip/glitchtip:6.2.6
+    restart: unless-stopped
+    depends_on: [glitchtip-db]
+    environment:
+      DATABASE_URL: postgres://glitchtip:${GLITCHTIP_DB_PASSWORD}@glitchtip-db:5432/glitchtip
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY}
+      GLITCHTIP_DOMAIN: https://${GLITCHTIP_DOMAIN}
+      DEFAULT_FROM_EMAIL: ${MAIL_FROM_ADDRESS}
+      EMAIL_URL: smtp+tls://${SES_SMTP_USER}:${SES_SMTP_PASSWORD_URLENCODED}@email-smtp.eu-north-1.amazonaws.com:587
+      SERVER_ROLE: all_in_one
+      ENABLE_USER_REGISTRATION: "False"
+      ENABLE_ORGANIZATION_CREATION: "False"
+      ENABLE_ADMIN: "False"
+    volumes:
+      - glitchtip-uploads:/code/uploads
+
+  # --- TLS and routing -----------------------------------------------------------------------
+  caddy:
+    image: caddy:2.11.9
+    restart: unless-stopped
+    depends_on: [web, auth, storage]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
+      GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../supabase/templates:/srv/templates:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  # --- Voice: LiveKit, SIP and the agent (from step 6.2b) ------------------------------------
+  redis:
+    image: valkey/valkey:8.1.12-trixie
+    restart: unless-stopped
+    profiles: ["voice"]
+    # On the host's loopback only: LiveKit and SIP run with host networking.
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  # Host networking, as LiveKit recommends. Port 7880 (signalling for the agent and SIP) is
+  # closed from outside by the server's firewall; only the media ports are open.
+  livekit:
+    image: livekit/livekit-server:v1.13.10
+    restart: unless-stopped
+    profiles: ["voice"]
+    network_mode: host
+    depends_on: [redis]
+    environment:
+      LIVEKIT_CONFIG: |
+        port: 7880
+        log_level: info
+        rtc:
+          tcp_port: 7881
+          port_range_start: 50000
+          port_range_end: 60000
+          use_external_ip: true
+        redis:
+          address: 127.0.0.1:6379
+        keys:
+          ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+        turn:
+          enabled: true
+          udp_port: 3478
+
+  sip:
+    image: livekit/sip:v1.23.0
+    restart: unless-stopped
+    profiles: ["voice"]
+    network_mode: host
+    depends_on: [redis, livekit]
+    environment:
+      SIP_CONFIG_BODY: |
+        api_key: ${LIVEKIT_API_KEY}
+        api_secret: ${LIVEKIT_API_SECRET}
+        ws_url: ws://127.0.0.1:7880
+        redis:
+          address: 127.0.0.1:6379
+        sip_port: 5060
+        rtp_port: 10000-20000
+        use_external_ip: true
+
+  voice:
+    <<: *app
+    profiles: ["voice"]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    environment:
+      NODE_ENV: production
+      LIVEKIT_URL: ws://host.docker.internal:7880
+      VOICE_TOOLS_URL: http://web:3000
+    # The agent's start script comes with step 6.2b; until then the profile is not started.
+    command: ["pnpm", "--filter", "@bojen/voice", "start"]
+
+volumes:
+  db-data:
+  db-config:
+  storage-data:
+  photon-data:
+  glitchtip-db:
+  glitchtip-uploads:
+  caddy-data:
+  caddy-config:

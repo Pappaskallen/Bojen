@@ -1346,30 +1346,23 @@ export const legal = {
     title: "Underbiträden",
     intro:
       "Bojen behandlar personuppgifter för de firmor som använder tjänsten. Här är de företag Bojen anlitar för det. Vi meddelar firmorna 30 dagar innan ett underbiträde läggs till eller byts ut.",
-    updated: "Senast ändrad 18 november 2026.",
+    updated: "Senast ändrad 21 november 2026.",
     headers: ["Företag", "Vad de gör åt Bojen", "Uppgifter", "Var", "Skydd vid överföring"],
     planned: "Tas i bruk senare",
     rows: [
       {
-        name: "Supabase Inc.",
-        purpose: "Databas, inloggning och lagring av bilder och filer",
+        name: "Hetzner Online GmbH",
+        purpose:
+          "Drift av Bojens server: databas, inloggning, bilder och filer, webbappen, röstagenten och kartorna",
         data: "Alla uppgifter i tjänsten. Koder och åtkomstinformation är krypterade.",
-        where: "Stockholm (AWS eu-north-1)",
-        safeguard: "EU:s standardavtalsklausuler",
-        status: "active",
-      },
-      {
-        name: "Vercel Inc.",
-        purpose: "Drift av webbappen och bokningssidorna",
-        data: "Det som skickas till och från webbappen",
-        where: "Stockholm (arn1)",
-        safeguard: "EU:s standardavtalsklausuler",
+        where: "Helsingfors, Finland",
+        safeguard: "Inom EU",
         status: "active",
       },
       {
         name: "Amazon Web Services EMEA SARL",
-        purpose: "Nyckelhantering för krypteringen (KMS)",
-        data: "Krypteringsnycklar, inga personuppgifter i klartext",
+        purpose: "Nyckelhantering för krypteringen (KMS) och utskick av e-post (SES)",
+        data: "Krypteringsnycklar, e-postadress och e-postens innehåll",
         where: "Stockholm (eu-north-1)",
         safeguard: "Inom EU",
         status: "active",
@@ -1380,14 +1373,6 @@ export const legal = {
         data: "Telefonnummer, sms och samtal",
         where: "Sverige",
         safeguard: "Inom EU",
-        status: "active",
-      },
-      {
-        name: "Mailgun Technologies Inc.",
-        purpose: "E-post",
-        data: "E-postadress och e-postens innehåll",
-        where: "EU (Mailguns EU-region)",
-        safeguard: "EU:s standardavtalsklausuler",
         status: "active",
       },
       {
