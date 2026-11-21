@@ -68,10 +68,10 @@ För MVP:n gäller den mindre stacken nedan. Den ska gå att flytta till AWS sen
 | `packages/core` | Ren domänlogik utan I/O |
 | Restider | OSRM (öppen källkod, OpenStreetMap) på egen server i stället för Google Routes |
 | Adressökning | Photon (öppen källkod, OpenStreetMap) i stället för Google Places |
-| `packages/adapters` | 46elks, Amazon SES, OSRM, Azure, Claude, Fortnox, KMS – var och en med fejkimplementation |
+| `packages/adapters` | 46elks, SMTP mot egen e-postserver, OSRM, Azure, Claude, Fortnox, KMS – var och en med fejkimplementation |
 | Tester | Vitest (enhet + databas via `supabase start`) och Playwright |
 | Mekanikerns app | PWA (Serwist + IndexedDB), inte React Native |
-| Drift | En egen server hos Hetzner i Helsingfors (AX41) med Docker Compose: Supabase, webben, arbetaren, röstagenten, LiveKit, OSRM, Photon och GlitchTip. Säkerhetskopior med WAL-G till Hetzner Object Storage. KMS och e-post (SES) hos AWS i Stockholm. Beslut 2026-11-21, se `docs/egen-drift.md`. |
+| Drift | En egen server hos Hetzner i Helsingfors (AX41) med Docker Compose: Supabase, webben, arbetaren, röstagenten, LiveKit, OSRM, Photon och GlitchTip. Säkerhetskopior med WAL-G till Hetzner Object Storage. E-posten på samma server (Stalwart). Bara KMS hos AWS i Stockholm. Beslut 2026-11-21, se `docs/egen-drift.md`. |
 
 Om ett steg visar att ett val ovan inte håller: stanna, beskriv problemet och föreslå
 ett alternativ i stället för att byta tyst.
@@ -433,7 +433,7 @@ ett alternativ i stället för att byta tyst.
 - **Mål:** Allt som går att köra själv körs på en egen server, enligt beslutet 2026-11-21 i `docs/egen-drift.md`.
 - **Berör:** `infra/*`, Dockerfiles för `apps/web`, `apps/worker` och `apps/voice`, `.github/workflows/deploy.yml` och `packages/adapters/src/email`.
 - **Gör:**
-  - E-post genom Amazon SES i stället för Mailgun, både appens utskick och Supabase Auths SMTP.
+  - E-post genom en egen e-postserver (Stalwart) i stället för Mailgun, både appens utskick, Supabase Auths SMTP och inkorgarna. DKIM, SPF, DMARC och omvänd DNS sätts upp så att mejlen inte hamnar i skräpposten.
   - Docker Compose för hela servern:
     - Supabase: Postgres med PostGIS, Auth, Storage och Kong;
     - webben, arbetaren och röstagenten;
@@ -447,7 +447,7 @@ ett alternativ i stället för att byta tyst.
     - Ett skript provar en återställning.
   - Brandvägg: bara ssh med nyckel, 80, 443 och LiveKits portar är öppna. Postgres och de interna tjänsterna nås inte utifrån.
   - Driftsättning från GitHub Actions när CI är grönt på `main`: bygg avbildningarna, kör migreringarna och starta om tjänsterna.
-  - (Påbörjat 2026-11-21: e-posten går genom SES, och `infra/` har compose-filen, Caddy, Postgres med WAL-G, skripten för uppsättning, säkerhetskopior, återställningstest, kartor och driftsättning samt arbetsflödet `deploy.yml`. Inget är provat på en riktig server än; det som ska kontrolleras står sist i `infra/README.md`. Steget bockas av när servern är beställd och *Klart när* är uppfyllt.)
+  - (Påbörjat 2026-11-21: e-posten går genom den egna e-postservern (beslut samma dag, först SES), och `infra/` har compose-filen, Caddy, Postgres med WAL-G, skripten för uppsättning, säkerhetskopior, återställningstest, kartor och driftsättning samt arbetsflödet `deploy.yml`. Inget är provat på en riktig server än; det som ska kontrolleras står sist i `infra/README.md`. Steget bockas av när servern är beställd och *Klart när* är uppfyllt.)
 - **Klart när:**
   - Servern sätts upp från repot med ett skript.
   - Bokningssidan, inloggningen och ett testsamtal fungerar där.
@@ -465,7 +465,7 @@ ett alternativ i stället för att byta tyst.
   - (Utkast 2026-11-18 i `docs/juridik/`: personuppgiftsbiträdesavtal, allmänna villkor, integritetspolicy, mall för information till firmans kunder och förifylld mall för konsekvensbedömning. Listan över underbiträden finns som publik sida på `/underbitraden` och följer MVP-stacken. Juristgranskning och åtta öppna frågor återstår, bland dem att automatisk radering och export enligt 10.3 inte är byggda och att löftet om lagring hos Anthropic kräver ett avtal om nolllagring.)
 - [ ] Onboarding: importmall för Excel, guide för nummerportering hos 46elks och utbildningsvideo på 10 minuter för pilotfirmorna.
   - (Delvis 2026-11-18, se `docs/onboarding/`: importmallen finns, tillsammans med en import som kontrollerar listan och sedan sparar den i en enda transaktion (`pnpm db:import`). Guiden för nummerportering finns. 46elks porteringsvillkor är inte offentliga, så de är frågor att ställa till 46elks. Manuset till videon finns, men videon återstår att spela in.)
-- [ ] Drift inom EU (spec 10): egna servrar för OSRM och Photon (OpenStreetMap) i stället för de publika, så att adresser och platser inte lämnar vår drift. Den självhostade Supabase i produktion har JWT-kroken, den svenska mejlmallen, avstängda registreringar, SMTP via Amazon SES, sms-kroken (`send_sms` till `/api/webhooks/supabase/send-sms` med egen hemlighet) och sms-kodens giltighet på 10 minuter inställda. 46elks har leveransrapporter till `/api/webhooks/elks/delivery` med egen token, och `SMS_OPT_OUT_KEY` är satt och säkerhetskopierad (byts den går STOPP-listan förlorad). `SHORT_LINK_KEY` är satt, densamma i webben och arbetaren (byts den slutar alla skickade länkar att fungera), och `KMS_KEY_ID` pekar på AWS KMS i eu-north-1 för webben också.
+- [ ] Drift inom EU (spec 10): egna servrar för OSRM och Photon (OpenStreetMap) i stället för de publika, så att adresser och platser inte lämnar vår drift. Den självhostade Supabase i produktion har JWT-kroken, den svenska mejlmallen, avstängda registreringar, SMTP via den egna e-postservern, sms-kroken (`send_sms` till `/api/webhooks/supabase/send-sms` med egen hemlighet) och sms-kodens giltighet på 10 minuter inställda. 46elks har leveransrapporter till `/api/webhooks/elks/delivery` med egen token, och `SMS_OPT_OUT_KEY` är satt och säkerhetskopierad (byts den går STOPP-listan förlorad). `SHORT_LINK_KEY` är satt, densamma i webben och arbetaren (byts den slutar alla skickade länkar att fungera), och `KMS_KEY_ID` pekar på AWS KMS i eu-north-1 för webben också.
 
 **Summa:** cirka 70 utvecklardagar (före tilläggen 2026-11-11 och 2026-11-12: steg 2.7 och 2.8 och utökade steg 3.1 och 5.5, cirka 4 dagar till), alltså cirka 16 veckor med två utvecklare inklusive marginal. Det stämmer med tidsplanen i 12.1.
 

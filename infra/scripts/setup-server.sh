@@ -2,7 +2,7 @@
 # First setup of Bojen's server (byggplan step 9), on a fresh Ubuntu 24.04, as root:
 #   sh setup-server.sh <ssh public key of the deploy user>
 # Installs Docker from Docker's own apt repository, closes everything but ssh, web and
-# LiveKit's ports, turns on automatic security updates and the nightly backup.
+# e-mail and LiveKit's ports, turns on automatic security updates and the nightly backup.
 set -eu
 DEPLOY_KEY="${1:?the deploy user's ssh public key}"
 REPO=https://github.com/Pappaskallen/Bojen.git
@@ -29,6 +29,9 @@ ufw default allow outgoing
 ufw allow 22/tcp
 ufw allow 80/tcp
 ufw allow 443
+ufw allow 25/tcp comment "E-mail in"
+ufw allow 465/tcp comment "E-mail out, for staff's mail apps"
+ufw allow 993/tcp comment "IMAP for staff's mail apps"
 ufw allow 7881/tcp comment "LiveKit RTC over TCP"
 ufw allow 3478/udp comment "LiveKit TURN"
 ufw allow 50000:60000/udp comment "LiveKit media"
@@ -63,7 +66,26 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 UNIT
+# Stalwart reads its certificate (Caddy's, renewed about every 60 days) when it starts, so it
+# restarts once a week, at night. Mail servers that send meanwhile try again.
+cat > /etc/systemd/system/bojen-mail-reload.service <<'UNIT'
+[Unit]
+Description=Bojen: restart the mail server to read a renewed certificate
+[Service]
+Type=oneshot
+User=bojen
+ExecStart=/usr/bin/docker compose -f /srv/bojen/infra/docker-compose.yml --env-file /srv/bojen/infra/.env restart stalwart
+UNIT
+cat > /etc/systemd/system/bojen-mail-reload.timer <<'UNIT'
+[Unit]
+Description=Bojen: weekly mail server restart
+[Timer]
+OnCalendar=Sun *-*-* 03:30:00 UTC
+Persistent=true
+[Install]
+WantedBy=timers.target
+UNIT
 systemctl daemon-reload
-systemctl enable --now bojen-backup.timer
+systemctl enable --now bojen-backup.timer bojen-mail-reload.timer
 
 echo "Klart. Lägg infra/.env i /srv/bojen/infra/ (se infra/README.md) och kör deploy.sh som bojen."

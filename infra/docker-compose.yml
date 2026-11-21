@@ -121,11 +121,11 @@ services:
       GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED: "true"
       GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL: 10
       GOTRUE_RATE_LIMIT_EMAIL_SENT: 2
-      # E-mail through Amazon SES's SMTP interface in Stockholm.
-      GOTRUE_SMTP_HOST: email-smtp.eu-north-1.amazonaws.com
-      GOTRUE_SMTP_PORT: 587
-      GOTRUE_SMTP_USER: ${SES_SMTP_USER}
-      GOTRUE_SMTP_PASS: ${SES_SMTP_PASSWORD}
+      # E-mail through our own mail server (stalwart), with implicit TLS.
+      GOTRUE_SMTP_HOST: ${SMTP_HOST}
+      GOTRUE_SMTP_PORT: 465
+      GOTRUE_SMTP_USER: ${SMTP_USER}
+      GOTRUE_SMTP_PASS: ${SMTP_PASSWORD}
       GOTRUE_SMTP_ADMIN_EMAIL: ${MAIL_FROM_ADDRESS}
       GOTRUE_SMTP_SENDER_NAME: Bojen
 
@@ -219,13 +219,34 @@ services:
       SECRET_KEY: ${GLITCHTIP_SECRET_KEY}
       GLITCHTIP_DOMAIN: https://${GLITCHTIP_DOMAIN}
       DEFAULT_FROM_EMAIL: ${MAIL_FROM_ADDRESS}
-      EMAIL_URL: smtp+tls://${SES_SMTP_USER}:${SES_SMTP_PASSWORD_URLENCODED}@email-smtp.eu-north-1.amazonaws.com:587
+      EMAIL_URL: smtp+ssl://${SMTP_USER_URLENCODED}:${SMTP_PASSWORD_URLENCODED}@${SMTP_HOST}:465
       SERVER_ROLE: all_in_one
       ENABLE_USER_REGISTRATION: "False"
       ENABLE_ORGANIZATION_CREATION: "False"
       ENABLE_ADMIN: "False"
     volumes:
       - glitchtip-uploads:/code/uploads
+
+  # --- E-mail: Stalwart (SMTP, IMAP, DKIM and spam filter) ----------------------------------
+  # Set up once in its web admin, through an ssh tunnel to 127.0.0.1:8080 (infra/README.md).
+  # Its TLS certificate is the one Caddy gets for SMTP_HOST, read from Caddy's data.
+  stalwart:
+    image: stalwartlabs/stalwart:v1.0.3
+    restart: unless-stopped
+    init: true
+    ports:
+      - "25:25"
+      - "465:465"
+      - "993:993"
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - stalwart-etc:/etc/stalwart
+      - stalwart-data:/var/lib/stalwart
+      - caddy-data:/caddy:ro
+    networks:
+      default:
+        # The apps, Auth and GlitchTip reach it by its public name, so the certificate fits.
+        aliases: ["${SMTP_HOST}"]
 
   # --- TLS and routing -----------------------------------------------------------------------
   caddy:
@@ -240,6 +261,7 @@ services:
       APP_DOMAIN: ${APP_DOMAIN}
       API_DOMAIN: ${API_DOMAIN}
       GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN}
+      MAIL_DOMAIN: ${SMTP_HOST}
       ACME_EMAIL: ${ACME_EMAIL}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
@@ -317,4 +339,6 @@ volumes:
   glitchtip-db:
   glitchtip-uploads:
   caddy-data:
+  stalwart-etc:
+  stalwart-data:
   caddy-config:

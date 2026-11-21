@@ -38,7 +38,7 @@ export interface OutgoingEmail {
   replyTo?: string;
 }
 
-/** Sends one e-mail. Amazon SES (eu-north-1) in production, a fake in tests. */
+/** Sends one e-mail. Bojen's own mail server in production, a fake in tests. */
 export interface EmailSender {
   send(message: OutgoingEmail): Promise<{ id: string }>;
 }

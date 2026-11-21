@@ -1353,7 +1353,7 @@ export const legal = {
       {
         name: "Hetzner Online GmbH",
         purpose:
-          "Drift av Bojens server: databas, inloggning, bilder och filer, webbappen, röstagenten och kartorna",
+          "Drift av Bojens server: databas, inloggning, bilder och filer, webbappen, e-post, röstagenten och kartorna",
         data: "Alla uppgifter i tjänsten. Koder och åtkomstinformation är krypterade.",
         where: "Helsingfors, Finland",
         safeguard: "Inom EU",
@@ -1361,8 +1361,8 @@ export const legal = {
       },
       {
         name: "Amazon Web Services EMEA SARL",
-        purpose: "Nyckelhantering för krypteringen (KMS) och utskick av e-post (SES)",
-        data: "Krypteringsnycklar, e-postadress och e-postens innehåll",
+        purpose: "Nyckelhantering för krypteringen (KMS)",
+        data: "Krypteringsnycklar, inga personuppgifter i klartext",
         where: "Stockholm (eu-north-1)",
         safeguard: "Inom EU",
         status: "active",

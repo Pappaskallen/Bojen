@@ -6,6 +6,8 @@
 set -eu
 cd "$(dirname "$0")/.."
 compose() { docker compose -f docker-compose.yml --env-file .env "$@"; }
-compose exec -T -u postgres db sh -c 'wal-g backup-push "$PGDATA"'
-compose exec -T -u postgres db wal-g delete retain FULL 35 --confirm
+# In Supabase's Postgres only supabase_admin is a superuser; it may log in on the local socket.
+walg() { compose exec -T -u postgres -e PGUSER=supabase_admin -e PGHOST=/var/run/postgresql db "$@"; }
+walg sh -c 'wal-g backup-push "$PGDATA"'
+walg wal-g delete retain FULL 35 --confirm
 echo "Säkerhetskopia klar: $(date -u +%FT%TZ)"

@@ -6,7 +6,7 @@ import {
   createFakeEmail,
   createFakeSms,
   createFakeMaps,
-  sesEmailFromEnv,
+  smtpEmailFromEnv,
   createOsrmMaps,
   elksFromEnv,
   systemClock,
@@ -40,9 +40,10 @@ function smsSender(): SmsSender {
 }
 
 function emailSender(): EmailSender {
-  const ses = sesEmailFromEnv();
-  if (ses) return ses;
-  if (production) throw new Error("Amazon SES is not configured (SES_FROM and the AWS keys)");
+  const smtp = smtpEmailFromEnv();
+  if (smtp) return smtp;
+  if (production)
+    throw new Error("The mail server is not configured (SMTP_HOST, SMTP_USER, SMTP_PASSWORD)");
   const fake = createFakeEmail();
   return {
     async send(message) {
