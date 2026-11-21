@@ -1,0 +1,54 @@
+name: Testsvit för samtal
+
+# Byggplan step 6.5: the 30 simulated calls against Claude, on changes to the receptionist.
+# It runs only when the repository has the secret ANTHROPIC_API_KEY, since every run costs
+# money; without it the job says so and passes.
+on:
+  push:
+    paths:
+      - "apps/voice/**"
+      - "packages/core/src/voice/**"
+      - "packages/adapters/src/voice/**"
+  workflow_dispatch:
+
+concurrency:
+  group: samtal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - name: Without a key
+        if: env.ANTHROPIC_API_KEY == ''
+        run: echo "ANTHROPIC_API_KEY saknas i repots hemligheter, så testsviten för samtal körs inte."
+
+      - uses: actions/checkout@v4
+        if: env.ANTHROPIC_API_KEY != ''
+
+      - uses: pnpm/action-setup@v4
+        if: env.ANTHROPIC_API_KEY != ''
+
+      - uses: actions/setup-node@v4
+        if: env.ANTHROPIC_API_KEY != ''
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        if: env.ANTHROPIC_API_KEY != ''
+
+      - name: The 30 calls
+        if: env.ANTHROPIC_API_KEY != ''
+        run: pnpm --filter @bojen/voice evals --report "$RUNNER_TEMP/samtal"
+
+      - name: Keep the report
+        if: always() && env.ANTHROPIC_API_KEY != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: samtal-rapport
+          path: ${{ runner.temp }}/samtal
+          retention-days: 14
