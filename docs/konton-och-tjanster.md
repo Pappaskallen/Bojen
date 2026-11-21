@@ -146,8 +146,10 @@ Från specens 10.7 och 13.
 ## Ungefärlig månadskostnad under piloten
 
 Fasta kostnader, med priserna ovan: Supabase Pro med återställning, Vercel Pro, två servrar,
-LiveKit på egen server, Mailgun Basic, Sentry gratis och KMS. Det blir **cirka 210 USD och
-60 EUR, alltså ungefär 2 900 kr per månad**.
+LiveKit på egen server, Mailgun Basic, Sentry gratis och KMS. Det blir **cirka 160 USD
+(25 + 100 + 20 + 15 + 1) och 61 EUR, alltså ungefär 2 500 kr per månad**. Utan återställning
+till valfri tidpunkt blir det cirka 1 500 kr. Behöver databasen en större instans än Micro
+tillkommer 15–60 USD.
 
 Till det kommer rörliga kostnader per firma: sms, samtalsminuter, Azure och Claude. Specen
 räknar med cirka 900 kr per mekaniker och månad under högsäsong.
