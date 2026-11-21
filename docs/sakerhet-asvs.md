@@ -76,7 +76,7 @@ konto och är inte infört; Dependabot och `pnpm audit` täcker samma behov unde
 ## V8–V9: Dataskydd och transport
 
 - [x] Svar med koder och åtkomstinformation har `Cache-Control: no-store`.
-- [x] **V9** https och TLS sköts av Vercel och Supabase. HSTS skickas nu (se V14).
+- [x] **V9** https och TLS sköts av Caddy på den egna servern, med certifikat från Let's Encrypt (`infra/`). HSTS skickas nu (se V14).
 
 ## V13: API och webhooks
 
@@ -105,6 +105,6 @@ konto och är inte infört; Dependabot och `pnpm audit` täcker samma behov unde
   Bör göras före lanseringen.
 - [ ] **Begränsning av anrop till den publika bokningen** (V11.1.4). Det finns ingen gräns per
   IP-adress för att skicka bokningar. Varje bokning blir en förfrågan som ägaren godkänner och
-  skickar inget sms förrän då, så skadan begränsas till skräp i listan. Förslag: en regel i
-  Vercels brandvägg (inget konto utöver Vercel) när piloten startar.
+  skickar inget sms förrän då, så skadan begränsas till skräp i listan. Förslag: en gräns i Caddy
+  på den egna servern när piloten startar.
 - [ ] **Penetrationstest** före kommersiell lansering, enligt specifikationen.

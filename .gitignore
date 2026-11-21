@@ -21,3 +21,7 @@ apps/web/public/sw.js
 apps/web/public/sw.js.map
 apps/web/public/swe-worker-*.js
 apps/voice/evals/results/
+
+# The server (infra/): its secrets and the map data
+infra/.env
+infra/data/

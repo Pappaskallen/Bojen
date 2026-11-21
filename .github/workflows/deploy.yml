@@ -1,0 +1,41 @@
+name: Driftsättning
+
+# Byggplan step 9: when CI is green on main, the server builds and starts that commit
+# (infra/scripts/deploy.sh). Runs only when the repository has the secrets DEPLOY_HOST,
+# DEPLOY_SSH_KEY (the bojen user's private key) and DEPLOY_KNOWN_HOSTS (the server's host key,
+# from `ssh-keyscan`); without them the job says so and passes.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Without a server
+        if: env.DEPLOY_HOST == ''
+        run: echo "DEPLOY_HOST saknas i repots hemligheter, så ingenting driftsätts."
+
+      - name: Deploy the commit
+        if: env.DEPLOY_HOST != ''
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519
+          ssh "bojen@$DEPLOY_HOST" "sh /srv/bojen/infra/scripts/deploy.sh $COMMIT"

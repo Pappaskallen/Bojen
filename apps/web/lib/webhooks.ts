@@ -64,8 +64,8 @@ export const ELKS_IPS = [
 ] as const;
 
 /**
- * The caller's address as the host reports it. On Vercel `x-real-ip` and the first
- * `x-forwarded-for` entry are set by the platform, not by the caller.
+ * The caller's address as the host reports it. Caddy in front of the app (`infra/Caddyfile`)
+ * sets `x-real-ip` to the address the connection came from and replaces any the caller sent.
  */
 function callerIp(request: Request): string | null {
   const real = request.headers.get("x-real-ip");

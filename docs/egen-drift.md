@@ -102,7 +102,11 @@ Om du vill komma igång snabbt men ändå spara:
 
 Det blir ungefär 25 USD + 59 EUR + några kronor, alltså cirka 950 kr per månad (min uträkning).
 
-## Beslut som behövs innan jag bygger något av detta
+## Beslut 2026-11-21
+
+Robert valde **en egen server**: AX41, självhostad Supabase, webbappen och LiveKit på servern, Amazon SES och GlitchTip. Bygget är steg 9 i byggplanen och finns i `infra/`.
+
+## Besluten som behövdes
 
 Allt utom KMS, Azure, Claude och 46elks är avvikelser från MVP-stacken i byggplanen. Jag byter
 inte stack utan ditt ja. Det som ska bestämmas:

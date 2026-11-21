@@ -1,0 +1,45 @@
+# TLS and routing on Bojen's server (byggplan step 9). Certificates from Let's Encrypt.
+{
+	email {$ACME_EMAIL}
+}
+
+(headers) {
+	# The app trusts x-real-ip for the 46elks address check (apps/web/lib/webhooks.ts):
+	# it is always the address the connection came from, never one the caller sent.
+	header_up X-Real-IP {remote_host}
+}
+
+# The web app: administration, booking pages, the widget, webhooks and short links.
+{$APP_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy web:3000 {
+		import headers
+	}
+}
+
+# Supabase: only the two parts the app uses. Studio, PostgREST and the rest are not exposed.
+{$API_DOMAIN} {
+	handle_path /auth/v1/* {
+		reverse_proxy auth:9999 {
+			import headers
+		}
+	}
+	handle_path /storage/v1/* {
+		reverse_proxy storage:5000 {
+			import headers
+			header_up X-Forwarded-Prefix /storage/v1
+		}
+	}
+	respond 404
+}
+
+# Errors and uptime from the apps (GlitchTip).
+{$GLITCHTIP_DOMAIN} {
+	reverse_proxy glitchtip:8000
+}
+
+# Internal only (not published): the e-mail templates that Auth reads (supabase/templates).
+:8080 {
+	root * /srv/templates
+	file_server
+}

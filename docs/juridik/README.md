@@ -27,10 +27,12 @@ Skrivna 2026-11-18 utifrån specifikationen (kapitel 10 och 13) och det som fakt
      anteckningar och bilder på typskyltar går också dit.
    - Löftet kräver ett avtal om nolllagring (Zero Data Retention) med Anthropic. Annars ska
      texterna ange Anthropics lagringstid.
-3. **Drift av arbetaren, röstagenten och OSRM.** Var de körs är inte bestämt. Den leverantören
-   blir ett underbiträde och ska stå med på listan.
-4. **LiveKit.** Om LiveKit Cloud används i steg 6.2b blir LiveKit ett underbiträde för
-   samtalsljudet. Om LiveKit körs på egen server blir driftleverantören det.
+3. **Drift:** *bestämt 2026-11-21.* Allt som går att köra själv ligger på en egen server hos
+   Hetzner i Helsingfors (`docs/egen-drift.md`). Hetzner står på listan, och Supabase, Vercel
+   och Mailgun är borttagna. E-posten går genom Amazon SES i Stockholm.
+4. **LiveKit:** *bestämt 2026-11-21.* LiveKit körs på den egna servern, så samtalsljudet
+   stannar hos Hetzner inom EU. Används LiveKit Cloud för testsamtalen i steg 6.2b gäller det
+   bara testnummer med påhittade kunder.
 5. **Bolaget och kontaktadressen.** Bojen AB:s organisationsnummer och adress, och om adressen
    `dataskydd@bojen.se` ska finnas. Den står på sidan över underbiträden.
 6. **Pilotvillkor.** Pris och period för pilotfirmorna, och utlovad tillgänglighet: mål eller

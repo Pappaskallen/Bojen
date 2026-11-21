@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   ElksError,
-  MailgunError,
   createElksSms,
   createFakeEmail,
-  createMailgunEmail,
+  createSesEmail,
+  sesEmailFromEnv,
+  type SesSender,
   parseElksDeliveryReport,
 } from ".";
 
@@ -92,15 +93,23 @@ describe("46elks", () => {
   });
 });
 
-describe("Mailgun", () => {
-  it("posts to the EU region with the domain, text and html", async () => {
-    const { calls, fetch } = recorder(200, { id: "<2026.abc@mg.bojen.se>", message: "Queued." });
-    const email = createMailgunEmail({
-      apiKey: "key-1",
-      domain: "mg.bojen.se",
-      from: "Bojen <noreply@mg.bojen.se>",
-      fetch,
-    });
+describe("Amazon SES", () => {
+  const sesClient = (answer: { MessageId?: string } | Error) => {
+    const sent: { input: unknown; options: unknown }[] = [];
+    return {
+      sent,
+      client: {
+        send: (command: { input: unknown }, options?: unknown) => {
+          sent.push({ input: command.input, options });
+          return answer instanceof Error ? Promise.reject(answer) : Promise.resolve(answer);
+        },
+      } as unknown as SesSender,
+    };
+  };
+
+  it("sends text and html from the default sender, with a reply-to", async () => {
+    const { client, sent } = sesClient({ MessageId: "0100-abc" });
+    const email = createSesEmail({ client, from: "Bojen <noreply@bojen.se>" });
     await expect(
       email.send({
         to: "per@example.test",
@@ -109,31 +118,47 @@ describe("Mailgun", () => {
         html: "<p>Hej</p>",
         replyTo: "jonas@example.test",
       }),
-    ).resolves.toEqual({ id: "<2026.abc@mg.bojen.se>" });
-    expect(calls[0]?.url).toBe("https://api.eu.mailgun.net/v3/mg.bojen.se/messages");
-    expect(new Headers(calls[0]?.init.headers).get("authorization")).toBe(
-      `Basic ${Buffer.from("api:key-1").toString("base64")}`,
-    );
-    expect(Object.fromEntries(form(calls[0]?.init ?? {}))).toEqual({
-      from: "Bojen <noreply@mg.bojen.se>",
-      to: "per@example.test",
-      subject: "Bokningsbekräftelse",
-      text: "Hej",
-      html: "<p>Hej</p>",
-      "h:Reply-To": "jonas@example.test",
+    ).resolves.toEqual({ id: "0100-abc" });
+    expect(sent[0]?.input).toEqual({
+      FromEmailAddress: "Bojen <noreply@bojen.se>",
+      Destination: { ToAddresses: ["per@example.test"] },
+      ReplyToAddresses: ["jonas@example.test"],
+      Content: {
+        Simple: {
+          Subject: { Data: "Bokningsbekräftelse", Charset: "UTF-8" },
+          Body: {
+            Text: { Data: "Hej", Charset: "UTF-8" },
+            Html: { Data: "<p>Hej</p>", Charset: "UTF-8" },
+          },
+        },
+      },
     });
   });
 
-  it("throws on an error answer", async () => {
-    const { fetch } = recorder(401, "Forbidden");
+  it("uses the message's own sender, and fails without a message id or on an error", async () => {
+    const own = sesClient({ MessageId: "id" });
+    await createSesEmail({ client: own.client, from: "f@bojen.se" }).send({
+      from: "Jonas <jonas@bojen.se>",
+      to: "a@b.test",
+      subject: "s",
+      text: "t",
+      html: "h",
+    });
+    expect(own.sent[0]?.input).toMatchObject({ FromEmailAddress: "Jonas <jonas@bojen.se>" });
+    expect(own.sent[0]?.input).not.toHaveProperty("ReplyToAddresses");
+
+    const message = { to: "a@b.test", subject: "s", text: "t", html: "h" };
     await expect(
-      createMailgunEmail({ apiKey: "k", domain: "d", from: "f", fetch }).send({
-        to: "a@b.test",
-        subject: "s",
-        text: "t",
-        html: "h",
-      }),
-    ).rejects.toBeInstanceOf(MailgunError);
+      createSesEmail({ client: sesClient({}).client, from: "f" }).send(message),
+    ).rejects.toThrow(/no message id/);
+    await expect(
+      createSesEmail({ client: sesClient(new Error("throttled")).client, from: "f" }).send(message),
+    ).rejects.toThrow("throttled");
+  });
+
+  it("is used only when SES_FROM is set", () => {
+    expect(sesEmailFromEnv({})).toBeNull();
+    expect(sesEmailFromEnv({ SES_FROM: "Bojen <noreply@bojen.se>" })).not.toBeNull();
   });
 
   it("the fake keeps what it was asked to send", async () => {

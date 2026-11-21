@@ -5,6 +5,18 @@ specifikationens kapitel 10, 11 och 13. Priserna är lästa på leverantörernas
 exklusive moms. De ändras, så kontrollera dem innan du väljer plan. Där ett pris inte gick att
 läsa står det.
 
+> **Beslut 2026-11-21: egen server** (`docs/egen-drift.md`). Följande konton behövs inte
+> längre för produktionen: **Supabase, Vercel, LiveKit Cloud, Mailgun och Sentry**. I stället
+> behövs:
+>
+> - **Hetzner:** servern AX41 i Helsingfors (59 EUR per månad) och Object Storage för
+>   säkerhetskopiorna (6,49 EUR per månad).
+> - **AWS:** samma konto som för KMS skickar nu också e-posten, via Amazon SES i Stockholm. Det
+>   kostar 0,10 USD per 1 000 mejl och kräver en verifierad domän.
+>
+> LiveKit Cloud kan fortfarande användas gratis för de första testsamtalen. Allt annat nedan
+> gäller som förut.
+
 ## Gör så här
 
 1. **Bolaget först.** Skapa alla konton i Bojen AB:s namn med en adress på bolagets domän, inte

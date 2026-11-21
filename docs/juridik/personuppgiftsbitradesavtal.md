@@ -216,11 +216,8 @@ Se den publika listan på [https://bojen.se/underbitraden]. Listan vid avtalets 
 
 | Underbiträde | Uppgift | Var |
 | --- | --- | --- |
-| Supabase Inc. | Databas, inloggning, filer | Stockholm (AWS eu-north-1) |
-| Vercel Inc. | Drift av webbappen | Stockholm (arn1) |
-| Amazon Web Services EMEA SARL | Nyckelhantering (KMS) | Stockholm |
+| Hetzner Online GmbH | Drift av servern: databas, inloggning, filer, webbappen, röstagenten och kartorna | Helsingfors, Finland |
+| Amazon Web Services EMEA SARL | Nyckelhantering (KMS) och e-post (SES) | Stockholm |
 | 46elks AB | Sms och telefoni | Sverige |
-| Mailgun Technologies Inc. | E-post | EU |
 | Anthropic PBC | AI för sms, rapporter, typskyltar och receptionisten | USA |
 | Microsoft Ireland Operations Ltd | Tal till text och text till tal (planerat) | Sverige |
-| [ATT AVGÖRA: drift av arbetaren, röstagenten och OSRM] | | |
