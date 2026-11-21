@@ -104,7 +104,7 @@ Det blir ungefär 25 USD + 59 EUR + några kronor, alltså cirka 950 kr per mån
 
 ## Beslut 2026-11-21
 
-Robert valde **en egen server**: AX41, självhostad Supabase, webbappen och LiveKit på servern, Amazon SES och GlitchTip. Bygget är steg 9 i byggplanen och finns i `infra/`.
+Robert valde **en egen server**: AX41, självhostad Supabase, webbappen och LiveKit på servern, och GlitchTip. Samma dag bestämde han att **även e-posten ska ligga på servern**, både utskicken och inkorgarna, i stället för SES. Den körs med Stalwart. Risken är att mejlen oftare hamnar i skräpposten, så SPF, DKIM, DMARC och omvänd DNS är krav, och utgående port 25 måste vara öppen hos Hetzner. Bygget är steg 9 i byggplanen och finns i `infra/`.
 
 ## Besluten som behövdes
 

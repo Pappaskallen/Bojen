@@ -34,11 +34,16 @@ run 'postgres -D /tmp/restore -c config_file=/etc/postgresql/postgresql.conf -c 
 
 for _ in $(seq 1 120); do
   if run 'pg_isready -h localhost -p 5433 -U postgres' >/dev/null 2>&1 \
-    && [ "$(run "psql -h localhost -p 5433 -U postgres -tAc 'select pg_is_in_recovery()'")" = "f" ]; then
+    && [ "$(run "psql -h localhost -p 5433 -U supabase_admin -d postgres -tAc 'select pg_is_in_recovery()'")" = "f" ]; then
     break
   fi
   sleep 5
 done
-TENANTS=$(run "psql -h localhost -p 5433 -U postgres -tAc 'select count(*) from public.tenant'")
-LATEST=$(run "psql -h localhost -p 5433 -U postgres -tAc 'select max(occurred_at) from public.audit_log'")
+if [ "$(run "psql -h localhost -p 5433 -U supabase_admin -d postgres -tAc 'select pg_is_in_recovery()'" 2>/dev/null)" != "f" ]; then
+  run 'tail -20 /tmp/restore.log'
+  echo "Återställningen blev inte klar. Ligger tidpunkten efter den senast arkiverade skrivloggen? Prova en minut tidigare." >&2
+  exit 1
+fi
+TENANTS=$(run "psql -h localhost -p 5433 -U supabase_admin -d postgres -tAc 'select count(*) from public.tenant'")
+LATEST=$(run "psql -h localhost -p 5433 -U supabase_admin -d postgres -tAc 'select max(occurred_at) from public.audit_log'")
 echo "Återställningen fungerade: $TENANTS firmor, senaste händelse i revisionsloggen $LATEST."

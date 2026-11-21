@@ -29,7 +29,7 @@ Skrivna 2026-11-18 utifrån specifikationen (kapitel 10 och 13) och det som fakt
      texterna ange Anthropics lagringstid.
 3. **Drift:** *bestämt 2026-11-21.* Allt som går att köra själv ligger på en egen server hos
    Hetzner i Helsingfors (`docs/egen-drift.md`). Hetzner står på listan, och Supabase, Vercel
-   och Mailgun är borttagna. E-posten går genom Amazon SES i Stockholm.
+   och Mailgun är borttagna. E-posten går genom Bojens egen e-postserver på samma server.
 4. **LiveKit:** *bestämt 2026-11-21.* LiveKit körs på den egna servern, så samtalsljudet
    stannar hos Hetzner inom EU. Används LiveKit Cloud för testsamtalen i steg 6.2b gäller det
    bara testnummer med påhittade kunder.

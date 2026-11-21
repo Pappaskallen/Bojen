@@ -18,8 +18,12 @@ export {
   type ElksDeliveryReport,
   type ElksOptions,
 } from "./elks/elks";
-export { createSesEmail, type SesOptions, type SesSender } from "./email/ses";
-export { sesEmailFromEnv } from "./email/env";
+export {
+  createSmtpEmail,
+  smtpEmailFromEnv,
+  type MailTransport,
+  type SmtpOptions,
+} from "./email/smtp";
 export { createFakeEmail, type FakeEmail } from "./email/fake";
 export { elksFromEnv } from "./elks/env";
 export { REPLY_MODEL, createClaudeClassifier, type ClaudeClassifierOptions } from "./llm/claude";

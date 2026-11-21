@@ -3,9 +3,9 @@ import {
   ElksError,
   createElksSms,
   createFakeEmail,
-  createSesEmail,
-  sesEmailFromEnv,
-  type SesSender,
+  createSmtpEmail,
+  smtpEmailFromEnv,
+  type MailTransport,
   parseElksDeliveryReport,
 } from ".";
 
@@ -93,23 +93,23 @@ describe("46elks", () => {
   });
 });
 
-describe("Amazon SES", () => {
-  const sesClient = (answer: { MessageId?: string } | Error) => {
-    const sent: { input: unknown; options: unknown }[] = [];
+describe("e-mail through our own mail server", () => {
+  const transport = (answer: { messageId?: string } | Error) => {
+    const sent: Parameters<MailTransport["sendMail"]>[0][] = [];
     return {
       sent,
-      client: {
-        send: (command: { input: unknown }, options?: unknown) => {
-          sent.push({ input: command.input, options });
+      transport: {
+        sendMail: (mail: Parameters<MailTransport["sendMail"]>[0]) => {
+          sent.push(mail);
           return answer instanceof Error ? Promise.reject(answer) : Promise.resolve(answer);
         },
-      } as unknown as SesSender,
+      },
     };
   };
 
   it("sends text and html from the default sender, with a reply-to", async () => {
-    const { client, sent } = sesClient({ MessageId: "0100-abc" });
-    const email = createSesEmail({ client, from: "Bojen <noreply@bojen.se>" });
+    const t = transport({ messageId: "<abc@bojen.se>" });
+    const email = createSmtpEmail({ transport: t.transport, from: "Bojen <noreply@bojen.se>" });
     await expect(
       email.send({
         to: "per@example.test",
@@ -118,47 +118,52 @@ describe("Amazon SES", () => {
         html: "<p>Hej</p>",
         replyTo: "jonas@example.test",
       }),
-    ).resolves.toEqual({ id: "0100-abc" });
-    expect(sent[0]?.input).toEqual({
-      FromEmailAddress: "Bojen <noreply@bojen.se>",
-      Destination: { ToAddresses: ["per@example.test"] },
-      ReplyToAddresses: ["jonas@example.test"],
-      Content: {
-        Simple: {
-          Subject: { Data: "Bokningsbekräftelse", Charset: "UTF-8" },
-          Body: {
-            Text: { Data: "Hej", Charset: "UTF-8" },
-            Html: { Data: "<p>Hej</p>", Charset: "UTF-8" },
-          },
-        },
+    ).resolves.toEqual({ id: "<abc@bojen.se>" });
+    expect(t.sent).toEqual([
+      {
+        from: "Bojen <noreply@bojen.se>",
+        to: "per@example.test",
+        subject: "Bokningsbekräftelse",
+        text: "Hej",
+        html: "<p>Hej</p>",
+        replyTo: "jonas@example.test",
       },
-    });
+    ]);
   });
 
   it("uses the message's own sender, and fails without a message id or on an error", async () => {
-    const own = sesClient({ MessageId: "id" });
-    await createSesEmail({ client: own.client, from: "f@bojen.se" }).send({
+    const own = transport({ messageId: "id" });
+    await createSmtpEmail({ transport: own.transport, from: "f@bojen.se" }).send({
       from: "Jonas <jonas@bojen.se>",
       to: "a@b.test",
       subject: "s",
       text: "t",
       html: "h",
     });
-    expect(own.sent[0]?.input).toMatchObject({ FromEmailAddress: "Jonas <jonas@bojen.se>" });
-    expect(own.sent[0]?.input).not.toHaveProperty("ReplyToAddresses");
+    expect(own.sent[0]).toMatchObject({ from: "Jonas <jonas@bojen.se>" });
+    expect(own.sent[0]).not.toHaveProperty("replyTo");
 
     const message = { to: "a@b.test", subject: "s", text: "t", html: "h" };
     await expect(
-      createSesEmail({ client: sesClient({}).client, from: "f" }).send(message),
+      createSmtpEmail({ transport: transport({}).transport, from: "f" }).send(message),
     ).rejects.toThrow(/no message id/);
     await expect(
-      createSesEmail({ client: sesClient(new Error("throttled")).client, from: "f" }).send(message),
-    ).rejects.toThrow("throttled");
+      createSmtpEmail({ transport: transport(new Error("refused")).transport, from: "f" }).send(
+        message,
+      ),
+    ).rejects.toThrow("refused");
   });
 
-  it("is used only when SES_FROM is set", () => {
-    expect(sesEmailFromEnv({})).toBeNull();
-    expect(sesEmailFromEnv({ SES_FROM: "Bojen <noreply@bojen.se>" })).not.toBeNull();
+  it("is used only when SMTP_HOST is set, and then needs an account", () => {
+    expect(smtpEmailFromEnv({})).toBeNull();
+    expect(() => smtpEmailFromEnv({ SMTP_HOST: "mail.bojen.se" })).toThrow(/SMTP_USER/);
+    expect(
+      smtpEmailFromEnv({
+        SMTP_HOST: "mail.bojen.se",
+        SMTP_USER: "noreply@bojen.se",
+        SMTP_PASSWORD: "x",
+      }),
+    ).not.toBeNull();
   });
 
   it("the fake keeps what it was asked to send", async () => {

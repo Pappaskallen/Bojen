@@ -38,6 +38,11 @@
 	reverse_proxy glitchtip:8000
 }
 
+# The mail server's name: Caddy gets its certificate, which Stalwart uses for SMTP and IMAP.
+{$MAIL_DOMAIN} {
+	respond "Bojen e-post" 200
+}
+
 # Internal only (not published): the e-mail templates that Auth reads (supabase/templates).
 :8080 {
 	root * /srv/templates

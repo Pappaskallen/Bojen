@@ -11,8 +11,9 @@ läsa står det.
 >
 > - **Hetzner:** servern AX41 i Helsingfors (59 EUR per månad) och Object Storage för
 >   säkerhetskopiorna (6,49 EUR per månad).
-> - **AWS:** samma konto som för KMS skickar nu också e-posten, via Amazon SES i Stockholm. Det
->   kostar 0,10 USD per 1 000 mejl och kräver en verifierad domän.
+> - **AWS:** bara KMS. E-posten ligger på den egna servern (Stalwart), så SES behövs inte.
+> - **DNS och Hetzner för e-posten:** MX, SPF, DKIM, DMARC och omvänd DNS för servern, och
+>   besked från Hetzner om att utgående port 25 är öppen.
 >
 > LiveKit Cloud kan fortfarande användas gratis för de första testsamtalen. Allt annat nedan
 > gäller som förut.

@@ -216,8 +216,8 @@ Se den publika listan på [https://bojen.se/underbitraden]. Listan vid avtalets 
 
 | Underbiträde | Uppgift | Var |
 | --- | --- | --- |
-| Hetzner Online GmbH | Drift av servern: databas, inloggning, filer, webbappen, röstagenten och kartorna | Helsingfors, Finland |
-| Amazon Web Services EMEA SARL | Nyckelhantering (KMS) och e-post (SES) | Stockholm |
+| Hetzner Online GmbH | Drift av servern: databas, inloggning, filer, webbappen, e-post, röstagenten och kartorna | Helsingfors, Finland |
+| Amazon Web Services EMEA SARL | Nyckelhantering (KMS) | Stockholm |
 | 46elks AB | Sms och telefoni | Sverige |
 | Anthropic PBC | AI för sms, rapporter, typskyltar och receptionisten | USA |
 | Microsoft Ireland Operations Ltd | Tal till text och text till tal (planerat) | Sverige |
