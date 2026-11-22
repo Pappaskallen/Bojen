@@ -101,6 +101,12 @@ konto och är inte infört; Dependabot och `pnpm audit` täcker samma behov unde
   (`frame-ancestors 'none'` och `X-Frame-Options: DENY`).
   Testat i `e2e/security-headers.spec.ts`, som också kontrollerar att sidorna inte bryter mot sin
   egen policy.
+- [x] **CSP utan `'unsafe-inline'` för skript** (2026-11-22). `middleware.ts` gör en ny nonce
+  per svar och sätter policyn (`lib/csp.ts`): `script-src 'self' 'nonce-…' 'strict-dynamic'`.
+  Next.js läser nonce ur policyn i förfrågan och sätter den på sina egna skript, så ett
+  insmugglat inline-skript körs inte. Alla sidor renderas därför per förfrågan
+  (`dynamic = "force-dynamic"` i rotlayouten). Stilar har kvar `'unsafe-inline'` för Reacts
+  `style`-attribut.
 - [x] Hemligheter ligger bara i miljövariabler; `.env.example` har namnen utan värden.
 
 ## V11: Affärslogik
@@ -117,7 +123,4 @@ konto och är inte infört; Dependabot och `pnpm audit` täcker samma behov unde
 ## Återstår (förslag)
 
 - [ ] **Testsviten för samtal** (steg 6.5): kräver Claude-anrop.
-- [ ] **CSP utan `'unsafe-inline'` för skript.** Next.js lägger egna skript direkt i sidan. Att
-  ta bort undantaget kräver en nonce per svar via middleware, vilket gör alla sidor dynamiska.
-  Bör göras före lanseringen.
 - [ ] **Penetrationstest** före kommersiell lansering, enligt specifikationen.
