@@ -77,6 +77,14 @@ Klistra aldrig in dem i chatten.
   - ett nummer per pilotfirma, eller deras egna nummer porterade in.
 - **Sms:** för avsändarnamnet `Bojen` behövs inget eget nummer. För att ta emot svar behövs ett
   nummer.
+- **Hastighet (läst 2026-11-22):** ett konto skickar som standard 100 sms per minut. Det som
+  skickas därutöver köas hos 46elks och går iväg i tur och ordning, enligt
+  [46elks dokumentation](https://46elks.com/docs/send-sms). Byggplanens krav är 500 per minut,
+  och vårkampanjen skickar 40 sms per firma klockan 18:30, så med tio firmor blir det 400 på
+  samma minut. Fråga 46elks:
+  - om de kan höja gränsen till minst 500 per minut, och vad det kostar;
+  - om gränsen gäller per underkonto, så att varje firma får sin egen;
+  - om koder och påminnelser kan gå före kampanjens sms i deras kö.
 - **Kostnad:**
 
   | Vad | Pris |

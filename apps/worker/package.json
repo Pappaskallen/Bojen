@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "nameplates": "tsx src/nameplates-cli.ts"
+    "nameplates": "tsx src/nameplates-cli.ts",
+    "load:sms": "tsx src/load/sms-load.ts"
   },
   "dependencies": {
     "@bojen/adapters": "workspace:*",

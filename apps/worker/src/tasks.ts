@@ -89,6 +89,10 @@ const visitTask =
   };
 
 /** Every background task, by its Graphile Worker name. */
+/** How the worker runs Graphile Worker in production; the load test (src/load) uses the same. */
+export const WORKER_CONCURRENCY = 4;
+export const WORKER_POLL_INTERVAL_MS = 2000;
+
 export function taskList(deps: WorkerDeps): TaskList {
   return {
     [SEND_MESSAGE_TASK]: sendMessageTask(deps),
