@@ -25,8 +25,7 @@ function routes(over: Partial<InvoiceExportRouteDeps> = {}) {
   return { deps, r: createInvoiceExportRoutes(deps) };
 }
 
-const get = (month: string) =>
-  new Request(`http://bojen.test/api/fakturaunderlag?manad=${month}`);
+const get = (month: string) => new Request(`http://bojen.test/api/fakturaunderlag?manad=${month}`);
 const post = (month: string) => {
   const body = new FormData();
   body.set("manad", month);

@@ -64,11 +64,13 @@ async function firm(tx: Tx, name: string) {
         status: "done",
       })
       .returning();
-    await tx.insert(serviceReport).values(
-      approved
-        ? { tenantId, visitId: v!.id, status: "approved", approvedAt: start, invoice: INVOICE }
-        : { tenantId, visitId: v!.id, status: "draft" },
-    );
+    await tx
+      .insert(serviceReport)
+      .values(
+        approved
+          ? { tenantId, visitId: v!.id, status: "approved", approvedAt: start, invoice: INVOICE }
+          : { tenantId, visitId: v!.id, status: "draft" },
+      );
     return j!.id;
   }
   return { tenantId, visitOn };

@@ -20,8 +20,7 @@ export function createInvoiceExportRoutes(deps: InvoiceExportRouteDeps) {
   async function owner(request: Request) {
     const session = await deps.session(request);
     if (session?.step !== "none") return new Response(null, { status: 401, headers: NO_STORE });
-    if (session.role === "mechanic")
-      return new Response(null, { status: 403, headers: NO_STORE });
+    if (session.role === "mechanic") return new Response(null, { status: 403, headers: NO_STORE });
     return session;
   }
 
@@ -31,7 +30,8 @@ export function createInvoiceExportRoutes(deps: InvoiceExportRouteDeps) {
       if (session instanceof Response) return session;
       const month = new URL(request.url).searchParams.get("manad") ?? "";
       const rows = await deps.rows(session.context.tenantId, month);
-      if (!rows) return new Response(crm.invoiceExport.invalidMonth, { status: 400, headers: NO_STORE });
+      if (!rows)
+        return new Response(crm.invoiceExport.invalidMonth, { status: 400, headers: NO_STORE });
       return new Response(invoiceCsv(rows), {
         headers: {
           ...NO_STORE,
@@ -47,9 +47,7 @@ export function createInvoiceExportRoutes(deps: InvoiceExportRouteDeps) {
       const form = await request.formData().catch(() => null);
       const month = form?.get("manad");
       const moved =
-        typeof month === "string"
-          ? await deps.markInvoiced(session.context.tenantId, month)
-          : null;
+        typeof month === "string" ? await deps.markInvoiced(session.context.tenantId, month) : null;
       const location =
         moved === null
           ? "/pipeline?fakturafel=1"

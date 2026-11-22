@@ -11,8 +11,20 @@ const row = (over: Partial<InvoiceExportRow> = {}): InvoiceExportRow => ({
   boat: "Bustern, Nimbus 26",
   service: "Årsservice inombordare",
   lines: [
-    { type: "labour", description: "Årsservice", quantity: 2.5, unitPriceOre: 95_000, amountOre: 237_500 },
-    { type: "discount", description: "Marinadag", quantity: 1, unitPriceOre: -49_500, amountOre: -49_500 },
+    {
+      type: "labour",
+      description: "Årsservice",
+      quantity: 2.5,
+      unitPriceOre: 95_000,
+      amountOre: 237_500,
+    },
+    {
+      type: "discount",
+      description: "Marinadag",
+      quantity: 1,
+      unitPriceOre: -49_500,
+      amountOre: -49_500,
+    },
   ],
   netOre: 188_000,
   vatOre: 47_000,

@@ -845,7 +845,9 @@ export const crm = {
     download: "Ladda ner CSV",
     markInvoiced: "Markera som fakturerade",
     marked: (n: number) =>
-      n === 1 ? "1 jobb flyttades till Fakturerat." : `${String(n)} jobb flyttades till Fakturerat.`,
+      n === 1
+        ? "1 jobb flyttades till Fakturerat."
+        : `${String(n)} jobb flyttades till Fakturerat.`,
     invalidMonth: "Välj en månad.",
     fileName: (month: string) => `fakturaunderlag-${month}.csv`,
     columns: {
