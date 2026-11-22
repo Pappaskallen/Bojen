@@ -68,3 +68,32 @@ export function planSms(input: {
 export function optOutHash(key: string, tenantId: string, phoneE164: string): string {
   return createHmac("sha256", key).update(`${tenantId}:${phoneE164}`).digest("base64url");
 }
+
+/**
+ * Campaign sms per minute, for all firms together. 46elks sends 100 sms a minute per account
+ * and queues the rest in order (read 2026-11-22), so a campaign round sent at once would hold
+ * up a login code or a confirmation behind it. Campaigns take half; codes, notices and
+ * replies have the other half.
+ */
+export const MARKETING_SMS_PER_MINUTE = 50;
+
+/**
+ * How far ahead of its earliest moment a campaign sms looks for the last one queued. A run
+ * longer than this (18 000 sms at 50 a minute) is not spread past it; a campaign sms queued
+ * for a later day does not push today's ones back.
+ */
+export const MARKETING_SPREAD_HORIZON_MS = 6 * 60 * 60_000;
+
+/**
+ * When a campaign sms goes out: at `earliest`, or one gap after the last campaign sms
+ * already queued (`lastQueued`), whichever is later.
+ */
+export function marketingSlot(
+  earliest: Date,
+  lastQueued: Date | null,
+  perMinute: number = MARKETING_SMS_PER_MINUTE,
+): Date {
+  if (!lastQueued) return earliest;
+  const next = lastQueued.getTime() + Math.ceil(60_000 / perMinute);
+  return next > earliest.getTime() ? new Date(next) : earliest;
+}

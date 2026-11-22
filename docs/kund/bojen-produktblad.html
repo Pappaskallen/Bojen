@@ -1,0 +1,329 @@
+<title>Bojen produktblad</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: ett A4-blad som ett sjökort. Mörk "djupvatten"-rubrik, ljust kort under,
+   funktionerna i prioritetsordning som numrerade sjömärken längs en farled. */
+:root {
+  --paper: #f3f7f9;      /* sjökortets ljusa vatten */
+  --sheet: #ffffff;
+  --ink: #0d2236;        /* djupvatten */
+  --muted: #4b6175;
+  --rule: #c9d7e1;
+  --buoy: #f2b705;       /* kardinalmärkets gula */
+  --buoy-ink: #0d2236;
+  --deep: #0d2236;
+  --deep-fg: #eaf2f7;
+  --deep-muted: #9fb7c9;
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Consolas", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #08131e; --sheet: #0f1f2e; --ink: #e6eef4; --muted: #9db2c3; --rule: #23394c;
+    --buoy: #f5c22e; --buoy-ink: #0d2236; --deep: #051019; --deep-fg: #eaf2f7; --deep-muted: #8fa9bc;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #08131e; --sheet: #0f1f2e; --ink: #e6eef4; --muted: #9db2c3; --rule: #23394c;
+  --buoy: #f5c22e; --buoy-ink: #0d2236; --deep: #051019; --deep-fg: #eaf2f7; --deep-muted: #8fa9bc;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-block: 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.sheet {
+  max-width: 860px;
+  margin: 0 auto;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Rubrik */
+.top {
+  background: var(--deep);
+  color: var(--deep-fg);
+  padding: 28px 36px 26px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 20px 28px;
+  align-items: end;
+  position: relative;
+}
+.top::after { /* djupkurvor */
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 120% at 105% 120%, transparent 58%, rgba(159,183,201,.18) 58.4%, transparent 59%),
+    radial-gradient(ellipse 72% 140% at 105% 120%, transparent 58%, rgba(159,183,201,.12) 58.3%, transparent 58.8%),
+    radial-gradient(ellipse 84% 160% at 105% 120%, transparent 58%, rgba(159,183,201,.08) 58.3%, transparent 58.8%);
+  pointer-events: none;
+}
+.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.mark { width: 44px; height: 56px; flex: none; }
+h1 {
+  font-family: var(--display);
+  font-stretch: 125%;
+  font-weight: 900;
+  font-size: 2.6rem;
+  letter-spacing: .02em;
+  line-height: 1;
+  margin: 0;
+}
+.lede {
+  grid-column: 1 / -1;
+  max-width: 62ch;
+  margin: 4px 0 0;
+  font-size: 1.08rem;
+  color: var(--deep-fg);
+  text-wrap: pretty;
+}
+.lede strong { color: var(--buoy); font-weight: 600; }
+.pos {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--deep-muted);
+  text-align: right;
+  letter-spacing: .04em;
+  line-height: 1.5;
+}
+
+/* Effektmål */
+.goals {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--rule);
+}
+.goal { padding: 16px 20px 14px; border-right: 1px solid var(--rule); min-width: 0; }
+.goal:last-child { border-right: 0; }
+.goal b {
+  display: block;
+  font-family: var(--display);
+  font-stretch: 85%;
+  font-weight: 800;
+  font-size: 1.7rem;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.goal span { font-size: .84rem; color: var(--muted); display: block; margin-top: 3px; }
+
+/* Funktioner */
+.body { padding: 22px 36px 8px; }
+.eyebrow {
+  font-family: var(--display);
+  font-stretch: 110%;
+  font-weight: 700;
+  font-size: .74rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 12px;
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.features { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.f {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) minmax(0, 13.5rem);
+  gap: 4px 16px;
+  padding: 11px 0;
+  border-top: 1px solid var(--rule);
+  align-items: start;
+}
+.f:first-child { border-top: 0; }
+.n {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--mono);
+  font-size: .82rem;
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.f.top3 .n { background: var(--buoy); border-color: var(--buoy); color: var(--buoy-ink); font-weight: 500; }
+.f h3 {
+  font-family: var(--display);
+  font-stretch: 100%;
+  font-weight: 700;
+  font-size: 1.02rem;
+  margin: 3px 0 2px;
+  text-wrap: balance;
+}
+.f p { margin: 0; color: var(--muted); font-size: .92rem; max-width: 60ch; }
+.gap {
+  font-size: .78rem;
+  color: var(--muted);
+  border-left: 2px solid var(--rule);
+  padding-left: 10px;
+  margin-top: 4px;
+}
+.gap em {
+  font-style: normal;
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: .66rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 1px;
+}
+
+/* Fot */
+.foot {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 28px;
+  padding: 16px 36px 22px;
+  border-top: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--paper) 60%, var(--sheet));
+}
+.foot h4 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: .74rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+}
+.foot p { margin: 0; font-size: .84rem; color: var(--muted); }
+.sign {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--muted);
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 10px 36px 14px;
+  border-top: 1px solid var(--rule);
+}
+
+@media (max-width: 680px) {
+  .top { grid-template-columns: 1fr; padding: 22px 20px; }
+  .pos { text-align: left; }
+  h1 { font-size: 2.1rem; }
+  .goals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .goal:nth-child(2) { border-right: 0; }
+  .goal:nth-child(-n+2) { border-bottom: 1px solid var(--rule); }
+  .body { padding: 18px 20px 4px; }
+  .f { grid-template-columns: 34px minmax(0, 1fr); }
+  .gap { grid-column: 2; }
+  .foot { grid-template-columns: 1fr; padding: 16px 20px 20px; }
+  .sign { padding: 10px 20px 14px; }
+}
+
+@media print {
+  @page { size: A4; margin: 10mm; }
+  :root { --paper: #fff; }
+  body { padding: 0; font-size: 12.5px; background: #fff; }
+  .sheet { border: 0; max-width: none; }
+  .top, .f.top3 .n { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .f { padding: 7px 0; }
+}
+</style>
+
+<div class="sheet">
+  <header class="top">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 44 56" aria-hidden="true">
+        <!-- Kardinalmärke: två svarta toppkoner och en gul kropp -->
+        <path d="M22 2 L30 12 H14 Z" fill="#eaf2f7"/>
+        <path d="M14 15 H30 L22 25 Z" fill="#eaf2f7"/>
+        <rect x="19.5" y="25" width="5" height="5" fill="#eaf2f7"/>
+        <path d="M12 30 H32 L34 46 H10 Z" fill="#f2b705"/>
+        <rect x="10.6" y="36" width="22.8" height="4" fill="#0d2236"/>
+        <path d="M4 50 Q11 46 18 50 T32 50 T44 50" stroke="#9fb7c9" stroke-width="1.6" fill="none"/>
+      </svg>
+      <h1>Bojen</h1>
+    </div>
+    <div class="pos">59°19,8′N 018°38,9′E<br>Stockholms skärgård</div>
+    <p class="lede">Bokning, kundregister och kundkontakt för båtmekaniker som åker ut till båten. Ett system som <strong>svarar i telefon när du ligger under en motor</strong>, lägger jobben där du redan är och kollar att båten finns på plats innan du åker.</p>
+  </header>
+
+  <section class="goals" aria-label="Mål för en enmansfirma i högsäsong">
+    <div class="goal"><b>8–12 h</b><span>mindre administration per vecka</span></div>
+    <div class="goal"><b>+15–25 %</b><span>fler jobb per vecka med mindre körning</span></div>
+    <div class="goal"><b>&lt; 2 %</b><span>utkörningar till en båt som inte var där</span></div>
+    <div class="goal"><b>&gt; 60 %</b><span>av våren bokad redan den 1 mars</span></div>
+  </section>
+
+  <section class="body">
+    <h2 class="eyebrow"><span>Funktionerna, det mest efterfrågade först</span><span>Saknas i dag i</span></h2>
+    <ol class="features">
+      <li class="f top3">
+        <span class="n">1</span>
+        <div><h3>Receptionist som svarar dygnet runt</h3>
+          <p>En AI-röst på svenska tar samtalet, känner igen kunden och båten, frågar efter motor, plats och läge och bokar en ledig tid. Haverier går direkt till dig, med säkerhetsfrågan först.</p></div>
+        <div class="gap"><em>Röstbrevlåda, telefonservice</em>Svarar, men kan inte båtar och bokar inte.</div>
+      </li>
+      <li class="f top3">
+        <span class="n">2</span>
+        <div><h3>Tillgänglighetskontroll dagen innan</h3>
+          <p>Ett sms frågar om båten ligger där den ska, i sjön eller på land, och om nyckel och kod finns. Svarar kunden nej går tiden genast vidare.</p></div>
+        <div class="gap"><em>Bokningssystem, fältservice</em>Har bara en påminnelse om tiden.</div>
+      </li>
+      <li class="f top3">
+        <span class="n">3</span>
+        <div><h3>Bokning som förstår skärgården</h3>
+          <p>Tider i marinor där du redan har jobb visas först och kan ge kunden rabatt. Tider som skulle kosta för mycket körning visas inte alls.</p></div>
+        <div class="gap"><em>Calendly, Bookings m.fl.</em>Bygger på fasta tider på en adress.</div>
+      </li>
+      <li class="f">
+        <span class="n">4</span>
+        <div><h3>Båtkortet</h3>
+          <p>Båt, motor, drev, serienummer, var båten står sommar och vinter, gångtimmar, historik och nästa service på en skärm. Kunden skickar en bild på typskylten, och systemet läser av modellen.</p></div>
+        <div class="gap"><em>Excel, fältservicesystem</em>Kunden står i centrum, inte båten.</div>
+      </li>
+      <li class="f">
+        <span class="n">5</span>
+        <div><h3>Säsongen fylls i förväg</h3>
+          <p>I januari får förra årets kunder ett sms med förslag på samma vecka som förra året. Svarar de JA blir det en bokning direkt. I augusti på samma sätt för vinterkonservering.</p></div>
+        <div class="gap"><em>Alla alternativ</em>Ingen förbokning utifrån förra säsongen.</div>
+      </li>
+      <li class="f">
+        <span class="n">6</span>
+        <div><h3>Väntelista som fyller avbokade tider</h3>
+          <p>En avbokad tid erbjuds till kunder i samma område som väntar. Den som svarar först får tiden.</p></div>
+        <div class="gap"><em>Alla alternativ</em>En lucka i schemat blir oftast tom.</div>
+      </li>
+      <li class="f">
+        <span class="n">7</span>
+        <div><h3>Mekanikerappen, även utan täckning</h3>
+          <p>Dagens jobb, båtkort och åtkomst finns i telefonen ute på öarna. Stora knappar för oljiga händer. Koder visas bara för den som har jobbet, och bara samma dag.</p></div>
+        <div class="gap"><em>Webbaserade system</em>Fungerar inte där täckningen tar slut.</div>
+      </li>
+      <li class="f">
+        <span class="n">8</span>
+        <div><h3>Servicerapport på några minuter</h3>
+          <p>Prata in vad du gjort och ta bilder, så skrivs rapporten åt dig. Kunden får arbete, delar, gångtimmar och vad som bör göras nästa säsong.</p></div>
+        <div class="gap"><em>Papper, fältservice</em>Rapporten skrivs för hand på kvällen.</div>
+      </li>
+      <li class="f">
+        <span class="n">9</span>
+        <div><h3>Faktura, recensioner och nyckeltal</h3>
+          <p>Fakturan går till Fortnox. Nöjda kunder får en länk till Google-recension. Du ser intäkter, beläggning och körtid i mobilen och får en veckorapport på måndagar.</p></div>
+        <div class="gap"><em>Flera separata tjänster</em>Inget av det hänger ihop med bokningen.</div>
+      </li>
+    </ol>
+  </section>
+
+  <footer class="foot">
+    <div><h4>Dina kunders uppgifter</h4><p>All data lagras inom EU och hanteras enligt GDPR. Koder och nyckelinformation krypteras och loggas aldrig.</p></div>
+    <div><h4>Säsongspris</h4><p>Full avgift när båtarna är i sjön, låg avgift december–februari. Röstminuter och sms ingår.</p></div>
+    <div><h4>Kom igång</h4><p>Vi flyttar över dina kunder från Excel, kopplar ditt nummer och bokningen på din webbplats. Pilotstart mars 2027.</p></div>
+  </footer>
+  <div class="sign"><span>bojen.se</span><span>För firmor med 1–5 mekaniker</span></div>
+</div>

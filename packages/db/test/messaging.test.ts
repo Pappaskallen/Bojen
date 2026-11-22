@@ -119,6 +119,48 @@ describe("queueSms", () => {
     });
   });
 
+  it("spreads campaign sms 1.2 s apart across firms, and leaves other sms alone", async () => {
+    await withRollback(async (tx) => {
+      const a = await firm(tx);
+      const b = await firm(tx);
+      const deps = { db: tx, now: () => at("2027-01-12T18:30:00"), optOutKey: KEY };
+      const spring = {
+        firstName: "Per",
+        boat: "Bustern",
+        date: "tisdag 13/4",
+        placeShort: "Bullandö",
+        firm: "Jonas Båtservice",
+      };
+      const sent = [];
+      for (const f of [a, b, a]) {
+        sent.push(
+          await queueSms(
+            deps,
+            { tenantId: f.tenantId, to: PHONE, customerId: f.customerId },
+            "f11_spring_b",
+            spring,
+          ),
+        );
+      }
+      expect(sent.map((s) => (s.status === "queued" ? s.sendAfter : null))).toEqual([
+        at("2027-01-12T18:30:00"),
+        at("2027-01-12T18:30:01.200"),
+        at("2027-01-12T18:30:02.400"),
+      ]);
+      const third = sent[2]!;
+      expect(new Date((await jobFor(tx, third.messageId))[0]!.run_at)).toEqual(
+        at("2027-01-12T18:30:02.400"),
+      );
+      const notice = await queueSms(
+        deps,
+        { tenantId: a.tenantId, to: PHONE, customerId: a.customerId },
+        "f6_on_way",
+        ON_WAY,
+      );
+      expect(notice).toMatchObject({ sendAfter: at("2027-01-12T18:30:00") });
+    });
+  });
+
   it("STOPP to one firm does not stop another firm's sms", async () => {
     await withRollback(async (tx) => {
       const a = await firm(tx);

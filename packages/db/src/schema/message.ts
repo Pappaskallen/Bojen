@@ -93,6 +93,10 @@ export const message = pgTable(
     index("message_tenant_id_customer_id_created_at_idx").on(t.tenantId, t.customerId, t.createdAt),
     index("message_visit_id_idx").on(t.tenantId, t.visitId),
     index("message_external_id_idx").on(t.externalId),
+    // The last campaign sms queued, for spreading the next one (queueSms).
+    index("message_queued_send_after_idx")
+      .on(t.sendAfter)
+      .where(sql`${t.status} = 'queued'`),
     tenantIsolationPolicy(),
   ],
 );

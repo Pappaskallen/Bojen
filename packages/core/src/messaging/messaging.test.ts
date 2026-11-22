@@ -8,6 +8,7 @@ import {
   countSegments,
   earliestSend,
   inQuietHours,
+  marketingSlot,
   optOutHash,
   planSms,
   renderEmail,
@@ -268,5 +269,22 @@ describe("quiet hours and STOPP", () => {
     expect(a).not.toBe(optOutHash("key-1", "tenant-b", "+46701234567"));
     expect(a).not.toBe(optOutHash("key-2", "tenant-a", "+46701234567"));
     expect(a).not.toContain("4670");
+  });
+});
+
+describe("campaign sms spread", () => {
+  const t = (iso: string) => new Date(`${iso}+01:00`);
+  it("goes out at once when no campaign sms is queued", () => {
+    expect(marketingSlot(t("2027-01-12T18:30:00"), null)).toEqual(t("2027-01-12T18:30:00"));
+  });
+  it("comes 1.2 s after the last one queued, 50 a minute", () => {
+    expect(marketingSlot(t("2027-01-12T18:30:00"), t("2027-01-12T18:34:10"))).toEqual(
+      t("2027-01-12T18:34:11.200"),
+    );
+  });
+  it("is not moved earlier than its own moment", () => {
+    expect(marketingSlot(t("2027-01-13T08:00:00"), t("2027-01-12T18:34:10"))).toEqual(
+      t("2027-01-13T08:00:00"),
+    );
   });
 });
