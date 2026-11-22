@@ -21,6 +21,8 @@ x-app: &app
     NEXT_PUBLIC_SUPABASE_URL: https://${API_DOMAIN}
     OSRM_URL: http://osrm:5000
     PHOTON_URL: http://photon:2322
+    # The deployed commit, set by deploy.sh, so an error in GlitchTip points at its code.
+    APP_RELEASE: ${APP_RELEASE:-}
   depends_on:
     db:
       condition: service_healthy

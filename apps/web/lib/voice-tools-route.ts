@@ -24,6 +24,7 @@ import {
   type VoiceToolName,
 } from "@bojen/core";
 import type { AgentContext, CallRow, ReceptionistFacts } from "@bojen/db";
+import { logErrorKind } from "./errors";
 
 export interface VoiceToolsDeps {
   /** `VOICE_SERVICE_SECRET`: only the voice agent may start calls. */
@@ -132,7 +133,7 @@ export function createVoiceToolsRoute(deps: VoiceToolsDeps) {
         return json(await deps.run(name, call, input));
       } catch (error) {
         // The tool's name only: what the caller said stays out of the log.
-        console.error(`[voice-tools] ${name} failed`, (error as Error).name);
+        logErrorKind(`[voice-tools] ${name} failed`, error);
         return json({ error: "failed" }, 500);
       }
     },

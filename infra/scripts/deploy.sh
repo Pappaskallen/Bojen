@@ -10,6 +10,7 @@ cd "$(dirname "$0")/../.."
 git fetch --quiet origin main
 git checkout --quiet --detach "${1:-origin/main}"
 set -a; . infra/.env; set +a
+export APP_RELEASE="$(git rev-parse --short HEAD)"
 
 docker build -f infra/app.Dockerfile -t bojen-app \
   --build-arg NEXT_PUBLIC_SUPABASE_URL="https://$API_DOMAIN" \

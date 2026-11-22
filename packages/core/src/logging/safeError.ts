@@ -24,11 +24,11 @@ const asRecord = (value: unknown): ErrorLike | null =>
 const text = (value: unknown): string | null =>
   typeof value === "string" && value.length > 0 ? value : null;
 
-/** Phone numbers, e-mail addresses and long digit runs (codes) out of a free-text message. */
+/** Phone numbers, e-mail addresses and runs of four digits or more (codes, such as a gate code) out of a free-text message. */
 export function scrubMessage(message: string): string {
   const scrubbed = message
     .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, "[e-post]")
-    .replace(/\+?\d[\d\s-]{4,}\d/g, "[nummer]");
+    .replace(/\+?\d[\d\s-]{2,}\d/g, "[nummer]");
   return scrubbed.length > MAX_LENGTH ? `${scrubbed.slice(0, MAX_LENGTH)}…` : scrubbed;
 }
 

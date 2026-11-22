@@ -40,6 +40,7 @@ describe("safeError", () => {
       "Error: 46elks refused [nummer] for [e-post]",
     );
     expect(scrubMessage("code 482913 sent")).toBe("code [nummer] sent");
+    expect(scrubMessage("gate code 4711, try 404")).toBe("gate code [nummer], try 404");
     expect(scrubMessage("x".repeat(300))).toHaveLength(201);
     expect(safeError(new TypeError("visit not found"))).toBe("TypeError: visit not found");
     expect(safeError(null)).toBe("unknown error");

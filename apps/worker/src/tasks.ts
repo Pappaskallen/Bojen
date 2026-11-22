@@ -31,7 +31,7 @@ import {
   type DraftDeps,
   type PrivacyDeps,
 } from "@bojen/db";
-import { safeError } from "@bojen/core/logging";
+import { safeError, type ErrorReporter } from "@bojen/core/logging";
 import type { Task, TaskList } from "graphile-worker";
 import { CHECK_TASK, sendAvailabilityCheck } from "./flows/availabilityCheck";
 import { ESCALATION_TASK, REMINDER_TASK, handleCheckEvent } from "./flows/availabilityFollowup";
@@ -227,9 +227,10 @@ export function escalationTasks(
 /**
  * Every task, with what a failure says made safe (ASVS V7.1): Graphile Worker logs a failed
  * job's error and keeps its message in `last_error`, and a database error's message carries
- * the query's parameters. The retry still happens; only the message changes.
+ * the query's parameters. The retry still happens; only the message changes. The error goes to
+ * GlitchTip too, made safe in the same way (byggplan step 9), with the task's name.
  */
-export function withSafeErrors(tasks: TaskList): TaskList {
+export function withSafeErrors(tasks: TaskList, reporter?: ErrorReporter): TaskList {
   const safe: TaskList = {};
   for (const [name, task] of Object.entries(tasks)) {
     if (!task) continue;
@@ -237,6 +238,13 @@ export function withSafeErrors(tasks: TaskList): TaskList {
       try {
         await task(payload, helpers);
       } catch (error) {
+        const job = (helpers as Partial<typeof helpers>).job;
+        await reporter?.report(error, {
+          tags: {
+            task: name,
+            attempt: job ? `${String(job.attempts)}/${String(job.max_attempts)}` : undefined,
+          },
+        });
         throw new Error(safeError(error));
       }
     };

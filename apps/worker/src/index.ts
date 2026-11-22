@@ -9,6 +9,7 @@ import {
   smtpEmailFromEnv,
   createOsrmMaps,
   elksFromEnv,
+  errorReporterFromEnv,
   systemClock,
   webPushFromEnv,
 } from "@bojen/adapters";
@@ -24,6 +25,13 @@ import { taskList, withSafeErrors, type EscalationDeps } from "./tasks";
  * outside production, or with `BOJEN_FAKE_SERVICES=1` (the end-to-end tests).
  */
 const production = process.env.NODE_ENV === "production" && process.env.BOJEN_FAKE_SERVICES !== "1";
+
+/** Errors to GlitchTip when `GLITCHTIP_DSN` is set (byggplan step 9); nothing is sent otherwise. */
+const errors = errorReporterFromEnv("worker");
+process.on("unhandledRejection", (reason) => {
+  console.error("[worker] unhandled rejection", safeError(reason));
+  void errors.report(reason, { tags: { kind: "unhandledRejection" } });
+});
 
 function smsSender(): SmsSender {
   const elks = elksFromEnv();
@@ -124,13 +132,15 @@ async function main() {
           ? createOsrmMaps({ baseUrl: process.env.OSRM_URL })
           : createFakeMaps(),
       }),
+      errors,
     ),
   });
   console.info(`[worker] ${systemClock.now().toISOString()} started`);
   await runner.promise;
 }
 
-main().catch((error: unknown) => {
+main().catch(async (error: unknown) => {
   console.error("[worker] stopped", safeError(error));
   process.exitCode = 1;
+  await errors.report(error, { level: "fatal", tags: { kind: "startup" } });
 });

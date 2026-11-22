@@ -79,3 +79,11 @@ export {
   type IncomingTargets,
 } from "./elks/voice";
 export { createAgentHealth } from "./voice/health";
+export {
+  createFakeErrorReporter,
+  createGlitchTipReporter,
+  errorReporterFromEnv,
+  noErrorReporter,
+  type FakeErrorReporter,
+  type GlitchTipOptions,
+} from "./errors";

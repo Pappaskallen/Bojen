@@ -1,5 +1,6 @@
 import {
   createFakeEmail,
+  createFakeErrorReporter,
   createFakeNameplateReader,
   createFakePush,
   createFakeReportWriter,
@@ -128,6 +129,21 @@ describe("withSafeErrors", () => {
     await expect(safe.fails?.({}, helpers)).rejects.not.toThrow(/4711|\+4670/);
     await safe.works?.("x", helpers);
     expect(ok).toEqual(["x"]);
+  });
+
+  it("reports the failure with the task's name and attempt", async () => {
+    const reporter = createFakeErrorReporter();
+    const failing = new Error("boom");
+    const safe = withSafeErrors(
+      { fails: () => Promise.reject(failing), works: () => Promise.resolve() },
+      reporter,
+    );
+    const helpers = { job: { attempts: 2, max_attempts: 25 } } as JobHelpers;
+    await expect(safe.fails?.({}, helpers)).rejects.toThrow("Error: boom");
+    await safe.works?.({}, helpers);
+    expect(reporter.reported).toEqual([
+      { error: failing, tags: { task: "fails", attempt: "2/25" } },
+    ]);
   });
 });
 

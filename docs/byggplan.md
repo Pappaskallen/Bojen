@@ -447,7 +447,7 @@ ett alternativ i stället för att byta tyst.
     - Ett skript provar en återställning.
   - Brandvägg: bara ssh med nyckel, 80, 443 och LiveKits portar är öppna. Postgres och de interna tjänsterna nås inte utifrån.
   - Driftsättning från GitHub Actions när CI är grönt på `main`: bygg avbildningarna, kör migreringarna och starta om tjänsterna.
-  - (Påbörjat 2026-11-21: e-posten går genom den egna e-postservern (beslut samma dag, först SES), och `infra/` har compose-filen, Caddy, Postgres med WAL-G, skripten för uppsättning, säkerhetskopior, återställningstest, kartor och driftsättning samt arbetsflödet `deploy.yml`. Inget är provat på en riktig server än; det som ska kontrolleras står sist i `infra/README.md`. Steget bockas av när servern är beställd och *Klart när* är uppfyllt.)
+  - (Påbörjat 2026-11-21: e-posten går genom den egna e-postservern (beslut samma dag, först SES), och `infra/` har compose-filen, Caddy, Postgres med WAL-G, skripten för uppsättning, säkerhetskopior, återställningstest, kartor och driftsättning samt arbetsflödet `deploy.yml`. Den 22 november kom felrapporteringen till GlitchTip från webben och arbetaren. Inget är provat på en riktig server än; det som ska kontrolleras står sist i `infra/README.md`. Steget bockas av när servern är beställd och *Klart när* är uppfyllt.)
 - **Klart när:**
   - Servern sätts upp från repot med ett skript.
   - Bokningssidan, inloggningen och ett testsamtal fungerar där.
