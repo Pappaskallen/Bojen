@@ -150,6 +150,10 @@ filbackend i stället för Hetzners hink:
   `postgres` är inte superanvändare i Supabases Postgres.
 - **Återställning till vald tidpunkt:** fungerar. Rader som kom efter tidpunkten var borta.
   Tidpunkten måste ligga före den senast arkiverade skrivloggen.
+- **GlitchTip 6.2.6** (2026-11-22): migreringarna, `createsuperuser` och ett projekt fungerar,
+  med `VALKEY_URL=""` så att cache och kö ligger i GlitchTips egen Postgres. Fel som skickades
+  genom adaptern med namn, telefonnummer, e-postadress och portkod i meddelandet kom fram med
+  rätt typ, taggar och version. Ingen av uppgifterna fanns någonstans i GlitchTips databas.
 
 ## Inte provat än
 
@@ -165,6 +169,6 @@ Det här är skrivet utan en riktig server och ska kontrolleras vid första upps
 - **Photon:** att importen klarar `-country-codes se` från Photons planetdump. Annars finns en
   färdig svensk databas, `photon-db-se-latest`, men den är från juli 2025 och kanske inte i
   samma format.
-- **GlitchTip:** att `createsuperuser` och upptidsövervakningen fungerar i version 6.2.6.
+- **GlitchTip:** upptidsövervakningen och e-postaviseringen.
 - **LiveKit och SIP:** profilen `voice` är inte provad. Den kopplas in och provas i steg 6.2b,
   och då ska `SIP_CONFIG_BODY` kontrolleras mot LiveKits dokumentation.

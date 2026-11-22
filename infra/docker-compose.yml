@@ -226,6 +226,9 @@ services:
       ENABLE_USER_REGISTRATION: "False"
       ENABLE_ORGANIZATION_CREATION: "False"
       ENABLE_ADMIN: "False"
+      # Cache and task queue in its own Postgres. Without this GlitchTip 6 looks for redis:6379,
+      # which is LiveKit's Valkey with the voice profile and nothing without it (tried locally).
+      VALKEY_URL: ""
     volumes:
       - glitchtip-uploads:/code/uploads
 

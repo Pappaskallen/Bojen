@@ -58,7 +58,11 @@ export function stackFrames(stack: unknown): StackFrame[] {
     const match = FRAME.exec(line);
     if (!match) continue;
     const [, fn, file = "", lineNo, colNo] = match;
-    const filename = file.replace(/^file:\/\//, "").replace(/[?#].*$/, "");
+    // `at async file:1:2` has no function name, and the word belongs to neither.
+    const filename = file
+      .replace(/^async /, "")
+      .replace(/^file:\/\//, "")
+      .replace(/[?#].*$/, "");
     frames.push({
       ...(fn ? { function: fn.replace(/^async /, "") } : {}),
       filename,

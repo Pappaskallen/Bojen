@@ -99,5 +99,8 @@ describe("errorEvent", () => {
       exception: { values: [{ type: "unknown error", value: "" }] },
     });
     expect(stackFrames(undefined)).toEqual([]);
+    expect(stackFrames("Error\n    at async node:internal/modules/esm/loader:647:26")).toEqual([
+      { filename: "node:internal/modules/esm/loader", lineno: 647, colno: 26, in_app: false },
+    ]);
   });
 });
