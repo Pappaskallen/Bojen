@@ -836,6 +836,37 @@ export const crm = {
   },
   accessMethod: { car: "Bil", boat: "Båt", ferry: "Färja" },
   /** The pipeline (step 5.4). */
+  /** The invoice bases as CSV, until Fortnox (spec 12.1). */
+  invoiceExport: {
+    heading: "Fakturaunderlag",
+    intro:
+      "Ladda ner månadens godkända fakturaunderlag som en fil för Excel eller Fortnox import. Markera dem sedan som fakturerade, så flyttas korten.",
+    month: "Månad",
+    download: "Ladda ner CSV",
+    markInvoiced: "Markera som fakturerade",
+    marked: (n: number) =>
+      n === 1 ? "1 jobb flyttades till Fakturerat." : `${String(n)} jobb flyttades till Fakturerat.`,
+    invalidMonth: "Välj en månad.",
+    fileName: (month: string) => `fakturaunderlag-${month}.csv`,
+    columns: {
+      basis: "Underlag",
+      day: "Datum",
+      customer: "Kund",
+      email: "E-post",
+      phone: "Telefon",
+      billingAddress: "Fakturaadress",
+      boat: "Båt",
+      service: "Tjänst",
+      type: "Radtyp",
+      description: "Benämning",
+      quantity: "Antal",
+      unitPrice: "À-pris exkl. moms",
+      amount: "Belopp exkl. moms",
+      net: "Summa exkl. moms",
+      vat: "Moms",
+      gross: "Summa inkl. moms",
+    },
+  },
   pipeline: {
     title: "Pipeline",
     intro: "Dra ett kort till en annan kolumn, eller välj kolumn i listan på kortet.",

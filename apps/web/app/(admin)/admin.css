@@ -610,3 +610,11 @@ a.kpi-card:focus-visible {
   overflow-x: auto;
   max-width: 100%;
 }
+
+/* The CSV export of invoice bases on the pipeline (spec 12.1). */
+.invoice-export form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}

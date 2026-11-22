@@ -86,6 +86,8 @@ import {
   exportCustomer as exportCustomerData,
   recordExport,
   setFirmAudioDays,
+  invoiceExportRows,
+  markMonthInvoiced,
 } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createBoatAccessRoute } from "./boat-access";
@@ -102,6 +104,7 @@ import { createVoiceToolsRoute } from "./voice-tools-route";
 import { createReportRoute } from "./report-route";
 import { createReviewLinkRoute } from "./review-link-route";
 import { createPrivacyRoutes } from "./privacy-routes";
+import { createInvoiceExportRoutes } from "./invoice-export-route";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
 import { ELKS_IPS, createWebhookRoutes } from "./webhooks";
@@ -561,4 +564,11 @@ export const privacyRoutes = createPrivacyRoutes({
       customerId,
       actorId,
     ),
+});
+
+/** The invoice bases as CSV until Fortnox (spec 12.1). */
+export const invoiceExportRoutes = createInvoiceExportRoutes({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  rows: (tenantId, month) => invoiceExportRows(db(), tenantId, month),
+  markInvoiced: (tenantId, month) => markMonthInvoiced(db(), tenantId, month, new Date()),
 });
