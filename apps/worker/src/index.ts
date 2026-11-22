@@ -18,7 +18,13 @@ import { connect, databaseUrl, KPI_CRONTAB, PRIVACY_CRONTAB } from "@bojen/db";
 import { run } from "graphile-worker";
 import { customerLinks } from "./flows/deps";
 import { postCallDeps, reportDeps } from "./report-deps";
-import { taskList, withSafeErrors, type EscalationDeps } from "./tasks";
+import {
+  WORKER_CONCURRENCY,
+  WORKER_POLL_INTERVAL_MS,
+  taskList,
+  withSafeErrors,
+  type EscalationDeps,
+} from "./tasks";
 
 /**
  * The background worker: Graphile Worker on the same Postgres. Fakes are only allowed
@@ -112,9 +118,9 @@ async function main() {
   const reports = reportDeps(production);
   const runner = await run({
     connectionString: url,
-    concurrency: 4,
+    concurrency: WORKER_CONCURRENCY,
     noHandleSignals: false,
-    pollInterval: 2000,
+    pollInterval: WORKER_POLL_INTERVAL_MS,
     crontab: `${KPI_CRONTAB}\n${PRIVACY_CRONTAB}`,
     taskList: withSafeErrors(
       taskList({
