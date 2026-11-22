@@ -100,6 +100,9 @@ export const sv = {
       required: "Fyll i det här fältet.",
       phone: "Skriv ett svenskt mobilnummer, till exempel 070-123 45 67.",
       notFound: "Sidan finns inte. Kontrollera länken.",
+      /** 429 from the public booking's limits per IP address. */
+      tooMany:
+        "Du har försökt många gånger på kort tid. Vänta en stund och försök igen, eller ring oss.",
     },
   },
   signIn: {

@@ -67,7 +67,7 @@ export const ELKS_IPS = [
  * The caller's address as the host reports it. Caddy in front of the app (`infra/Caddyfile`)
  * sets `x-real-ip` to the address the connection came from and replaces any the caller sent.
  */
-function callerIp(request: Request): string | null {
+export function callerIp(request: Request): string | null {
   const real = request.headers.get("x-real-ip");
   if (real) return real.trim();
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
