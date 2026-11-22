@@ -9,8 +9,13 @@
  *   GET  /api/boka/{firm}/address?q=…                            → { results }
  *   POST /api/boka/{firm}/suggestions   { serviceTypeId, place, mode, changeDate? } → { suggestions }
  *   POST /api/boka/{firm}/book          multipart: data (JSON) + photos              → 201 { visit }
+ *
+ * Each is limited per IP address (`PUBLIC_BOOKING_LIMITS` in core, ASVS V11.1.4): over the
+ * limit the answer is 429 with `Retry-After`, before the firm is even looked up.
  */
 import type {
+  PublicBookingAction,
+  RateLimiter,
   GeoPoint,
   Geocoder,
   MapsProvider,
@@ -36,6 +41,7 @@ import {
   type Photo,
   type PublicBookingInput,
 } from "@bojen/db";
+import { callerIp } from "./webhooks";
 
 export interface PublicDeps {
   db: () => Database;
@@ -45,6 +51,8 @@ export interface PublicDeps {
   storage: () => ObjectStorage;
   now: () => Date;
   sessionSecret: () => string;
+  /** One limiter per action; none in the end-to-end tests, which book many times from one address. */
+  limits?: Record<PublicBookingAction, RateLimiter> | null;
 }
 
 const MODES: readonly PlacementMode[] = ["water", "land", "indoor"];
@@ -108,6 +116,20 @@ async function readJson(request: Request): Promise<Record<string, unknown>> {
 }
 
 export function createPublicRoutes(deps: PublicDeps) {
+  /** A 429 when this address has used `action` too often, otherwise null. */
+  function overLimit(action: PublicBookingAction, request: Request): Promise<Response> | null {
+    const limiter = deps.limits?.[action];
+    if (!limiter) return null;
+    const result = limiter.take(callerIp(request) ?? "unknown", deps.now());
+    if (result.ok) return null;
+    return Promise.resolve(
+      Response.json(
+        { error: "too_many_requests" },
+        { status: 429, headers: { "Retry-After": String(result.retryAfterSeconds) } },
+      ),
+    );
+  }
+
   async function withFirm(
     slug: string,
     work: (firm: Firm) => Promise<Response>,
@@ -143,6 +165,7 @@ export function createPublicRoutes(deps: PublicDeps) {
 
   return {
     code: (request: Request, slug: string) =>
+      overLimit("code", request) ??
       withFirm(slug, async (firm) => {
         const b = await readJson(request);
         await requestCode(
@@ -154,6 +177,7 @@ export function createPublicRoutes(deps: PublicDeps) {
       }),
 
     verify: (request: Request, slug: string) =>
+      overLimit("verify", request) ??
       withFirm(slug, async (firm) => {
         const b = await readJson(request);
         const result = await verifyCode(
@@ -173,6 +197,7 @@ export function createPublicRoutes(deps: PublicDeps) {
       }),
 
     address: (request: Request, slug: string) =>
+      overLimit("address", request) ??
       withFirm(slug, async (firm) => {
         const q = new URL(request.url).searchParams.get("q") ?? "";
         if (q.length > 120) throw new BadRequest("q");
@@ -182,6 +207,7 @@ export function createPublicRoutes(deps: PublicDeps) {
       }),
 
     suggestions: (request: Request, slug: string) =>
+      overLimit("suggestions", request) ??
       withFirm(slug, async (firm) => {
         const b = await readJson(request);
         const place = record(b.place);
@@ -203,6 +229,7 @@ export function createPublicRoutes(deps: PublicDeps) {
       }),
 
     book: (request: Request, slug: string) =>
+      overLimit("book", request) ??
       withFirm(slug, async (firm) => {
         const key = request.headers.get("idempotency-key");
         if (!key) throw new BadRequest("Idempotency-Key");

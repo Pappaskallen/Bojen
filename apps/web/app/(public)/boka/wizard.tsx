@@ -184,6 +184,7 @@ export function BookingWizard(props: WizardProps) {
   async function sendCode() {
     setError(null);
     const response = await post("code", { phone });
+    if (response.status === 429) return setError(t.errors.tooMany);
     if (response.status === 400) return setError(t.errors.phone);
     if (!response.ok) return setError(t.confirm.failed);
     setCodeSent(true);
@@ -192,6 +193,7 @@ export function BookingWizard(props: WizardProps) {
   async function verify() {
     setError(null);
     const response = await post("verify", { phone, code });
+    if (response.status === 429) return setError(t.errors.tooMany);
     if (!response.ok) {
       const body = (await response.json().catch(() => ({}))) as { detail?: string };
       return setError(body.detail === "expired" ? t.boat.expiredCode : t.boat.wrongCode);
@@ -205,8 +207,9 @@ export function BookingWizard(props: WizardProps) {
   async function searchAddress(event: FormEvent) {
     event.preventDefault();
     const response = await fetch(`${api}/address?q=${encodeURIComponent(query)}`);
-    const body = (await response.json().catch(() => ({ results: [] }))) as { results: Address[] };
-    setResults(body.results);
+    if (response.status === 429) setError(t.errors.tooMany);
+    const body = (await response.json().catch(() => ({ results: [] }))) as { results?: Address[] };
+    setResults(body.results ?? []);
   }
 
   async function loadSuggestions() {
@@ -218,6 +221,10 @@ export function BookingWizard(props: WizardProps) {
       mode,
       changeDate: needsChange ? changeDate : null,
     });
+    if (response.status === 429) {
+      setSuggestions([]);
+      return setError(t.errors.tooMany);
+    }
     const body = (await response.json().catch(() => ({ suggestions: [] }))) as {
       suggestions?: Suggestion[];
     };
@@ -292,6 +299,8 @@ export function BookingWizard(props: WizardProps) {
       setWho("existing");
       setStep(1);
       setError(t.boat.alreadyCustomer);
+    } else if (response?.status === 429) {
+      setError(t.errors.tooMany);
     } else if (response?.status === 409) {
       setStep(3);
       setError(t.confirm.taken);

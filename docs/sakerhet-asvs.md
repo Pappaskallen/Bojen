@@ -103,14 +103,21 @@ konto och är inte infört; Dependabot och `pnpm audit` täcker samma behov unde
   egen policy.
 - [x] Hemligheter ligger bara i miljövariabler; `.env.example` har namnen utan värden.
 
+## V11: Affärslogik
+
+- [x] **V11.1.4 Begränsning av anrop till den publika bokningen** (2026-11-22). Varje adress får
+  ett visst antal anrop per åtgärd och tidsfönster (`PUBLIC_BOOKING_LIMITS` i core): 5 koder per
+  15 minuter, eftersom varje kod kan bli ett sms, 10 kodförsök per 15 minuter, 60 adressökningar
+  och 30 tidsförslag per minut, och 5 bokningar per timme. Därutöver svarar appen 429 med
+  `Retry-After`, och sidan ber kunden vänta eller ringa. Räkningen ligger i minnet i den enda
+  webbprocessen, och adressen kommer från `x-real-ip` som Caddy sätter. Gränsen ligger i appen,
+  inte i Caddy som först föreslogs: Caddy kräver ett tillägg och en egen avbildning för det,
+  och i appen går gränsen att testa.
+
 ## Återstår (förslag)
 
 - [ ] **Testsviten för samtal** (steg 6.5): kräver Claude-anrop.
 - [ ] **CSP utan `'unsafe-inline'` för skript.** Next.js lägger egna skript direkt i sidan. Att
   ta bort undantaget kräver en nonce per svar via middleware, vilket gör alla sidor dynamiska.
   Bör göras före lanseringen.
-- [ ] **Begränsning av anrop till den publika bokningen** (V11.1.4). Det finns ingen gräns per
-  IP-adress för att skicka bokningar. Varje bokning blir en förfrågan som ägaren godkänner och
-  skickar inget sms förrän då, så skadan begränsas till skräp i listan. Förslag: en gräns i Caddy
-  på den egna servern när piloten startar.
 - [ ] **Penetrationstest** före kommersiell lansering, enligt specifikationen.

@@ -15,6 +15,7 @@ import {
   kmsFromEnv,
 } from "@bojen/adapters";
 import type { Kms } from "@bojen/core/crypto";
+import { PUBLIC_BOOKING_LIMITS, createRateLimiter } from "@bojen/core";
 import type {
   Geocoder,
   MapsProvider,
@@ -383,6 +384,21 @@ export const reviewLinkRoute = createReviewLinkRoute({
   open: (code) => openReviewLink(db(), linkKey(), code, new Date()),
 });
 
+/**
+ * The public booking's limits per IP address. Off only with `BOJEN_FAKE_SERVICES=1` (the
+ * end-to-end tests, which book many times from one address); on in development too.
+ */
+const publicLimits =
+  process.env.BOJEN_FAKE_SERVICES === "1"
+    ? null
+    : {
+        code: createRateLimiter(PUBLIC_BOOKING_LIMITS.code),
+        verify: createRateLimiter(PUBLIC_BOOKING_LIMITS.verify),
+        address: createRateLimiter(PUBLIC_BOOKING_LIMITS.address),
+        suggestions: createRateLimiter(PUBLIC_BOOKING_LIMITS.suggestions),
+        book: createRateLimiter(PUBLIC_BOOKING_LIMITS.book),
+      };
+
 export const publicRoutes = createPublicRoutes({
   db,
   sms,
@@ -391,6 +407,7 @@ export const publicRoutes = createPublicRoutes({
   storage,
   now: () => new Date(),
   sessionSecret,
+  limits: publicLimits,
 });
 
 /**
