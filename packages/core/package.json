@@ -11,7 +11,7 @@
     "./messaging": "./src/messaging/index.ts",
     "./links": "./src/links/shortLink.ts",
     "./pipeline": "./src/pipeline/pipeline.ts",
-    "./logging": "./src/logging/safeError.ts",
+    "./logging": "./src/logging/index.ts",
     "./onboarding": "./src/onboarding/customerImport.ts",
     "./privacy": "./src/privacy/index.ts"
   },

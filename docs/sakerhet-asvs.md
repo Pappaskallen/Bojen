@@ -72,6 +72,12 @@ konto och är inte infört; Dependabot och `pnpm audit` täcker samma behov unde
   sparar det i `last_error`. Nu loggas fel med `safeError` (`core/logging`): feltyp, tabell
   och Postgres-kod, aldrig värdena. Arbetarens jobb körs genom `withSafeErrors`.
 - [x] Engångskoden i Supabase sms-hook loggas och lagras inte.
+- [x] **Felrapporter till GlitchTip** på den egna servern (2026-11-22). Rapporten byggs av
+  `errorEvent` (`core/logging`) med samma rensning som loggen. Den innehåller feltypen, det
+  tvättade meddelandet, stackens funktioner och rader och några taggar: tjänst, ruttens mönster
+  och uppgift. Förfrågan, sidhuvuden, kakor, användaren och variabler skickas aldrig.
+  Rensningen tar nu bort alla siffror med fyra tecken eller fler, så att även en fyrsiffrig
+  portkod försvinner.
 
 ## V8–V9: Dataskydd och transport
 

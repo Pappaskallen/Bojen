@@ -84,12 +84,31 @@ använder dem.
       Skicka sedan en inloggningskod till dig själv och kontrollera på
       [mail-tester.com](https://www.mail-tester.com) att SPF, DKIM, DMARC och omvänd DNS
       godkänns.
-10. **Ta den första säkerhetskopian och prova den:**
+10. **Sätt upp felrapporteringen i GlitchTip.**
+    1. Skapa det första kontot. Registreringen är avstängd, så det görs på servern:
+       ```sh
+       docker compose -f infra/docker-compose.yml --env-file infra/.env exec glitchtip ./manage.py createsuperuser
+       ```
+    2. Logga in på `https://fel.bojen.se`. Skapa organisationen *Bojen* och projektet *bojen*
+       med plattformen Node.js.
+    3. Kopiera projektets DSN och skriv den i `infra/.env` med den interna adressen, så att
+       felen inte går ut på nätet: `GLITCHTIP_DSN=http://<nyckel>@glitchtip:8000/<projekt>`.
+       Webben och arbetaren skickar till samma projekt, och taggen `service` skiljer dem åt.
+    4. Lägg till en upptidsövervakning av `https://bojen.se/` och en avisering till e-post.
+    5. Starta om webben och arbetaren:
+       ```sh
+       docker compose -f infra/docker-compose.yml --env-file infra/.env up -d web worker
+       ```
+       Det som skickas är bara felets typ, ett tvättat meddelande, stackens funktioner och rader
+       och några taggar (tjänst, ruttens mönster, uppgift). Aldrig förfrågan, inloggningen eller
+       några värden; se `packages/core/src/logging/errorEvent.ts`.
+
+11. **Ta den första säkerhetskopian och prova den:**
     ```sh
     sh infra/scripts/backup.sh
     sh infra/scripts/restore-test.sh
     ```
-11. **Slå på driftsättningen från GitHub.** Lägg in repots hemligheter `DEPLOY_HOST`,
+12. **Slå på driftsättningen från GitHub.** Lägg in repots hemligheter `DEPLOY_HOST`,
     `DEPLOY_SSH_KEY` (privatnyckeln för `bojen`) och `DEPLOY_KNOWN_HOSTS`, som du får med
     `ssh-keyscan <server>`.
 
@@ -131,6 +150,10 @@ filbackend i stället för Hetzners hink:
   `postgres` är inte superanvändare i Supabases Postgres.
 - **Återställning till vald tidpunkt:** fungerar. Rader som kom efter tidpunkten var borta.
   Tidpunkten måste ligga före den senast arkiverade skrivloggen.
+- **GlitchTip 6.2.6** (2026-11-22): migreringarna, `createsuperuser` och ett projekt fungerar,
+  med `VALKEY_URL=""` så att cache och kö ligger i GlitchTips egen Postgres. Fel som skickades
+  genom adaptern med namn, telefonnummer, e-postadress och portkod i meddelandet kom fram med
+  rätt typ, taggar och version. Ingen av uppgifterna fanns någonstans i GlitchTips databas.
 
 ## Inte provat än
 
@@ -146,5 +169,6 @@ Det här är skrivet utan en riktig server och ska kontrolleras vid första upps
 - **Photon:** att importen klarar `-country-codes se` från Photons planetdump. Annars finns en
   färdig svensk databas, `photon-db-se-latest`, men den är från juli 2025 och kanske inte i
   samma format.
+- **GlitchTip:** upptidsövervakningen och e-postaviseringen.
 - **LiveKit och SIP:** profilen `voice` är inte provad. Den kopplas in och provas i steg 6.2b,
   och då ska `SIP_CONFIG_BODY` kontrolleras mot LiveKits dokumentation.

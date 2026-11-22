@@ -8,7 +8,7 @@
  *   POST /api/staff/inspelningar   days=30|90 → 303 to /sakerhet?ljud=30, or ?ljudfel=…
  */
 import { crm } from "@bojen/core/i18n/sv";
-import { safeError } from "@bojen/core/logging";
+import { logError } from "./errors";
 import { AUDIO_DAY_CHOICES, exportDocument, type CustomerExportData } from "@bojen/core/privacy";
 import { exportPdf } from "./export-pdf";
 import type { StaffSession } from "./staff-auth";
@@ -82,7 +82,7 @@ export function createPrivacyRoutes(deps: PrivacyRouteDeps) {
         }
         return back("/kunder?raderad=1");
       } catch (error) {
-        console.error("[radera] erasure failed", safeError(error));
+        logError("[radera] erasure failed", error);
         return back(`${card}?fel=failed`);
       }
     },
@@ -100,7 +100,7 @@ export function createPrivacyRoutes(deps: PrivacyRouteDeps) {
         await deps.setAudioDays(tenantId, days, actor.id);
         return back(`/sakerhet?ljud=${String(days)}#ljud`);
       } catch (error) {
-        console.error("[inspelningar] saving failed", safeError(error));
+        logError("[inspelningar] saving failed", error);
         return back("/sakerhet?ljudfel=failed");
       }
     },

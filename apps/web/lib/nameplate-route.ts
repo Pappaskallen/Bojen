@@ -8,6 +8,7 @@
  */
 import { NameplateError, type DayActor } from "@bojen/db";
 import type { StaffSession } from "./staff-auth";
+import { logErrorKind } from "./errors";
 
 export interface NameplateRouteDeps {
   session: (request: Request) => Promise<StaffSession | null>;
@@ -54,7 +55,7 @@ export function createNameplateRoute(deps: NameplateRouteDeps) {
       return back(`typskylt=${what === "confirm" ? "confirmed" : "dismissed"}`);
     } catch (error) {
       if (error instanceof NameplateError) return back(`typskyltfel=${error.code}`);
-      console.error("[typskylt] decision failed", (error as Error).name);
+      logErrorKind("[typskylt] decision failed", error);
       return back("typskyltfel=failed");
     }
   };

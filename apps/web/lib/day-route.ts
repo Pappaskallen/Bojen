@@ -1,4 +1,4 @@
-import { safeError } from "@bojen/core/logging";
+import { logError } from "./errors";
 /**
  * What the mechanic does on the day view (byggplan step 5.5): plain forms that post here.
  *
@@ -177,7 +177,7 @@ export function createDayRoute(deps: DayRouteDeps) {
       else {
         problem = dayProblem(error);
         if (problem === "failed") {
-          console.error("[idag] action failed", safeError(error));
+          logError("[idag] action failed", error);
           // Worth trying again later: the queue keeps it.
           if (wantsJson) return Response.json({ ok: false, problem }, { status: 500 });
         }

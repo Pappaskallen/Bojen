@@ -1,4 +1,4 @@
-import { safeError } from "@bojen/core/logging";
+import { logError } from "./errors";
 /**
  * The campaign pages' forms (byggplan step 5.6). Only the owner and administrators create
  * and start campaigns; a mechanic may look.
@@ -73,7 +73,7 @@ export function createCampaignRoutes(deps: CampaignRouteDeps) {
   const problemOf = (error: unknown) => {
     if (error instanceof BadForm) return "invalid_input";
     if (error instanceof CampaignError) return error.code;
-    console.error("[kampanjer] action failed", safeError(error));
+    logError("[kampanjer] action failed", error);
     return "failed";
   };
 
