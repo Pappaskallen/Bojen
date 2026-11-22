@@ -10,8 +10,10 @@
  */
 import type { EmailSender, SmsSender } from "@bojen/core";
 import {
+  MARKETING_SPREAD_HORIZON_MS,
   SMS_TEMPLATES,
   ignoresOptOut,
+  marketingSlot,
   optOutHash,
   planSms,
   quietUntilFor,
@@ -22,7 +24,7 @@ import {
   type SmsTemplateKey,
   type SmsVars,
 } from "@bojen/core/messaging";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lt, max, ne, sql } from "drizzle-orm";
 import type { Database } from "./client";
 import { message, smsOptOut, tenant } from "./schema";
 
@@ -116,6 +118,36 @@ export async function scheduleJob(
     )`);
 }
 
+const MARKETING_SMS = Object.entries(SMS_TEMPLATES)
+  .filter(([, info]) => info.category === "marketing")
+  .map(([key]) => key);
+
+/** One lock for all firms, so two rounds queued at once do not take the same moment. */
+const MARKETING_SPREAD_LOCK = 4_604_611;
+
+/**
+ * Campaign sms are spread out at `MARKETING_SMS_PER_MINUTE` for all firms together, so a
+ * round does not fill 46elks' queue ahead of codes and confirmations. Each takes the moment
+ * after the last campaign sms queued within the horizon. Needs a connection that sees every
+ * firm's messages, as the worker's does; under one firm's role it spreads only that firm's.
+ */
+async function spreadMarketing(tx: Pick<Database, "execute" | "select">, earliest: Date) {
+  await tx.execute(sql`select pg_advisory_xact_lock(${MARKETING_SPREAD_LOCK})`);
+  const [row] = await tx
+    .select({ last: max(message.sendAfter) })
+    .from(message)
+    .where(
+      and(
+        eq(message.status, "queued"),
+        eq(message.channel, "sms"),
+        inArray(message.template, MARKETING_SMS),
+        gte(message.sendAfter, earliest),
+        lt(message.sendAfter, new Date(earliest.getTime() + MARKETING_SPREAD_HORIZON_MS)),
+      ),
+    );
+  return marketingSlot(earliest, row?.last ?? null);
+}
+
 type QueuedKey = Exclude<SmsTemplateKey, "staff_sign_in_code" | "booking_code">;
 
 /**
@@ -135,14 +167,19 @@ export async function queueSms<K extends QueuedKey>(
     const optedOut = target.to
       ? await isOptedOut(tx, deps.optOutKey, target.tenantId, target.to)
       : false;
-    const plan = planSms({
-      category: rendered.category,
-      to: target.to,
-      optedOut,
-      now,
-      quietUntil: quietUntilFor(key),
-      ...(options.wanted ? { wanted: options.wanted } : {}),
-    });
+    const planned = (wanted?: Date) =>
+      planSms({
+        category: rendered.category,
+        to: target.to,
+        optedOut,
+        now,
+        quietUntil: quietUntilFor(key),
+        ...(wanted ? { wanted } : {}),
+      });
+    let plan = planned(options.wanted);
+    if (plan.action === "send" && rendered.category === "marketing") {
+      plan = planned(await spreadMarketing(tx, plan.at));
+    }
     const [row] = await tx
       .insert(message)
       .values({

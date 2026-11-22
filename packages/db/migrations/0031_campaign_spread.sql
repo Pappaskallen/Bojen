@@ -1,0 +1,1 @@
+CREATE INDEX "message_queued_send_after_idx" ON "message" USING btree ("send_after") WHERE "message"."status" = 'queued';

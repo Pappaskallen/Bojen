@@ -30,11 +30,14 @@ export {
   type RenderedSms,
 } from "./render";
 export {
+  MARKETING_SMS_PER_MINUTE,
+  MARKETING_SPREAD_HORIZON_MS,
   QUIET_FROM,
   QUIET_UNTIL,
   earliestSend,
   ignoresOptOut,
   inQuietHours,
+  marketingSlot,
   optOutHash,
   planSms,
   type DeliveryPlan,

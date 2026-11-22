@@ -79,12 +79,11 @@ Klistra aldrig in dem i chatten.
   nummer.
 - **Hastighet (läst 2026-11-22):** ett konto skickar som standard 100 sms per minut. Det som
   skickas därutöver köas hos 46elks och går iväg i tur och ordning, enligt
-  [46elks dokumentation](https://46elks.com/docs/send-sms). Byggplanens krav är 500 per minut,
-  och vårkampanjen skickar 40 sms per firma klockan 18:30, så med tio firmor blir det 400 på
-  samma minut. Fråga 46elks:
-  - om de kan höja gränsen till minst 500 per minut, och vad det kostar;
-  - om gränsen gäller per underkonto, så att varje firma får sin egen;
-  - om koder och påminnelser kan gå före kampanjens sms i deras kö.
+  [46elks dokumentation](https://46elks.com/docs/send-sms). Robert beslutade 2026-11-22 att
+  inte be om en högre gräns. I stället sprider `queueSms` ut kampanjens sms till 50 per minut
+  för alla firmor tillsammans (`MARKETING_SMS_PER_MINUTE`), så att koder, bekräftelser och svar
+  alltid har den andra halvan. Tio firmor med 40 sms var tar då 8 minuter från 18:30. Höjs
+  gränsen senare är det bara konstanten som ändras.
 - **Kostnad:**
 
   | Vad | Pris |
