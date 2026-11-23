@@ -27,7 +27,7 @@ const STAFF_PATHS = [
   "/api/fakturaunderlag",
 ];
 
-const isStaffPath = (pathname: string) =>
+export const isStaffPath = (pathname: string) =>
   STAFF_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
 /**

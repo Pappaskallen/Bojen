@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { config, middleware } from "../middleware";
+import { config, isStaffPath, middleware } from "../middleware";
 
 const env = {
   NEXT_PUBLIC_SUPABASE_URL: "http://supabase.test",
@@ -59,24 +59,49 @@ describe("session refresh middleware", () => {
 describe("which paths refresh the session", () => {
   it("covers every staff page and route, also the customer and boat cards", () => {
     for (const path of [
-      "/forfragningar/:path*",
-      "/sakerhet/:path*",
-      "/kunder/:path*",
-      "/batar/:path*",
-      "/marinor/:path*",
-      "/pipeline/:path*",
-      "/kampanjer/:path*",
-      "/idag/:path*",
-      "/oversikt/:path*",
-      "/api/idag/:path*",
-      "/api/passkey/:path*",
-      "/api/pipeline/:path*",
-      "/api/kampanjer/:path*",
-      "/api/bookings/:path*",
-      "/api/staff/:path*",
-      "/api/batar/:path*",
+      "/forfragningar",
+      "/sakerhet",
+      "/kunder/abc",
+      "/batar/abc",
+      "/marinor",
+      "/pipeline",
+      "/kampanjer/abc",
+      "/idag",
+      "/oversikt/samtal",
+      "/api/idag/x",
+      "/api/passkey/x",
+      "/api/pipeline/x",
+      "/api/kampanjer/x",
+      "/api/bookings/x",
+      "/api/staff/x",
+      "/api/batar/x",
+      "/api/fakturaunderlag",
     ]) {
-      expect(config.matcher).toContain(path);
+      expect(isStaffPath(path), path).toBe(true);
     }
+    for (const path of ["/", "/boka/firma", "/logga-in", "/kunderna", "/api/webhooks/elks"]) {
+      expect(isStaffPath(path), path).toBe(false);
+    }
+  });
+
+  it("runs on every page but not on static files", () => {
+    expect(config.matcher).toEqual(["/((?!_next/static|_next/image|.*\\.[a-zA-Z0-9]+$).*)"]);
+  });
+});
+
+describe("content security policy", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("sends a policy with a fresh nonce, and puts it in the request for Next.js", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const a = await middleware(new NextRequest("http://127.0.0.1:3100/boka/firma"));
+    const b = await middleware(new NextRequest("http://127.0.0.1:3100/logga-in"));
+    const pa = a.headers.get("content-security-policy") ?? "";
+    const pb = b.headers.get("content-security-policy") ?? "";
+    expect(pa).toMatch(/script-src .self. .nonce-[A-Za-z0-9+/=]+. .strict-dynamic./);
+    expect(pa).not.toContain("frame-ancestors");
+    expect(pb).toContain("frame-ancestors 'none'");
+    expect(pa.match(/nonce-[^']+/)?.[0]).not.toBe(pb.match(/nonce-[^']+/)?.[0]);
+    expect(a.headers.get("x-middleware-request-content-security-policy")).toBe(pa);
   });
 });
