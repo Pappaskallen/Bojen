@@ -204,6 +204,41 @@ Båda kostar 0 kr och håller datan på vår server. Ett utskick via en tjänst 
 (15 USD per månad, enligt den gamla kalkylen) blir aktuellt först om leveransen till inkorgarna
 krånglar. Det är adaptern `packages/adapters/src/email` som byts i så fall.
 
+### 10. VoiceStudio i stället för Azure? (undersökt 2026-11-23)
+
+Robert har [VoiceStudio](https://github.com/debpalash/VoiceStudio) 0.5.7 installerat. Det är ett
+skrivbordsprogram med öppen källkod (AGPL-3.0) för tal till text, text till tal och röstkloning
+helt lokalt, med motorer som WhisperX, Faster-Whisper, OmniVoice och CosyVoice. Det har ett lokalt
+API på port 3900, med strömmande tal över websocket (`/ws/tts`) och transkribering
+(`/v1/audio/transcriptions`).
+
+| Punkt | Bedömning |
+|---|---|
+| Kostnad | 5: gratis, bortsett från hårdvaran |
+| Licens för vår användning | **1.** Standardmodellen för röst, OmniVoice, är icke-kommersiell (CC-BY-NC). Enligt projektets egen förteckning är ingen modell godkänd för kommersiellt bruk än. Den kommersiella licensen finns i den betalda VoiceStudio Pro. |
+| Svenska | ?: "646 språk" utlovas, men ingen lista per motor. Whisper-motorerna (tal till text) klarar svenska. Rösterna är okända. |
+| Latens i telefonsamtal | **1 på vår hårdvara.** Mätningarna är gjorda på en Apple M2. Utan GPU är det ungefär hälften så snabbt som M2, och ännu långsammare jämfört med NVIDIA. GPU-stöd på Windows kräver NVIDIA. Din dator har en AMD Vega 8 och 4 kärnor, och Hetzner AX41 har ingen GPU. Ett svar under 1,2 sekunder (p90) är inte realistiskt. |
+| Drift | 2: ett skrivbordsprogram (Electron), inte en servertjänst. Att köra det på servern är inte det projektet är byggt för. |
+| Dataskydd | 5: allt stannar lokalt |
+| Mognad | 3: stort och aktivt projekt, men version 0.x och snabba förändringar |
+
+**Slutsats: inte för röstagenten i piloten.**
+- Licensen stoppar standardrösten i en kommersiell tjänst.
+- Utan GPU blir svaren för långsamma för ett telefonsamtal.
+- Det är byggt för en dator, inte för en server som tar emot samtal dygnet runt.
+
+**Där det kan vara till nytta redan nu:**
+- **Testljud vid din egen dator.** Läs in eller generera svenska meningar med båttermer för
+  jämförelsetestet av tal till text (punkt 2). Använd då en motor vars licens tillåter det, eller
+  din egen röst, och bara som testdata.
+- **Tal till text i efterhand.** Whisper (MIT-licens) går att köra på servern för
+  röstanteckningar och inspelningar där svaret inte behöver komma direkt. Det kräver ingen
+  VoiceStudio, och vi kan pröva det om Azure-kostnaden blir ett problem. Svenskt finjusterade
+  Whisper-modeller från KB-labbet är värda att testa. Kontrollera licensen först.
+- **Om en GPU-server blir aktuell senare** (till exempel en Hetzner GEX med NVIDIA) och en motor
+  med kommersiell licens och bra svenska finns, kan frågan prövas igen. Då som en ny adapter för
+  tal, och med samma jämförelsetest.
+
 ## Del 3. Sammanfattning
 
 | Tjänst | Förslag | Ändring mot i dag |
