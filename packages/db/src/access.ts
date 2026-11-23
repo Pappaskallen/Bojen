@@ -58,7 +58,10 @@ export class AccessDeniedError extends Error {
 }
 
 /** The firm's data key in plaintext. Creates and stores a wrapped key on first use. */
-async function dataKey(deps: Pick<AccessDeps, "db" | "kms">, tenantId: string): Promise<Buffer> {
+export async function tenantDataKey(
+  deps: Pick<AccessDeps, "db" | "kms">,
+  tenantId: string,
+): Promise<Buffer> {
   const { db, kms } = deps;
   const [row] = await db
     .select({ wrapped: tenant.dataKeyEncrypted })
@@ -76,7 +79,7 @@ async function dataKey(deps: Pick<AccessDeps, "db" | "kms">, tenantId: string): 
   if (stored.length === 1) return created.plaintext;
 
   // Another request stored a key first; use that one.
-  return dataKey(deps, tenantId);
+  return tenantDataKey(deps, tenantId);
 }
 
 function seal(key: Buffer, tenantId: string, field: EncryptedField, value: string | undefined) {
@@ -100,7 +103,7 @@ export interface AccessInput {
 /** Saves a boat's access information, encrypting the code and key location. */
 export async function encryptAccess(deps: AccessDeps, input: AccessInput): Promise<{ id: string }> {
   const { tenantId, boatId } = input;
-  const key = await dataKey(deps, tenantId);
+  const key = await tenantDataKey(deps, tenantId);
   const values = {
     codeEncrypted: seal(key, tenantId, "access_info.code", input.code),
     keyLocationEncrypted: seal(key, tenantId, "access_info.key_location", input.keyLocation),
@@ -145,7 +148,7 @@ export async function encryptLocationAccess(
   input: LocationAccessInput,
 ): Promise<{ id: string }> {
   const { tenantId, locationId } = input;
-  const key = await dataKey(deps, tenantId);
+  const key = await tenantDataKey(deps, tenantId);
   const changes = Object.fromEntries(
     Object.entries({
       gateCodeEncrypted: seal(key, tenantId, "location_access_rule.gate_code", input.gateCode),
@@ -255,7 +258,7 @@ async function openAccess(
   day: string,
 ): Promise<RevealedAccess> {
   const { db } = deps;
-  const key = await dataKey(deps, tenantId);
+  const key = await tenantDataKey(deps, tenantId);
   const [info] = boatId
     ? await db
         .select()

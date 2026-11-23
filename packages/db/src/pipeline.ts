@@ -9,6 +9,7 @@ import {
   isPipelineStatus,
   mayMoveCard,
   statusAfterInvoice,
+  statusAfterPayment,
   statusAfterVisitDone,
   type PipelineColumn,
   type PipelineStatus,
@@ -234,6 +235,27 @@ export async function jobAfterInvoice(db: Db, tenantId: string, jobId: string, a
     to,
     { type: "system", id: null },
     "invoice",
+    at,
+  );
+}
+
+/** After Fortnox says the invoice is paid (step 8): the card moves to paid. */
+export async function jobAfterPayment(db: Db, tenantId: string, jobId: string, at: Date) {
+  const [row] = await db
+    .select({ status: job.pipelineStatus })
+    .from(job)
+    .where(and(eq(job.tenantId, tenantId), eq(job.id, jobId), isNull(job.deletedAt)));
+  if (!row) return false;
+  const to = statusAfterPayment(row.status);
+  if (!to) return false;
+  return setStatus(
+    db,
+    tenantId,
+    jobId,
+    row.status,
+    to,
+    { type: "system", id: null },
+    "payment",
     at,
   );
 }

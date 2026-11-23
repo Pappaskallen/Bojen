@@ -10,7 +10,8 @@ type Page =
   | "customers"
   | "places"
   | "campaigns"
-  | "security";
+  | "security"
+  | "integrations";
 
 const LINKS: { page: Page; href: string }[] = [
   { page: "overview", href: "/oversikt" },
@@ -22,6 +23,7 @@ const LINKS: { page: Page; href: string }[] = [
   { page: "places", href: "/marinor" },
   { page: "campaigns", href: "/kampanjer" },
   { page: "security", href: "/sakerhet" },
+  { page: "integrations", href: "/installningar/integrationer" },
 ];
 
 /** The menu on the staff pages; the page you are on is not a link. */

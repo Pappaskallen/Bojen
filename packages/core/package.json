@@ -13,7 +13,8 @@
     "./pipeline": "./src/pipeline/pipeline.ts",
     "./logging": "./src/logging/index.ts",
     "./onboarding": "./src/onboarding/customerImport.ts",
-    "./privacy": "./src/privacy/index.ts"
+    "./privacy": "./src/privacy/index.ts",
+    "./fortnox": "./src/fortnox/fortnox.ts"
   },
   "scripts": {
     "lint": "eslint .",

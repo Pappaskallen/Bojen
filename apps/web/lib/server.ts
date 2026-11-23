@@ -12,6 +12,7 @@ import {
   createFakeClassifier,
   createAgentHealth,
   elksFromEnv,
+  fortnoxFromEnv,
   kmsFromEnv,
 } from "@bojen/adapters";
 import type { Kms } from "@bojen/core/crypto";
@@ -88,6 +89,9 @@ import {
   setFirmAudioDays,
   invoiceExportRows,
   markMonthInvoiced,
+  disconnectFortnox,
+  saveFortnoxConnection,
+  saveFortnoxSettings,
 } from "@bojen/db";
 import { createBookingRoutes, type RequestContext } from "./bookings";
 import { createBoatAccessRoute } from "./boat-access";
@@ -105,6 +109,7 @@ import { createReportRoute } from "./report-route";
 import { createReviewLinkRoute } from "./review-link-route";
 import { createPrivacyRoutes } from "./privacy-routes";
 import { createInvoiceExportRoutes } from "./invoice-export-route";
+import { createFortnoxRoutes } from "./fortnox-routes";
 import { createPublicRoutes } from "./public-booking";
 import { createStaffAdminRoutes } from "./staff-admin";
 import { ELKS_IPS, createWebhookRoutes } from "./webhooks";
@@ -571,4 +576,19 @@ export const invoiceExportRoutes = createInvoiceExportRoutes({
   session: (request) => sessionFromRequest(staffAuth(), request),
   rows: (tenantId, month) => invoiceExportRows(db(), tenantId, month),
   markInvoiced: (tenantId, month) => markMonthInvoiced(db(), tenantId, month, new Date()),
+});
+
+/** Fortnox (step 8): null until the app is registered (FORTNOX_CLIENT_ID and _SECRET). */
+export const fortnoxApi = once(() => fortnoxFromEnv());
+
+/** Connecting the firm's Fortnox (step 8). */
+export const fortnoxRoutes = createFortnoxRoutes({
+  session: (request) => sessionFromRequest(staffAuth(), request),
+  fortnox: fortnoxApi,
+  clientId: () => process.env.FORTNOX_CLIENT_ID ?? null,
+  redirectUri: () => `${appUrl()}/api/integrationer/fortnox/callback`,
+  secureCookies: production,
+  save: (input) => saveFortnoxConnection({ db: db(), kms: kms() }, { ...input, now: new Date() }),
+  disconnect: (tenantId) => disconnectFortnox(db(), tenantId),
+  saveSettings: (tenantId, settings) => saveFortnoxSettings(db(), tenantId, settings),
 });

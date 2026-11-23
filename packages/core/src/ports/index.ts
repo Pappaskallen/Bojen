@@ -178,3 +178,47 @@ export interface PushPayload {
 export interface PushSender {
   send(target: PushTarget, payload: PushPayload): Promise<{ gone: boolean }>;
 }
+
+/** The tokens from Fortnox' token endpoint. The refresh token is used once (it rotates). */
+export interface FortnoxTokens {
+  accessToken: string;
+  refreshToken: string;
+  /** Seconds the access token lasts; 3600 at Fortnox. */
+  expiresIn: number;
+  scope: string;
+}
+
+/** A Fortnox invoice as far as Bojen reads it. */
+export interface FortnoxInvoiceState {
+  documentNumber: string;
+  balance: number | null;
+  cancelled: boolean;
+  total: number | null;
+}
+
+/**
+ * Fortnox (step 8): the OAuth 2 token endpoint and the REST API at api.fortnox.se/3. The HTTP
+ * adapter in production, a fake in tests. Every call for a firm takes its access token.
+ */
+export interface FortnoxApi {
+  exchangeCode(input: {
+    code: string;
+    redirectUri: string;
+    verifier: string;
+  }): Promise<FortnoxTokens>;
+  refresh(refreshToken: string): Promise<FortnoxTokens>;
+  companyName(accessToken: string): Promise<string | null>;
+  createCustomer(accessToken: string, customer: Record<string, unknown>): Promise<string>;
+  updateCustomer(
+    accessToken: string,
+    customerNumber: string,
+    customer: Record<string, unknown>,
+  ): Promise<void>;
+  /** The invoice Bojen made for a visit before, found by its reference, or null. */
+  findInvoice(accessToken: string, reference: string): Promise<FortnoxInvoiceState | null>;
+  createInvoice(
+    accessToken: string,
+    invoice: Record<string, unknown>,
+  ): Promise<FortnoxInvoiceState>;
+  getInvoice(accessToken: string, documentNumber: string): Promise<FortnoxInvoiceState>;
+}

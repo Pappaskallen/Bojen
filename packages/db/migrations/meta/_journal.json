@@ -225,6 +225,13 @@
       "when": 1795378342095,
       "tag": "0031_campaign_spread",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795414190771,
+      "tag": "0032_fortnox",
+      "breakpoints": true
     }
   ]
 }

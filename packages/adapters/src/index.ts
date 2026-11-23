@@ -87,3 +87,11 @@ export {
   type FakeErrorReporter,
   type GlitchTipOptions,
 } from "./errors";
+export {
+  FortnoxError,
+  createFakeFortnox,
+  createFortnoxApi,
+  fortnoxFromEnv,
+  type FakeFortnox,
+  type FortnoxOptions,
+} from "./fortnox";

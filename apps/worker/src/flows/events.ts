@@ -8,6 +8,7 @@ import { handleOfferAnswer, startWaitlist } from "./waitlistOffer";
 import { type ReportContent, sendServiceReport } from "./serviceReport";
 import { handleCampaignAnswer, handleSoldAnswer } from "./campaign";
 import { handleSurveyAnswer, scheduleSurvey } from "./survey";
+import { queueFortnoxInvoice } from "./fortnox";
 
 export const DOMAIN_EVENT_TASK = "domain_event";
 
@@ -103,6 +104,8 @@ export async function handleDomainEvent(deps: FlowDeps, eventId: string): Promis
       const reportVisit = typeof payload.visitId === "string" ? payload.visitId : visitId;
       if (!reportVisit) return "ignored";
       await sendServiceReport(deps, tenantId, reportVisit, payload as ReportContent);
+      // The invoice to Fortnox, when the firm has connected it (step 8).
+      await queueFortnoxInvoice(deps, tenantId, reportVisit);
       return "report";
     }
     case "message.received":

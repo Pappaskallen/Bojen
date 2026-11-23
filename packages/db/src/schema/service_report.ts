@@ -60,6 +60,10 @@ export const serviceReport = pgTable(
     approvedAt: timestamp("approved_at", { withTimezone: true }),
     approvedBy: uuid("approved_by"),
     invoice: jsonb("invoice").$type<StoredInvoice>(),
+    /** The invoice made in Fortnox from the approved basis (step 8), and when it was paid. */
+    fortnoxDocumentNumber: text("fortnox_document_number"),
+    fortnoxInvoicedAt: timestamp("fortnox_invoiced_at", { withTimezone: true }),
+    fortnoxPaidAt: timestamp("fortnox_paid_at", { withTimezone: true }),
   },
   (t) => [
     foreignKey({ columns: [t.tenantId], foreignColumns: [tenant.id] }),
