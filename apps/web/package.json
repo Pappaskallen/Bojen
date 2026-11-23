@@ -18,7 +18,7 @@
     "@bojen/db": "workspace:*",
     "@serwist/next": "9.5.15",
     "@simplewebauthn/browser": "14.0.0",
-    "@simplewebauthn/server": "14.0.3",
+    "@simplewebauthn/server": "14.1.0",
     "next": "15.5.29",
     "pdf-lib": "1.17.1",
     "react": "19.3.1",
