@@ -18,7 +18,9 @@ export type EncryptedField =
   | "access_info.code"
   | "access_info.key_location"
   | "location_access_rule.gate_code"
-  | "location_access_rule.key_box";
+  | "location_access_rule.key_box"
+  | "fortnox_connection.access_token"
+  | "fortnox_connection.refresh_token";
 
 export function fieldAad(tenantId: string, field: EncryptedField): Buffer {
   return Buffer.from(`bojen:v1:${tenantId}:${field}`, "utf8");

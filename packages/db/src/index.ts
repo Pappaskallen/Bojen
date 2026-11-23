@@ -30,3 +30,4 @@ export * from "./calls";
 export * from "./privacy";
 export * from "./customer-import";
 export * from "./invoice-export";
+export * from "./fortnox";

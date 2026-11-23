@@ -25,6 +25,8 @@ const STAFF_PATHS = [
   "/api/passkey",
   "/api/auth",
   "/api/fakturaunderlag",
+  "/installningar",
+  "/api/integrationer",
 ];
 
 export const isStaffPath = (pathname: string) =>

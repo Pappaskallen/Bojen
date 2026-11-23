@@ -56,3 +56,8 @@ export function statusAfterVisitDone(
 export function statusAfterInvoice(current: PipelineStatus): PipelineStatus | null {
   return current === "invoiced" || current === "paid" ? null : "invoiced";
 }
+
+/** A paid invoice moves its card to paid (step 8). */
+export function statusAfterPayment(current: PipelineStatus): PipelineStatus | null {
+  return current === "paid" ? null : "paid";
+}

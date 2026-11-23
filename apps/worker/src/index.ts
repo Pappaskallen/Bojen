@@ -10,6 +10,8 @@ import {
   createOsrmMaps,
   elksFromEnv,
   errorReporterFromEnv,
+  fortnoxFromEnv,
+  kmsFromEnv,
   systemClock,
   webPushFromEnv,
 } from "@bojen/adapters";
@@ -17,6 +19,7 @@ import type { EmailSender, PushSender, SmsSender } from "@bojen/core";
 import { connect, databaseUrl, KPI_CRONTAB, PRIVACY_CRONTAB } from "@bojen/db";
 import { run } from "graphile-worker";
 import { customerLinks } from "./flows/deps";
+import { FORTNOX_CRONTAB } from "./flows/fortnox";
 import { postCallDeps, reportDeps } from "./report-deps";
 import {
   WORKER_CONCURRENCY,
@@ -116,12 +119,14 @@ async function main() {
   const url = databaseUrl();
   const { db } = connect(url);
   const reports = reportDeps(production);
+  // Fortnox (step 8) once the app is registered (FORTNOX_CLIENT_ID and _SECRET).
+  const fortnox = fortnoxFromEnv();
   const runner = await run({
     connectionString: url,
     concurrency: WORKER_CONCURRENCY,
     noHandleSignals: false,
     pollInterval: WORKER_POLL_INTERVAL_MS,
-    crontab: `${KPI_CRONTAB}\n${PRIVACY_CRONTAB}`,
+    crontab: [KPI_CRONTAB, PRIVACY_CRONTAB, ...(fortnox ? [FORTNOX_CRONTAB] : [])].join("\n"),
     taskList: withSafeErrors(
       taskList({
         db,
@@ -134,6 +139,7 @@ async function main() {
         postCall: postCallDeps(production, reports.storage),
         escalation: escalationDeps(),
         privacy: { storage: reports.storage },
+        ...(fortnox ? { fortnox: { api: fortnox, kms: kmsFromEnv(process.env, production) } } : {}),
         maps: process.env.OSRM_URL
           ? createOsrmMaps({ baseUrl: process.env.OSRM_URL })
           : createFakeMaps(),

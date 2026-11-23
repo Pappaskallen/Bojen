@@ -90,6 +90,9 @@ export type {
   StaffAuth,
   StaffClaims,
   TotpEnrollment,
+  FortnoxApi,
+  FortnoxInvoiceState,
+  FortnoxTokens,
 } from "./ports";
 export { BOAT_MAKES, ENGINE_MAKES } from "./catalog/brands";
 export { modeTimeline } from "./booking/modes";
@@ -167,6 +170,7 @@ export {
   isPipelineStatus,
   mayMoveCard,
   statusAfterInvoice,
+  statusAfterPayment,
   statusAfterVisitDone,
   type PipelineColumn,
   type PipelineStatus,

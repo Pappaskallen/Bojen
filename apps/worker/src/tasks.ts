@@ -1,5 +1,6 @@
 import type {
   CallSummarizer,
+  FortnoxApi,
   EmailSender,
   MapsProvider,
   NameplateReader,
@@ -32,6 +33,7 @@ import {
   type PrivacyDeps,
 } from "@bojen/db";
 import { safeError, type ErrorReporter } from "@bojen/core/logging";
+import type { Kms } from "@bojen/core/crypto";
 import type { Task, TaskList } from "graphile-worker";
 import { CHECK_TASK, sendAvailabilityCheck } from "./flows/availabilityCheck";
 import { ESCALATION_TASK, REMINDER_TASK, handleCheckEvent } from "./flows/availabilityFollowup";
@@ -47,6 +49,12 @@ import {
   releaseCampaignHold,
   sendCampaignRound,
 } from "./flows/campaign";
+import {
+  FORTNOX_INVOICE_TASK,
+  FORTNOX_PAYMENTS_TASK,
+  checkFortnoxPayments,
+  sendFortnoxInvoice,
+} from "./flows/fortnox";
 
 export interface WorkerDeps extends FlowDeps {
   sms: SmsSender;
@@ -61,6 +69,8 @@ export interface WorkerDeps extends FlowDeps {
   escalation?: EscalationDeps;
   /** The nightly clean-up of personal data (step 7.4): the files go from this storage. */
   privacy?: { storage: ObjectStorage };
+  /** Invoices to Fortnox and their payments (step 8); off until the app is registered. */
+  fortnox?: { api: FortnoxApi; kms: Kms };
 }
 
 export interface EscalationDeps {
@@ -148,6 +158,29 @@ export function taskList(deps: WorkerDeps): TaskList {
       ? privacyTasks({ db: deps.db, now: deps.now, storage: deps.privacy.storage })
       : {}),
     ...(deps.reports ? reportTasks({ db: deps.db, now: deps.now, ...deps.reports }) : {}),
+    ...(deps.fortnox
+      ? fortnoxTasks({
+          db: deps.db,
+          now: deps.now,
+          kms: deps.fortnox.kms,
+          fortnox: deps.fortnox.api,
+        })
+      : {}),
+  };
+}
+
+/** Fortnox (step 8): the invoice after an approved report, and the hourly payment check. */
+export function fortnoxTasks(deps: Parameters<typeof sendFortnoxInvoice>[0]): TaskList {
+  return {
+    [FORTNOX_INVOICE_TASK]: visitTask((tenantId, visitId) =>
+      sendFortnoxInvoice(deps, tenantId, visitId),
+    ),
+    [FORTNOX_PAYMENTS_TASK]: async (_payload, helpers) => {
+      const r = await checkFortnoxPayments(deps);
+      helpers.logger.info(
+        `fortnox payments: ${String(r.checked)} checked, ${String(r.paid)} paid, ${String(r.skipped)} skipped`,
+      );
+    },
   };
 }
 

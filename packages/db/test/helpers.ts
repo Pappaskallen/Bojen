@@ -43,6 +43,7 @@ import {
   smsOptOut,
   nameplateReading,
   pushSubscription,
+  fortnoxConnection,
   serviceReport,
   staffPasskey,
   verificationCode,
@@ -352,6 +353,15 @@ export async function createTenantWithBoat(tx: Tx, name: string, phone: string) 
     endpoint: `https://push.example/${tenantId}`,
     p256dh: "not-a-real-key",
     auth: "not-a-real-auth",
+  });
+  await tx.insert(fortnoxConnection).values({
+    tenantId,
+    accessTokenEncrypted: Buffer.from("not-a-real-token"),
+    refreshTokenEncrypted: Buffer.from("not-a-real-token"),
+    accessExpiresAt: new Date("2027-01-01T01:00:00Z"),
+    refreshExpiresAt: new Date("2027-02-15T00:00:00Z"),
+    scope: "invoice",
+    connectedAt: new Date("2027-01-01T00:00:00Z"),
   });
   await tx.insert(kpiSnapshot).values({
     tenantId,

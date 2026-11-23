@@ -453,6 +453,42 @@ export const crm = {
     places: "Marinor",
     campaigns: "Kampanjer",
     security: "Säkerhet",
+    integrations: "Fortnox",
+  },
+  /** Connecting Fortnox (step 8). */
+  integrations: {
+    title: "Fortnox",
+    intro:
+      "När Fortnox är kopplat blir varje godkänt fakturaunderlag en faktura i Fortnox, och jobbet flyttas till Betalt när kunden har betalat.",
+    notRegistered:
+      "Kopplingen till Fortnox är inte aktiverad än. Under tiden kan du ladda ner fakturaunderlagen som CSV på pipelinesidan.",
+    notConnected: "Fortnox är inte kopplat.",
+    connected: (company: string | null, since: string) =>
+      company ? `Kopplat till ${company} sedan ${since}.` : `Kopplat sedan ${since}.`,
+    needsReconnect:
+      "Fortnox behöver kopplas igen. Inga nya fakturor skickas förrän du har gjort det.",
+    connect: "Koppla Fortnox",
+    reconnect: "Koppla Fortnox igen",
+    disconnect: "Koppla från Fortnox",
+    disconnectNote: "Fakturor som redan finns i Fortnox ligger kvar där.",
+    onlyOwners: "Bara ägare och administratörer kan ändra kopplingen.",
+    articlesHeading: "Artiklar och förfallodag",
+    articlesIntro:
+      "Skriv artikelnumren från ditt Fortnox för varje typ av rad. En rad utan artikelnummer skickas med bara benämning och pris.",
+    article: (type: string) => `Artikelnummer för ${type.toLowerCase()}`,
+    dueDays: "Dagar till förfallodag",
+    save: "Spara",
+    results: {
+      kopplad: "Fortnox är kopplat.",
+      bortkopplad: "Fortnox är bortkopplat.",
+      sparad: "Inställningarna är sparade.",
+      nekad: "Kopplingen avbröts i Fortnox. Inget ändrades.",
+      fel: "Det gick inte att koppla Fortnox. Försök igen.",
+      "ej-registrerad": "Kopplingen till Fortnox är inte aktiverad än.",
+      "ogiltig-artikel":
+        "Ett artikelnummer får bara ha bokstäver, siffror, punkt, bindestreck och understreck, högst 50 tecken.",
+      "ogiltiga-dagar": "Ange 0–90 dagar till förfallodag.",
+    } as Record<string, string>,
   },
   /** The dashboard in the phone (step 7.2, spec 9.2). */
   dashboard: {

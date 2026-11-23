@@ -16,6 +16,8 @@ export const customer = pgTable(
     phone: text("phone"),
     email: text("email"),
     billingAddress: text("billing_address"),
+    /** The customer's number in the firm's Fortnox, once Bojen has made it there (step 8). */
+    fortnoxCustomerNumber: text("fortnox_customer_number"),
     /** How the customer found the firm. */
     acquisitionChannel: text("acquisition_channel"),
     language: text("language").notNull().default("sv"),

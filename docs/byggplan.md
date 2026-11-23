@@ -429,6 +429,7 @@ ett alternativ i stället för att byta tyst.
 - **Gör:** Koppling via OAuth 2, synk av kunder och artiklar, faktura skapas från fakturaunderlaget och betalstatus hämtas via polling.
 - **Klart när:** Ett test i Fortnox sandlåda skapar en faktura och statusen *Betald* hämtas tillbaka.
 - (Reserv enligt spec 12.1, byggd 2026-11-22: till dess partneravtalet finns laddar ägaren ner månadens godkända fakturaunderlag som CSV från pipelinesidan, för Excel eller Fortnox import, och markerar dem som fakturerade så att korten flyttas. Själva Fortnox-kopplingen väntar på avtalet.)
+- (Del a byggd 2026-11-23 mot en fejkad Fortnox, med fält och adresser ur Fortnox OpenAPI-beskrivning: ägaren kopplar Fortnox med OAuth 2 och PKCE på `/installningar/integrationer` och anger firmans artikelnummer och förfallodagar. Token krypteras med firmans datanyckel i `fortnox_connection`, och refresh-token, som bara gäller en gång, förnyas under lås. När en rapport godkänns skapar arbetaren kunden i Fortnox första gången och fakturan från underlaget, med besöket som referens så att ett nytt försök inte ger en dubbel faktura. Kortet går till Fakturerat. Varje timme hämtas betalstatus, och betalda jobb går till Betalt. Del b, provet i Fortnox sandlåda i *Klart när*, görs när utvecklarkontot finns (`FORTNOX_CLIENT_ID` och `FORTNOX_CLIENT_SECRET`). Då bockas steget av.)
 
 ### Steg 9 – Drift på egen server (3–4 dagar)
 - **Mål:** Allt som går att köra själv körs på en egen server, enligt beslutet 2026-11-21 i `docs/egen-drift.md`.
