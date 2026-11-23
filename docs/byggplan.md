@@ -428,6 +428,7 @@ ett alternativ i stället för att byta tyst.
 - **Berör:** `packages/adapters/fortnox/*`, `apps/web/app/(admin)/installningar/integrationer/*`.
 - **Gör:** Koppling via OAuth 2, synk av kunder och artiklar, faktura skapas från fakturaunderlaget och betalstatus hämtas via polling.
 - **Klart när:** Ett test i Fortnox sandlåda skapar en faktura och statusen *Betald* hämtas tillbaka.
+- (Reserv enligt spec 12.1, byggd 2026-11-22: till dess partneravtalet finns laddar ägaren ner månadens godkända fakturaunderlag som CSV från pipelinesidan, för Excel eller Fortnox import, och markerar dem som fakturerade så att korten flyttas. Själva Fortnox-kopplingen väntar på avtalet.)
 
 ### Steg 9 – Drift på egen server (3–4 dagar)
 - **Mål:** Allt som går att köra själv körs på en egen server, enligt beslutet 2026-11-21 i `docs/egen-drift.md`.
