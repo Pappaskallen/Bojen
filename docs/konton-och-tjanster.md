@@ -1,5 +1,9 @@
 # Konton och tjänster som behövs
 
+> **2026-11-23:** Listan över konton, kostnaden och jämförelsen med alternativen står nu i
+> [konton-spec.md](konton-spec.md). Avsnitt 3 och kalkylen nedan gäller inte längre. Detaljerna om
+> 46elks, Anthropic och Azure gäller fortfarande.
+
 Sammanställt 2026-11-21 utifrån MVP-stacken i `docs/byggplan.md`, `.env.example` och
 specifikationens kapitel 10, 11 och 13. Priserna är lästa på leverantörernas prissidor samma dag,
 exklusive moms. De ändras, så kontrollera dem innan du väljer plan. Där ett pris inte gick att
