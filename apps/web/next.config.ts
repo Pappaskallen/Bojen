@@ -15,29 +15,10 @@ const withSerwist = withSerwistInit({
 });
 
 /**
- * Security headers on every response (ASVS V14.4, Avslutande kontroll). Everything the pages
- * load and call is on this site, so the policy allows only 'self'. Next.js puts its own inline
- * scripts in the page, hence 'unsafe-inline' for scripts until the pages use nonces. Off in
+ * Security headers on every response (ASVS V14.4, Avslutande kontroll). The Content Security
+ * Policy carries a nonce per response, so it is set in middleware.ts (lib/csp.ts). Off in
  * development, where hot reload needs eval.
  */
-function contentSecurityPolicy(frameAncestors: string | null): string {
-  return [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
-    "media-src 'self' blob:",
-    "font-src 'self'",
-    "connect-src 'self'",
-    "worker-src 'self'",
-    "manifest-src 'self'",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    ...(frameAncestors ? [`frame-ancestors ${frameAncestors}`] : []),
-  ].join("; ");
-}
-
 const COMMON_HEADERS = [
   // Browsers only heed it over https; two years, as the preload list asks.
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
@@ -65,7 +46,6 @@ const nextConfig: NextConfig = {
         source: "/:path((?!boka(?:/|$)).*)",
         headers: [
           ...COMMON_HEADERS,
-          { key: "Content-Security-Policy", value: contentSecurityPolicy("'none'") },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
         ],
@@ -74,10 +54,7 @@ const nextConfig: NextConfig = {
         // The booking pages, which the widget (public/widget.js) frames on the firm's own site:
         // any site may frame them, as before. They change nothing without the customer's input.
         source: "/boka/:path*",
-        headers: [
-          ...COMMON_HEADERS,
-          { key: "Content-Security-Policy", value: contentSecurityPolicy(null) },
-        ],
+        headers: COMMON_HEADERS,
       },
     ]);
   },
