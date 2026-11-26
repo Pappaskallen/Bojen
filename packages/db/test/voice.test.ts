@@ -411,7 +411,7 @@ describe("skicka_lank", () => {
         "voice_pictures_link",
       ]);
       expect(
-        sent.every((s) => s.to === "+46701119610" && /bojen\.se\/x\//.test(s.body ?? "")),
+        sent.every((s) => s.to === "+46701119610" && /bojen.app\/x\//.test(s.body ?? "")),
       ).toBe(true);
       neverSecret(sent.map((s) => s.body));
       expect(await skickaLank(f.deps, await f.current(callId), { typ: "kod" })).toEqual({

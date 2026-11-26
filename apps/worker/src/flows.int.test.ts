@@ -236,7 +236,7 @@ describe("short links in F1 (step 3.4)", () => {
       );
       await runDue();
       const codeIn = (body: string | undefined) =>
-        /bojen\.se\/x\/([A-Za-z0-9]{8}) /.exec(body ?? "")?.[1];
+        /bojen.app\/x\/([A-Za-z0-9]{8}) /.exec(body ?? "")?.[1];
       const first = codeIn(sms.lastTo(PHONE));
       expect(first).toBeDefined();
       // The sms with an 8-character code still fits the template's segments.
@@ -1384,7 +1384,7 @@ describe("a good score gets the review link (F9, KPI 18)", () => {
         .select({ body: message.body })
         .from(message)
         .where(and(eq(message.visitId, visitId), eq(message.template, "f9_reply_good")));
-      const code = /bojen\.se\/r\/([A-Za-z0-9]{8})/.exec(reply?.body ?? "")?.[1] ?? "";
+      const code = /bojen.app\/r\/([A-Za-z0-9]{8})/.exec(reply?.body ?? "")?.[1] ?? "";
       expect(reply?.body).toBe(
         `Tack, vad glad jag blir! Vill du hjälpa andra båtägare hitta hit? En recension tar 30 sek: bojen.app/r/${code} /Jonas`,
       );
