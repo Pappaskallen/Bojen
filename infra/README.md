@@ -15,7 +15,7 @@ sköter bara nycklarna (KMS). 46elks, Azure och Anthropic är kvar som tjänster
 | `auth`, `storage`, `rest` | Supabase Auth och Storage. PostgREST används bara av Storage. | `/auth/v1` och `/storage/v1` via Caddy, `API_DOMAIN` |
 | `osrm`, `photon` | Restider och adressökning med OpenStreetMap | nej |
 | `glitchtip` | Fel och upptid | via Caddy, `GLITCHTIP_DOMAIN` |
-| `stalwart` | E-post: utskick från appen, inkorgar som `dataskydd@bojen.se`, DKIM och skräppostfilter | 25, 465 och 993. Administrationen bara via ssh-tunnel. |
+| `stalwart` | E-post: utskick från appen, inkorgar som `dataskydd@bojen.app`, DKIM och skräppostfilter | 25, 465 och 993. Administrationen bara via ssh-tunnel. |
 | `livekit`, `sip`, `redis`, `voice` | Röstagenten (profilen `voice`, från steg 6.2b) | Media- och SIP-portar |
 
 Supabase Studio, Realtime, Edge Functions och de andra delarna körs inte, eftersom appen inte
@@ -27,14 +27,14 @@ använder dem.
 2. **Beställ en hink för säkerhetskopiorna:** Hetzner Object Storage, i **Falkenstein**. Den
    ligger då i en annan ort än servern, som specen kräver. Skapa en nyckel för hinken.
 3. **Lägg in DNS:**
-   - **Webben:** A- och AAAA-poster för `bojen.se`, `api.bojen.se`, `fel.bojen.se` och
-     `mail.bojen.se` till servern.
+   - **Webben:** A- och AAAA-poster för `bojen.app`, `api.bojen.app`, `fel.bojen.app` och
+     `mail.bojen.app` till servern.
    - **E-posten:**
-     - MX för `bojen.se` som pekar på `mail.bojen.se`;
-     - SPF: TXT `v=spf1 mx -all` för `bojen.se`;
-     - DMARC: TXT `v=DMARC1; p=quarantine; rua=mailto:dmarc@bojen.se` för `_dmarc.bojen.se`;
+     - MX för `bojen.app` som pekar på `mail.bojen.app`;
+     - SPF: TXT `v=spf1 mx -all` för `bojen.app`;
+     - DMARC: TXT `v=DMARC1; p=quarantine; rua=mailto:dmarc@bojen.app` för `_dmarc.bojen.app`;
      - DKIM-posten kommer från Stalwart i steg 9.
-   - **Omvänd DNS (PTR):** serverns IPv4- och IPv6-adress ska peka på `mail.bojen.se`. Det
+   - **Omvänd DNS (PTR):** serverns IPv4- och IPv6-adress ska peka på `mail.bojen.app`. Det
      ställs in i Hetzner Robot. Utan omvänd DNS hamnar mejlen i skräpposten.
    - **Port 25:** fråga Hetzner om utgående port 25 är öppen för servern. Vissa leverantörer
      spärrar den tills man ber om det, och utan den kan servern inte leverera mejl.
@@ -68,14 +68,14 @@ använder dem.
       ssh -L 8080:127.0.0.1:8080 bojen@<server>      # öppna sedan http://localhost:8080
       docker logs bojen-stalwart-1 2>&1 | grep -A8 'bootstrap mode'
       ```
-   2. Lägg till domänen `bojen.se` med servernamnet `mail.bojen.se`. Lägg sedan in den DKIM-post
+   2. Lägg till domänen `bojen.app` med servernamnet `mail.bojen.app`. Lägg sedan in den DKIM-post
       som Stalwart visar i DNS.
    3. Lägg till certifikatet från fil:
       - certifikatkedjan:
-        `/caddy/caddy/certificates/acme-v02.api.letsencrypt.org-directory/mail.bojen.se/mail.bojen.se.crt`;
-      - nyckeln: `.../mail.bojen.se.key` i samma mapp.
-   4. Skapa kontot `noreply@bojen.se` med lösenordet `SMTP_PASSWORD` från `infra/.env`.
-      Skapa också inkorgarna, till exempel `dataskydd@bojen.se`, `dmarc@bojen.se` och en per
+        `/caddy/caddy/certificates/acme-v02.api.letsencrypt.org-directory/mail.bojen.app/mail.bojen.app.crt`;
+      - nyckeln: `.../mail.bojen.app.key` i samma mapp.
+   4. Skapa kontot `noreply@bojen.app` med lösenordet `SMTP_PASSWORD` från `infra/.env`.
+      Skapa också inkorgarna, till exempel `dataskydd@bojen.app`, `dmarc@bojen.app` och en per
       person.
    5. Starta om och prova:
       ```sh
@@ -89,12 +89,12 @@ använder dem.
        ```sh
        docker compose -f infra/docker-compose.yml --env-file infra/.env exec glitchtip ./manage.py createsuperuser
        ```
-    2. Logga in på `https://fel.bojen.se`. Skapa organisationen *Bojen* och projektet *bojen*
+    2. Logga in på `https://fel.bojen.app`. Skapa organisationen *Bojen* och projektet *bojen*
        med plattformen Node.js.
     3. Kopiera projektets DSN och skriv den i `infra/.env` med den interna adressen, så att
        felen inte går ut på nätet: `GLITCHTIP_DSN=http://<nyckel>@glitchtip:8000/<projekt>`.
        Webben och arbetaren skickar till samma projekt, och taggen `service` skiljer dem åt.
-    4. Lägg till en upptidsövervakning av `https://bojen.se/` och en avisering till e-post.
+    4. Lägg till en upptidsövervakning av `https://bojen.app/` och en avisering till e-post.
     5. Starta om webben och arbetaren:
        ```sh
        docker compose -f infra/docker-compose.yml --env-file infra/.env up -d web worker
@@ -162,7 +162,7 @@ Det här är skrivet utan en riktig server och ska kontrolleras vid första upps
 - **Hinken:** att WAL-G når Hetzner Object Storage med `AWS_ENDPOINT` och sökvägsadressering.
 - **E-posten:**
   - att Stalwart tar certifikatet från Caddys mapp;
-  - att Auth, GlitchTip och appen kan skicka genom port 465 under namnet `mail.bojen.se`;
+  - att Auth, GlitchTip och appen kan skicka genom port 465 under namnet `mail.bojen.app`;
   - att mejlen kommer fram utan att hamna i skräpposten. Kontrollera med mail-tester.com.
 - **Auth:** att Auth läser mejlmallen från Caddy, och att sms- och JWT-krokarna fungerar som
   lokalt.

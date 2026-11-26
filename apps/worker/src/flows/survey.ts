@@ -56,7 +56,7 @@ export async function sendSurvey(
 
 /**
  * The answer to F9: the score is stored; 4–5 gets the review link (when the firm has a review
- * page in `settings.reviewUrl`; the sms has `bojen.se/r/{code}`, which counts the click),
+ * page in `settings.reviewUrl`; the sms has `bojen.app/r/{code}`, which counts the click),
  * 1–3 a task to call within 24 hours and the mechanic's reply.
  */
 export async function handleSurveyAnswer(

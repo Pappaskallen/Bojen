@@ -31,7 +31,7 @@ describe("46elks", () => {
       username: "u123",
       password: "secret",
       from: "JonasBat",
-      deliveryUrl: "https://app.bojen.se/api/webhooks/elks/delivery?token=t",
+      deliveryUrl: "https://app.bojen.app/api/webhooks/elks/delivery?token=t",
       fetch,
     });
     await expect(
@@ -48,7 +48,7 @@ describe("46elks", () => {
       from: "JonasBat",
       to: "+46701234567",
       message: "Hej Per! /Jonas Båtservice",
-      whendelivered: "https://app.bojen.se/api/webhooks/elks/delivery?token=t",
+      whendelivered: "https://app.bojen.app/api/webhooks/elks/delivery?token=t",
     });
   });
 
@@ -108,8 +108,8 @@ describe("e-mail through our own mail server", () => {
   };
 
   it("sends text and html from the default sender, with a reply-to", async () => {
-    const t = transport({ messageId: "<abc@bojen.se>" });
-    const email = createSmtpEmail({ transport: t.transport, from: "Bojen <noreply@bojen.se>" });
+    const t = transport({ messageId: "<abc@bojen.app>" });
+    const email = createSmtpEmail({ transport: t.transport, from: "Bojen <noreply@bojen.app>" });
     await expect(
       email.send({
         to: "per@example.test",
@@ -118,10 +118,10 @@ describe("e-mail through our own mail server", () => {
         html: "<p>Hej</p>",
         replyTo: "jonas@example.test",
       }),
-    ).resolves.toEqual({ id: "<abc@bojen.se>" });
+    ).resolves.toEqual({ id: "<abc@bojen.app>" });
     expect(t.sent).toEqual([
       {
-        from: "Bojen <noreply@bojen.se>",
+        from: "Bojen <noreply@bojen.app>",
         to: "per@example.test",
         subject: "Bokningsbekräftelse",
         text: "Hej",
@@ -133,14 +133,14 @@ describe("e-mail through our own mail server", () => {
 
   it("uses the message's own sender, and fails without a message id or on an error", async () => {
     const own = transport({ messageId: "id" });
-    await createSmtpEmail({ transport: own.transport, from: "f@bojen.se" }).send({
-      from: "Jonas <jonas@bojen.se>",
+    await createSmtpEmail({ transport: own.transport, from: "f@bojen.app" }).send({
+      from: "Jonas <jonas@bojen.app>",
       to: "a@b.test",
       subject: "s",
       text: "t",
       html: "h",
     });
-    expect(own.sent[0]).toMatchObject({ from: "Jonas <jonas@bojen.se>" });
+    expect(own.sent[0]).toMatchObject({ from: "Jonas <jonas@bojen.app>" });
     expect(own.sent[0]).not.toHaveProperty("replyTo");
 
     const message = { to: "a@b.test", subject: "s", text: "t", html: "h" };
@@ -156,11 +156,11 @@ describe("e-mail through our own mail server", () => {
 
   it("is used only when SMTP_HOST is set, and then needs an account", () => {
     expect(smtpEmailFromEnv({})).toBeNull();
-    expect(() => smtpEmailFromEnv({ SMTP_HOST: "mail.bojen.se" })).toThrow(/SMTP_USER/);
+    expect(() => smtpEmailFromEnv({ SMTP_HOST: "mail.bojen.app" })).toThrow(/SMTP_USER/);
     expect(
       smtpEmailFromEnv({
-        SMTP_HOST: "mail.bojen.se",
-        SMTP_USER: "noreply@bojen.se",
+        SMTP_HOST: "mail.bojen.app",
+        SMTP_USER: "noreply@bojen.app",
         SMTP_PASSWORD: "x",
       }),
     ).not.toBeNull();

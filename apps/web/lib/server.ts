@@ -497,7 +497,7 @@ const voiceDeps = (): VoiceDeps => ({
   storage: storage(),
   linkKey: linkKey(),
   secret: voiceSecret(),
-  appBase: appUrl() || "bojen.se",
+  appBase: appUrl() || "bojen.app",
 });
 
 const VOICE_TOOL_RUNNERS: Record<

@@ -171,13 +171,13 @@ flowchart LR
 
 | ID | User story | Acceptanskriterier | Prio |
 |---|---|---|---|
-| W1 | Som **mekaniker** vill jag bädda in bokningen på min webbplats. | En rad kod (`<script>` som web component) och en fristående sida på `boka.bojen.se/{firma}`. Egen färg och logga. Fungerar på mobil i 360 px bredd. Laddar på under 2 s på 4G. | M |
+| W1 | Som **mekaniker** vill jag bädda in bokningen på min webbplats. | En rad kod (`<script>` som web component) och en fristående sida på `boka.bojen.app/{firma}`. Egen färg och logga. Fungerar på mobil i 360 px bredd. Laddar på under 2 s på 4G. | M |
 | W2 | Som **båtägare** vill jag välja tjänst och båt enkelt. | Steg: tjänst → båt (sms-kod för befintlig kund, annars nytt formulär med märkeslistor) → plats (marina ur listan, karta eller adress) → läge och datum för sjösättning eller upptagning → tid → bilder → bekräfta. Högst 6 steg. | M |
 | W3 | Som **båtägare** vill jag se tider som passar platsen. | Tider räknas fram utifrån kalender, plats, tjänstens längd och krav på läge. Marinadagar sorteras först och märks med rabatten. Tider där extra körning överstiger firmans gräns (till exempel 45 min) visas inte. | M |
 | W4 | Som **mekaniker** vill jag inte boka jobb jag saknar delar till. | Om en del inte finns i lager och har ledtid L dagar visas tider tidigast från idag + L + 1 dag. Alternativet är att boka preliminärt: tiden reserveras och bekräftas när delarna har kommit. | B |
 | W5 | Som **mekaniker** vill jag välja automatisk eller manuell bekräftelse. | Kan ställas in per tjänst och kundtyp (till exempel automatiskt för befintliga kunder, manuellt för nya kunder och akutjobb). En manuell bokning blir *Förfrågan* och mekanikern godkänner med ett tryck i appen. | M |
 | W6 | Som **båtägare** vill jag kunna boka om själv. | Länken i bekräftelsen öppnar en sida för ombokning och avbokning. Avbokning är gratis fram till 48 h innan (inställbart). Den frigjorda tiden går till flödet för väntelistan. | M |
-| W7 | Som **marina** vill jag ha en egen bokningslänk. | Länken `boka.bojen.se/{firma}/m/{marina}` har marinan förvald. Kanalen sparas på kunden. | B |
+| W7 | Som **marina** vill jag ha en egen bokningslänk. | Länken `boka.bojen.app/{firma}/m/{marina}` har marinan förvald. Kanalen sparas på kunden. | B |
 
 **Hur tidsförslagen räknas fram (gemensamt för röst och webb):**
 
@@ -512,7 +512,7 @@ erDiagram
 
 - `{…}` är variabler.
 - Varje text har en uppgift om antal tecken och sms-segment (med å, ä och ö gäller 70 tecken för ett segment och 67 per segment när meddelandet delas).
-- Länkar förkortas till `bojen.se/x/AbC12` (17 tecken).
+- Länkar förkortas till `bojen.app/x/AbC12` (18 tecken).
 - Avsändare är firmans nummer. Signaturen är `/{Firmanamn}`.
 
 ### Översikt
@@ -550,7 +550,7 @@ erDiagram
 **Sms (ca 150 tecken, 3 segment):**
 > Hej {förnamn}! Bokat: {tjänst_kort} {veckodag} {datum} kl {fönster}, {plats_kort}. Du behöver inte vara på plats. Ändra/avboka: {länk} /{Firma}
 
-*Exempel:* ”Hej Per! Bokat: Vinterkonservering ons 22/10 kl 08–12, Bullandö. Du behöver inte vara på plats. Ändra/avboka: bojen.se/x/Kp3d9 /Jonas Båtservice”
+*Exempel:* ”Hej Per! Bokat: Vinterkonservering ons 22/10 kl 08–12, Bullandö. Du behöver inte vara på plats. Ändra/avboka: bojen.app/x/Kp3d9 /Jonas Båtservice”
 
 **E-post: ämne:** `Bokningsbekräftelse: {tjänst} {datum}`
 

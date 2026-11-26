@@ -12,7 +12,7 @@ import { tenant } from "./tenant";
 import { visit } from "./visit";
 
 /**
- * The customer's links in sms and e-mail, `bojen.se/x/{code}` (byggplan step 3.4). The code
+ * The customer's links in sms and e-mail, `bojen.app/x/{code}` (byggplan step 3.4). The code
  * itself is never stored, only a keyed hash of it (`linkHash` in core), so a copy of the
  * database holds no working links. A link expires, and changing or cancelling the booking
  * uses it up.

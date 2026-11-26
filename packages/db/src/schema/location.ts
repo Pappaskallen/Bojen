@@ -24,7 +24,7 @@ export const location = pgTable(
     tenantId: uuid("tenant_id").notNull(),
     type: locationType("type").notNull(),
     name: text("name").notNull(),
-    /** Used in the marina link `boka.bojen.se/{firm}/m/{slug}` (W7). */
+    /** Used in the marina link `boka.bojen.app/{firm}/m/{slug}` (W7). */
     slug: text("slug"),
     address: text("address"),
     /** Empty until the address has been geocoded. */

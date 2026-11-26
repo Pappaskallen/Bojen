@@ -1468,6 +1468,6 @@ export const legal = {
     ],
     pushNote:
       "Aviseringar till personalens mobiler går genom webbläsarens egen push-tjänst (Apple, Google eller Mozilla). De är krypterade så att push-tjänsten inte kan läsa dem.",
-    contact: "Frågor om personuppgifter: dataskydd@bojen.se",
+    contact: "Frågor om personuppgifter: dataskydd@bojen.app",
   },
 } as const;

@@ -65,18 +65,18 @@ describe("link hash", () => {
 });
 
 describe("link url", () => {
-  it("writes bojen.se/x/{code} without a scheme", () => {
-    expect(shortLinkUrl("https://bojen.se/", "AbC12xYz")).toBe("bojen.se/x/AbC12xYz");
+  it("writes bojen.app/x/{code} without a scheme", () => {
+    expect(shortLinkUrl("https://bojen.app/", "AbC12xYz")).toBe("bojen.app/x/AbC12xYz");
     expect(shortLinkUrl("http://localhost:3000", "AbC12xYz")).toBe("localhost:3000/x/AbC12xYz");
     // 3 characters more than the spec's 5-character example (decided with Robert 2026-11-12).
-    expect(shortLinkUrl("bojen.se", "AbC12xYz")).toHaveLength(19);
+    expect(shortLinkUrl("bojen.app", "AbC12xYz")).toHaveLength(20);
   });
 });
 
 describe("review link", () => {
-  it("writes bojen.se/r/{code}, as long as the booking's link", () => {
-    expect(reviewLinkUrl("https://bojen.se/", "AbC12xYz")).toBe("bojen.se/r/AbC12xYz");
-    expect(reviewLinkUrl("bojen.se", "AbC12xYz")).toHaveLength(19);
+  it("writes bojen.app/r/{code}, as long as the booking's link", () => {
+    expect(reviewLinkUrl("https://bojen.app/", "AbC12xYz")).toBe("bojen.app/r/AbC12xYz");
+    expect(reviewLinkUrl("bojen.app", "AbC12xYz")).toHaveLength(20);
   });
 
   it("works for 90 days", () => {

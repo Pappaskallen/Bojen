@@ -94,7 +94,7 @@ async function setUp(tx: Tx, name: string, phone: string) {
     storage: createFakeStorage(),
     linkKey: "voice-test-short-link-key-long-enough",
     secret: "voice-test-secret-long-enough-0123456789",
-    appBase: "bojen.se",
+    appBase: "bojen.app",
   };
   const begin = async (from: string | null) => {
     const started = await startCall(tx, { to: FIRM, from, now: NOW });
@@ -411,7 +411,7 @@ describe("skicka_lank", () => {
         "voice_pictures_link",
       ]);
       expect(
-        sent.every((s) => s.to === "+46701119610" && /bojen\.se\/x\//.test(s.body ?? "")),
+        sent.every((s) => s.to === "+46701119610" && /bojen.app\/x\//.test(s.body ?? "")),
       ).toBe(true);
       neverSecret(sent.map((s) => s.body));
       expect(await skickaLank(f.deps, await f.current(callId), { typ: "kod" })).toEqual({

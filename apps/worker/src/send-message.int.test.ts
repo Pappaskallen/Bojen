@@ -54,7 +54,7 @@ describe("send_message", () => {
         email: createFakeEmail(),
         now: () => new Date(),
         optOutKey: KEY,
-        link: () => "bojen.se/boka/test",
+        link: () => "bojen.app/boka/test",
       }),
     });
     expect(sms.lastTo(PHONE)).toBe(

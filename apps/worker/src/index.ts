@@ -111,7 +111,7 @@ function escalationDeps(): EscalationDeps {
         ? createElksRecordings({ username, password })
         : { fetch: () => Promise.resolve({ bytes: new Uint8Array(), contentType: "audio/wav" }) },
     transcriber: production ? null : createFakeTranscriber("Hej, ring upp mig om båten."),
-    appBase: process.env.APP_URL ?? "https://bojen.se",
+    appBase: process.env.APP_URL ?? "https://bojen.app",
   };
 }
 
@@ -134,7 +134,7 @@ async function main() {
         email: emailSender(),
         now: () => systemClock.now(),
         optOutKey: optOutKey(),
-        link: customerLinks(db, linkKey(), process.env.APP_URL ?? "bojen.se"),
+        link: customerLinks(db, linkKey(), process.env.APP_URL ?? "bojen.app"),
         reports,
         postCall: postCallDeps(production, reports.storage),
         escalation: escalationDeps(),

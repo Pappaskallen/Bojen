@@ -6,7 +6,7 @@ import { elksCallActions, parseElksIncomingCall, parseElksRecording } from "./vo
 const targets = {
   agentSip: "sip:bojen@sip.example",
   mechanic: "+46701234567",
-  voicemailUrl: "https://bojen.se/api/webhooks/elks/rostbrevlada?token=t",
+  voicemailUrl: "https://bojen.app/api/webhooks/elks/rostbrevlada?token=t",
 };
 const voicemail = {
   play: "sound/beep",

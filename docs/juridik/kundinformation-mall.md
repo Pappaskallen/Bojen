@@ -39,7 +39,7 @@ koden efter säsongen.
 **Vem som får uppgifterna:** vi använder systemet Bojen. Bojen och dess leverantörer behandlar
 uppgifterna åt oss enligt avtal, och lagringen sker inom EU. Text från sms och samtal tolkas av
 en AI-tjänst hos Anthropic i USA, med EU:s standardavtalsklausuler som skydd. Koder och adresser
-skickas aldrig dit. Listan över Bojens leverantörer finns på bojen.se/underbitraden.
+skickas aldrig dit. Listan över Bojens leverantörer finns på bojen.app/underbitraden.
 
 **Hur länge:** så länge du är kund och tre år efter senaste jobbet. Därefter tas uppgifterna om
 dig bort, och bara båtens tekniska historik kan sparas. Utskrifter av samtal sparas i två år.

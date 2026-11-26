@@ -26,7 +26,7 @@ Bojen kombinerar flera saker som IMY:s lista räknar som tecken på hög risk:
 | Uppgifter | Se bilaga 1 i personuppgiftsbiträdesavtalet |
 | Rättslig grund | Avtal, berättigat intresse (historik, samtal och erbjudanden till befintliga kunder), samtycke (övriga erbjudanden), rättslig förpliktelse (bokföring) |
 | Lagringstider | Se bilaga 1 i personuppgiftsbiträdesavtalet |
-| Mottagare | Bojens underbiträden, bojen.se/underbitraden |
+| Mottagare | Bojens underbiträden, bojen.app/underbitraden |
 
 ## 3. Nödvändighet och proportionalitet
 

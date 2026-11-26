@@ -38,7 +38,7 @@ Testerna i steg A kostar troligen under 500 kr totalt.
 
 | # | Konto | Vad | Kostnad |
 |---|---|---|---|
-| C1 | **En domän för appen** med DNS du styr. `bojen.se` är upptagen (2026-11-23); välj en kort, eftersom den står i varje sms-länk. | Webben, kortlänkarna, e-posten (MX, SPF, DKIM, DMARC) | Några hundra kronor per år |
+| C1 | **En domän för appen** med DNS du styr. Vald 2026-11-26: **`bojen.app`** (`bojen.se` är upptagen). Köp gärna även `bokabojen.se` och peka den hit. .app kräver https, vilket Caddy redan ger. | Webben, kortlänkarna, e-posten (MX, SPF, DKIM, DMARC) | Några hundra kronor per år |
 | C2 | **Hetzner**: servern AX41 och Object Storage | Allt i `infra/` körs där. Säkerhetskopiorna läggs på en annan ort. | AX41 57,30 EUR per månad efter prishöjningen 15 juni 2026, plus IPv4. Object Storage 6,49 EUR per månad. Be om öppen utgående port 25 och omvänd DNS. |
 | C3 | **Nyckeltjänst (KMS)** för krypteringen av koder | Huvudnyckeln ligger utanför servern | AWS KMS 1 USD per nyckel och månad och 0,03 USD per 10 000 anrop, med 20 000 anrop gratis. Se alternativet Scaleway i del 2. |
 | C4 | **46elks**: ett nummer per pilotfirma, eller porterade nummer | Firmans eget nummer till receptionisten och sms-svaren | 30 kr per nummer och månad. Porteringen kostar "ring oss". |

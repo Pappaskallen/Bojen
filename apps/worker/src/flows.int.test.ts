@@ -212,7 +212,7 @@ describe("short links in F1 (step 3.4)", () => {
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
         reports: fakeReports(),
-        link: customerLinks(db, linkKey, "https://bojen.se"),
+        link: customerLinks(db, linkKey, "https://bojen.app"),
       };
       const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
       const f = await setup(db);
@@ -236,14 +236,14 @@ describe("short links in F1 (step 3.4)", () => {
       );
       await runDue();
       const codeIn = (body: string | undefined) =>
-        /bojen\.se\/x\/([A-Za-z0-9]{8}) /.exec(body ?? "")?.[1];
+        /bojen.app\/x\/([A-Za-z0-9]{8}) /.exec(body ?? "")?.[1];
       const first = codeIn(sms.lastTo(PHONE));
       expect(first).toBeDefined();
       // The sms with an 8-character code still fits the template's segments.
-      expect(sms.lastTo(PHONE)).toContain(`Ändra/avboka: bojen.se/x/${first!} /Flödesfirman`);
+      expect(sms.lastTo(PHONE)).toContain(`Ändra/avboka: bojen.app/x/${first!} /Flödesfirman`);
       const email = deps.email.sent[0]?.text ?? "";
       // One link per confirmation, in both the sms and the e-mail.
-      expect(email).toContain(`Boka om eller avboka här: bojen.se/x/${first!}.`);
+      expect(email).toContain(`Boka om eller avboka här: bojen.app/x/${first!}.`);
 
       // An hour later the customer moves it to Friday 08:00 through the link.
       clock = at("2027-11-15T15:00:00");
@@ -299,7 +299,7 @@ describe("the availability check F3 (step 4.1)", () => {
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
         reports: fakeReports(),
-        link: () => "bojen.se/x/Kp3d9AbC",
+        link: () => "bojen.app/x/Kp3d9AbC",
       };
       const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
       const f = await setup(db);
@@ -380,7 +380,7 @@ describe("the availability check F3 (step 4.1)", () => {
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
         reports: fakeReports(),
-        link: () => "bojen.se/x/Kp3d9AbC",
+        link: () => "bojen.app/x/Kp3d9AbC",
       };
       const tasks = taskList(deps);
       const { runDue, pending } = await jobRunner(db, tasks, () => clock);
@@ -457,7 +457,7 @@ describe("answers to the availability check (step 4.2)", () => {
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
         reports: fakeReports(),
-        link: customerLinks(db, "flow-test-short-link-key-0123456789abcdef", "https://bojen.se"),
+        link: customerLinks(db, "flow-test-short-link-key-0123456789abcdef", "https://bojen.app"),
       };
       const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
       const f = await setup(db);
@@ -556,7 +556,7 @@ describe("answers to the availability check (step 4.2)", () => {
       ]);
       expect(await c.state()).toEqual({ status: "cancelled", availability: "declined" });
       expect(c.sms.lastTo(PHONE)).toBe(
-        "Okej, vi avbokar. Välj en ny tid här: bojen.se/boka/flodesfirman - eller svara NY så ringer vi dig. /Flödesfirman",
+        "Okej, vi avbokar. Välj en ny tid här: bojen.app/boka/flodesfirman - eller svara NY så ringer vi dig. /Flödesfirman",
       );
       // The cancellation's own event is what the waitlist flow F4 starts from (step 4.3).
       const [cancelled] = await c.db
@@ -740,7 +740,7 @@ describe("the waitlist fills a cancelled time (F4, step 4.3)", () => {
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
         reports: fakeReports(),
-        link: () => "bojen.se/boka/flodesfirman",
+        link: () => "bojen.app/boka/flodesfirman",
       };
       const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
       const f = await setup(db);
@@ -1058,7 +1058,7 @@ describe("the pipeline moves on its own (step 5.4)", () => {
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
         reports: fakeReports(),
-        link: () => "bojen.se/x/Kp3d9AbC",
+        link: () => "bojen.app/x/Kp3d9AbC",
       };
       const { runDue } = await jobRunner(db, taskList(deps), () => clock);
       const f = await setup(db);
@@ -1131,7 +1131,7 @@ describe("flows F1, F5, F7 and F9", () => {
           now: () => clock,
           optOutKey: "flow-test-opt-out-key",
           reports: fakeReports(),
-          link: () => "bojen.se/x/Kp3d9",
+          link: () => "bojen.app/x/Kp3d9",
         };
         const { runDue, pending } = await jobRunner(db, taskList(deps), () => clock);
         const sentWith = async (template: string) =>
@@ -1166,7 +1166,7 @@ describe("flows F1, F5, F7 and F9", () => {
         const visitId = booked.visit.id;
         expect(await runDue()).toEqual(["domain_event", "send_message", "send_message"]);
         expect(sms.lastTo(PHONE)).toBe(
-          "Hej Per! Bokat: Vinterkonservering ons 17/11 kl 08-12, Bullandö. Du behöver inte vara på plats. Ändra/avboka: bojen.se/x/Kp3d9 /Flödesfirman",
+          "Hej Per! Bokat: Vinterkonservering ons 17/11 kl 08-12, Bullandö. Du behöver inte vara på plats. Ändra/avboka: bojen.app/x/Kp3d9 /Flödesfirman",
         );
         expect(email.sent).toHaveLength(1);
         expect(email.sent[0]).toMatchObject({
@@ -1288,7 +1288,7 @@ describe("flows F1, F5, F7 and F9", () => {
         });
         expect(await runDue()).toEqual(["domain_event", "send_message", "send_message"]);
         expect(sms.lastTo(PHONE)).toBe(
-          "Klart! Vinterkonservering på Bustern är utförd. Rapport, bilder och betalning: bojen.se/x/Kp3d9 Tack för förtroendet! /Flödesfirman",
+          "Klart! Vinterkonservering på Bustern är utförd. Rapport, bilder och betalning: bojen.app/x/Kp3d9 Tack för förtroendet! /Flödesfirman",
         );
         expect(email.sent.at(-1)).toMatchObject({ subject: "Servicerapport: Bustern, 17/11" });
         expect(email.sent.at(-1)?.text).toContain("Bytt motorolja och oljefilter.");
@@ -1326,7 +1326,7 @@ describe("flows F1, F5, F7 and F9", () => {
 });
 
 describe("a good score gets the review link (F9, KPI 18)", () => {
-  it("sends bojen.se/r/{code}, which counts the click and leads to the firm's review page", async () => {
+  it("sends bojen.app/r/{code}, which counts the click and leads to the firm's review page", async () => {
     await inRollback(async (db) => {
       const REVIEW = "https://g.page/r/flodesfirman/review";
       const KEY = "flow-test-short-link-key-0123456789abcdef";
@@ -1377,16 +1377,16 @@ describe("a good score gets the review link (F9, KPI 18)", () => {
         db,
         now: () => clock,
         optOutKey: "flow-test-opt-out-key",
-        link: customerLinks(db, KEY, "https://bojen.se", () => clock),
+        link: customerLinks(db, KEY, "https://bojen.app", () => clock),
       };
       expect(await handleSurveyAnswer(deps, f.tenantId, visitId, 5)).toBe("review");
       const [reply] = await db
         .select({ body: message.body })
         .from(message)
         .where(and(eq(message.visitId, visitId), eq(message.template, "f9_reply_good")));
-      const code = /bojen\.se\/r\/([A-Za-z0-9]{8})/.exec(reply?.body ?? "")?.[1] ?? "";
+      const code = /bojen.app\/r\/([A-Za-z0-9]{8})/.exec(reply?.body ?? "")?.[1] ?? "";
       expect(reply?.body).toBe(
-        `Tack, vad glad jag blir! Vill du hjälpa andra båtägare hitta hit? En recension tar 30 sek: bojen.se/r/${code} /Jonas`,
+        `Tack, vad glad jag blir! Vill du hjälpa andra båtägare hitta hit? En recension tar 30 sek: bojen.app/r/${code} /Jonas`,
       );
 
       // The customer taps it: the click is counted and the review page opens.

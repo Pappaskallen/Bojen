@@ -139,7 +139,7 @@ export interface AlertDeps {
   push: PushSender;
   sms: SmsSender;
   now: () => Date;
-  /** For the link in the push and sms, for example `https://bojen.se`. */
+  /** For the link in the push and sms, for example `https://bojen.app`. */
   appBase: string;
 }
 

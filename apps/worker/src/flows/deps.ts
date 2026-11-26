@@ -27,9 +27,9 @@ export interface FlowDeps {
 }
 
 /**
- * The links in the flows (step 3.4): `manage` is a new short link, `bojen.se/x/{code}`, valid
+ * The links in the flows (step 3.4): `manage` is a new short link, `bojen.app/x/{code}`, valid
  * until the visit starts. The report has no page of its own yet, so `report` is still the
- * firm's booking page. `review` is a short link too, `bojen.se/r/{code}`, valid for 90 days.
+ * firm's booking page. `review` is a short link too, `bojen.app/r/{code}`, valid for 90 days.
  */
 export function customerLinks(
   db: Database,

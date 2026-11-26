@@ -22,7 +22,7 @@ export interface FortnoxRouteDeps {
   /** Null until the app is registered with Fortnox. */
   fortnox: () => FortnoxApi | null;
   clientId: () => string | null;
-  /** `https://bojen.se/api/integrationer/fortnox/callback`. */
+  /** `https://bojen.app/api/integrationer/fortnox/callback`. */
   redirectUri: () => string;
   secureCookies: boolean;
   save: (input: {

@@ -1,7 +1,7 @@
 import { errorEvent, type ErrorEvent, type ErrorReporter } from "@bojen/core/logging";
 
 export interface GlitchTipOptions {
-  /** The project's DSN from GlitchTip, `https://<key>@fel.bojen.se/<project>`. */
+  /** The project's DSN from GlitchTip, `https://<key>@fel.bojen.app/<project>`. */
   dsn: string;
   /** `web` or `worker`. */
   service: string;

@@ -70,7 +70,7 @@ export interface VoiceDeps extends MessagingDeps {
   linkKey: string;
   /** Signs the times offered in a call (`VOICE_TOOLS_SECRET`). */
   secret: string;
-  /** The app's public address, for the links in the sms, for example `bojen.se`. */
+  /** The app's public address, for the links in the sms, for example `bojen.app`. */
   appBase: string;
 }
 

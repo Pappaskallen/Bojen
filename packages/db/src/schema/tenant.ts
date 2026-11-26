@@ -8,7 +8,7 @@ export const tenant = pgTable(
   {
     ...baseColumns,
     name: text("name").notNull(),
-    /** Used in the public booking link, for example `boka.bojen.se/jonas-batservice`. */
+    /** Used in the public booking link, for example `boka.bojen.app/jonas-batservice`. */
     slug: text("slug"),
     orgNumber: text("org_number"),
     vatNumber: text("vat_number"),
