@@ -7,7 +7,7 @@
 
 ## Vem som är ansvarig
 
-[Bojen AB, org.nr XXXXXX-XXXX, adress] är personuppgiftsansvarig för det som står nedan.
+[InOpSoTech AB, org.nr XXXXXX-XXXX, adress], som tillhandahåller tjänsten Bojen, är personuppgiftsansvarig för det som står nedan.
 Kontakt: [dataskydd@bojen.se].
 
 ## Vilka uppgifter, varför och med vilken rätt

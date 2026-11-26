@@ -409,7 +409,7 @@ Tekniskt beräknas KPI:erna i materialiserade vyer som uppdateras var 15:e minut
 | Part | Roll | Avtal |
 |---|---|---|
 | Mekanikerfirman | Personuppgiftsansvarig för sina kunders data | Bojens användarvillkor och personuppgiftsbiträdesavtal (signeras digitalt vid start) |
-| Bojen AB | Personuppgiftsbiträde | Personuppgiftsbiträdesavtal enligt art. 28, med publik lista över underbiträden och 30 dagars förvarning vid ändringar |
+| InOpSoTech AB (tjänsten Bojen) | Personuppgiftsbiträde | Personuppgiftsbiträdesavtal enligt art. 28, med publik lista över underbiträden och 30 dagars förvarning vid ändringar |
 | AWS (eu-north-1), 46elks, Microsoft Azure (Sweden Central), Anthropic (Claude), Mailgun (EU), Google Maps, Sentry (EU) | Underbiträden | Leverantörernas egna biträdesavtal. För amerikanska bolag: EU:s standardavtalsklausuler och dataskyddsramverket mellan EU och USA där det är tillämpligt. **Inga ljudfiler eller transkriberingar lagras hos amerikanska underbiträden.** |
 | Stripe, Fortnox, Visma | Egna ansvariga eller firmans egna biträden | Firman ansluter sitt eget konto |
 
