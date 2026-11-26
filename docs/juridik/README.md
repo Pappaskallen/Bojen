@@ -33,7 +33,7 @@ Skrivna 2026-11-18 utifrån specifikationen (kapitel 10 och 13) och det som fakt
 4. **LiveKit:** *bestämt 2026-11-21.* LiveKit körs på den egna servern, så samtalsljudet
    stannar hos Hetzner inom EU. Används LiveKit Cloud för testsamtalen i steg 6.2b gäller det
    bara testnummer med påhittade kunder.
-5. **Bolaget och kontaktadressen.** Bojen AB:s organisationsnummer och adress, och om adressen
+5. **Bolaget och kontaktadressen.** InOpSoTech AB:s organisationsnummer och adress, och om adressen
    `dataskydd@bojen.se` ska finnas. Den står på sidan över underbiträden.
 6. **Pilotvillkor.** Pris och period för pilotfirmorna, och utlovad tillgänglighet: mål eller
    garanti.

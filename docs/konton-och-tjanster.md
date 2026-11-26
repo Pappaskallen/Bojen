@@ -24,7 +24,7 @@ läsa står det.
 
 ## Gör så här
 
-1. **Bolaget först.** Skapa alla konton i Bojen AB:s namn med en adress på bolagets domän, inte
+1. **Bolaget först.** Skapa alla konton i InOpSoTech AB:s namn med en adress på bolagets domän, inte
    en privat adress. Slå på tvåfaktor överallt och lägg in en budgetgräns eller ett larm där det
    går.
 2. **Det som låser upp de sista byggstegen** (6.2b, 6.3 och 6.5b): Anthropic, Azure Speech,
@@ -41,7 +41,7 @@ Klistra aldrig in dem i chatten.
 
 | Vad | Varför | Konto och val | Kostnad |
 |---|---|---|---|
-| Bojen AB | Avtalspart i alla konton och i PUB-avtalet. Organisationsnumret saknas i juridikutkasten. | Bolagsverket | Engångsavgift |
+| InOpSoTech AB | Avtalspart i alla konton och i PUB-avtalet. Bolaget finns; organisationsnumret saknas i juridikutkasten. | Finns redan | 0 kr |
 | Domänen `bojen.se` | Webbappen, kortlänkarna `bojen.se/x/…`, e-postdomänen `mg.bojen.se` och `dataskydd@bojen.se` | En svensk registrar med DNS du styr själv | Några hundra kronor per år |
 | E-post för bolaget | `dataskydd@bojen.se` och adressen som äger kontona | Valfri tjänst med servrar inom EU | Från cirka 50 kr per användare och månad |
 | GitHub | Koden och CI finns redan. Repot behöver hemligheter för CI (`ANTHROPIC_API_KEY` för testsviten för samtal). | Befintligt konto | 0 kr |

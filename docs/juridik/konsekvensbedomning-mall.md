@@ -20,7 +20,7 @@ Bojen kombinerar flera saker som IMY:s lista räknar som tecken på hög risk:
 | | |
 | --- | --- |
 | Ansvarig | [Firmans namn] |
-| Biträde | Bojen AB, enligt personuppgiftsbiträdesavtalet |
+| Biträde | InOpSoTech AB (tjänsten Bojen), enligt personuppgiftsbiträdesavtalet |
 | Ändamål | Boka, planera och utföra service på kunders båtar, kommunicera med kunderna, svara i telefon |
 | Registrerade | Firmans kunder (cirka [antal]), de som ringer firman, personalen |
 | Uppgifter | Se bilaga 1 i personuppgiftsbiträdesavtalet |

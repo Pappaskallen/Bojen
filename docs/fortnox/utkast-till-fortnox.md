@@ -18,11 +18,11 @@ Så går det till enligt Fortnox webbplats
 
 ## A. Mejl till Fortnox partnerteam
 
-**Ämne:** Bojen AB – ny integration för båtmekaniker (faktura och betalstatus)
+**Ämne:** Bojen från InOpSoTech AB – ny integration för båtmekaniker (faktura och betalstatus)
 
 Hej,
 
-Jag heter [förnamn efternamn] och driver Bojen AB ([organisationsnummer]). Vi bygger Bojen, ett
+Jag heter [förnamn efternamn] och driver InOpSoTech AB ([organisationsnummer]). Vi bygger Bojen, ett
 system för bokning, kundregister och kundkontakt för båtmekaniker som åker ut till kunderna,
 med start i Stockholms skärgård. Pilotsäsongen börjar 1 mars 2027 med 3–5 firmor, och de flesta
 av dem bokför i Fortnox.
@@ -60,7 +60,7 @@ Om något är enklare att ta på ett kort samtal går det bra. Ni når mig på [
 
 Vänliga hälsningar
 [förnamn efternamn]
-Bojen AB
+InOpSoTech AB
 [webbplats]
 
 ## B. Texter till appen i utvecklarportalen
@@ -97,7 +97,7 @@ bestäms i steg 8. Lägg till den lokala adressen för utveckling om portalen ti
 
 ## Innan du skickar
 
-- [ ] Bojen AB är registrerat och organisationsnumret finns.
+- [ ] InOpSoTech AB:s organisationsnummer är ifyllt.
 - [ ] Adresserna på bolagets domän finns (support och avsändare).
 - [ ] Integritetspolicyn är publicerad, eller så nämns den som kommande.
 - [ ] Svaren läggs in i `docs/konton-spec.md` under B1, och licensfrågan förs vidare till

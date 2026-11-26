@@ -6,7 +6,7 @@
 
 ## 1. Parter
 
-Villkoren gäller mellan [Bojen AB, org.nr XXXXXX-XXXX] (*Bojen*) och den firma som tecknar
+Villkoren gäller mellan [InOpSoTech AB, org.nr XXXXXX-XXXX], som tillhandahåller tjänsten Bojen (*Bojen*), och den firma som tecknar
 tjänsten (*Kunden*). Den som godkänner villkoren intygar att hen får företräda Kunden.
 
 ## 2. Tjänsten

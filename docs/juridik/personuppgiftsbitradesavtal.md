@@ -8,7 +8,7 @@ Avtalet gäller enligt artikel 28 i dataskyddsförordningen (GDPR) mellan
 
 - **Personuppgiftsansvarig:** firman som använder Bojen enligt Bojens allmänna villkor
   (*Firman*), och
-- **Personuppgiftsbiträde:** [Bojen AB, org.nr XXXXXX-XXXX, adress] (*Bojen*).
+- **Personuppgiftsbiträde:** [InOpSoTech AB, org.nr XXXXXX-XXXX, adress], som tillhandahåller tjänsten Bojen (*Bojen*).
 
 Avtalet är en del av Bojens allmänna villkor och gäller så länge Firman använder tjänsten och
 därefter tills Bojen har raderat eller lämnat tillbaka uppgifterna enligt punkt 11.
