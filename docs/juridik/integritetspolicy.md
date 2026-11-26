@@ -8,7 +8,7 @@
 ## Vem som är ansvarig
 
 [InOpSoTech AB, org.nr XXXXXX-XXXX, adress], som tillhandahåller tjänsten Bojen, är personuppgiftsansvarig för det som står nedan.
-Kontakt: [dataskydd@bojen.se].
+Kontakt: [dataskydd@bojen.app].
 
 ## Vilka uppgifter, varför och med vilken rätt
 
@@ -25,7 +25,7 @@ för sessionen. Mekanikerns dagvy sparar dagens jobb i telefonen så att den fun
 ## Vem som får uppgifterna
 
 Bojen anlitar leverantörer för drift, e-post och sms. De är personuppgiftsbiträden åt Bojen och
-står på [bojen.se/underbitraden]. Några är bolag i USA. Överföringen sker då med stöd av EU:s
+står på [bojen.app/underbitraden]. Några är bolag i USA. Överföringen sker då med stöd av EU:s
 standardavtalsklausuler, eller av dataskyddsramverket mellan EU och USA när bolaget är certifierat.
 Bojen säljer inga personuppgifter.
 
@@ -33,7 +33,7 @@ Bojen säljer inga personuppgifter.
 
 Du har rätt att få veta vilka uppgifter vi har om dig och få en kopia av dem. Du har också rätt
 att få dem rättade, raderade eller begränsade, att invända mot behandling som bygger på
-berättigat intresse och att flytta uppgifter du har lämnat. Hör av dig till [dataskydd@bojen.se].
+berättigat intresse och att flytta uppgifter du har lämnat. Hör av dig till [dataskydd@bojen.app].
 Vi svarar inom en månad.
 
 Om du är kund hos en båtmekaniker som använder Bojen, vänd dig till mekanikern. Vi hjälper
@@ -43,4 +43,4 @@ Du kan klaga hos Integritetsskyddsmyndigheten (IMY), www.imy.se.
 
 ## Ändringar
 
-Vi uppdaterar policyn när något ändras. Senaste versionen finns på [bojen.se/integritet].
+Vi uppdaterar policyn när något ändras. Senaste versionen finns på [bojen.app/integritet].

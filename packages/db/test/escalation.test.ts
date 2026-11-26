@@ -80,7 +80,7 @@ async function setUp(tx: Tx, name: string, phone: string, onCall = true) {
     storage: undefined as never,
     linkKey: "escalation-test-short-link-key-long-enough",
     secret: "escalation-test-secret-long-enough-0123456",
-    appBase: "bojen.se",
+    appBase: "bojen.app",
   };
   const started = await startCall(tx, { to: FIRM, from: phone, now: NOW });
   const c = await openCall(tx, f.tenantId, started!.callId);
@@ -186,7 +186,7 @@ describe("an urgent message on call (K2 without an answer)", () => {
       const push = createFakePush();
       push.gone.add("https://push.example/anna-old");
       const sms2 = createFakeSms();
-      const alertDeps = { db: tx, push, sms: sms2, now: () => NOW, appBase: "https://bojen.se" };
+      const alertDeps = { db: tx, push, sms: sms2, now: () => NOW, appBase: "https://bojen.app" };
       expect(
         await sendAlert(alertDeps, {
           tenantId: f.tenantId,
@@ -204,7 +204,7 @@ describe("an urgent message on call (K2 without an answer)", () => {
         tag: `task:${taskId}`,
       });
       expect(sms2.lastTo("+46701119801")).toBe(
-        "Bojen: Akut: Akutfirman kund ringde. Motorn har stannat vid Sandhamn, ingen fara. Svara här: https://bojen.se/idag/arenden",
+        "Bojen: Akut: Akutfirman kund ringde. Motorn har stannat vid Sandhamn, ingen fara. Svara här: https://bojen.app/idag/arenden",
       );
       // The dropped subscription is gone.
       expect(
@@ -228,7 +228,7 @@ describe("an urgent message on call (K2 without an answer)", () => {
         .from(message)
         .where(and(eq(message.tenantId, f.tenantId), eq(message.template, "voice_first_time")));
       expect(offer?.body).toBe(
-        "Förlåt att ingen har hunnit ringa upp dig. Boka första lediga tid här: bojen.se/boka/akutfirman eller ring oss igen. /Akutfirman",
+        "Förlåt att ingen har hunnit ringa upp dig. Boka första lediga tid här: bojen.app/boka/akutfirman eller ring oss igen. /Akutfirman",
       );
     });
   });
@@ -255,7 +255,7 @@ describe("an urgent message on call (K2 without an answer)", () => {
       const push = createFakePush();
       expect(
         await sendAlert(
-          { db: tx, push, sms: createFakeSms(), now: () => NOW, appBase: "bojen.se" },
+          { db: tx, push, sms: createFakeSms(), now: () => NOW, appBase: "bojen.app" },
           { tenantId: f.tenantId, taskId, userIds: [f.boId], channels: ["push", "sms"] },
         ),
       ).toEqual({ pushed: 0, texted: 0 });

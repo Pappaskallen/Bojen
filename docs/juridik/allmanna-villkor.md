@@ -14,7 +14,7 @@ tjänsten (*Kunden*). Den som godkänner villkoren intygar att hen får företr�
 Bojen är ett webbaserat system för båtmekaniker. Det består av bokningssida och widget,
 kundregister, sms och e-post till kunder, kontroll dagen innan, dagvy för mekanikern,
 servicerapporter, kampanjer, översikt med nyckeltal och en AI-receptionist i telefon. Tjänstens
-innehåll vid varje tid beskrivs på [bojen.se]. Bojen får utveckla och ändra tjänsten. En
+innehåll vid varje tid beskrivs på [bojen.app]. Bojen får utveckla och ändra tjänsten. En
 ändring som väsentligt försämrar den meddelas 30 dagar i förväg, och Kunden får då säga upp
 avtalet till den dag ändringen börjar gälla.
 

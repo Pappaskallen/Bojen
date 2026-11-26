@@ -18,7 +18,7 @@ describe("Fortnox authorization", () => {
     const url = new URL(
       authorizeUrl({
         clientId: "cid",
-        redirectUri: "https://bojen.se/api/integrationer/fortnox/callback",
+        redirectUri: "https://bojen.app/api/integrationer/fortnox/callback",
         state: a.state,
         challenge: a.challenge,
       }),
@@ -26,7 +26,7 @@ describe("Fortnox authorization", () => {
     expect(url.origin + url.pathname).toBe("https://apps.fortnox.se/oauth-v1/auth");
     expect(Object.fromEntries(url.searchParams)).toEqual({
       client_id: "cid",
-      redirect_uri: "https://bojen.se/api/integrationer/fortnox/callback",
+      redirect_uri: "https://bojen.app/api/integrationer/fortnox/callback",
       scope: "customer article invoice payment companyinformation",
       state: a.state,
       access_type: "offline",

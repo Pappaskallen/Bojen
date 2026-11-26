@@ -62,7 +62,7 @@ Bojen vidtar de tekniska och organisatoriska åtgärder som anges i bilaga 2. Bo
 ## 6. Underbiträden
 
 Firman ger Bojen ett allmänt förhandstillstånd att anlita underbiträden. De som används står i
-den publika listan på [https://bojen.se/underbitraden] (bilaga 3).
+den publika listan på [https://bojen.app/underbitraden] (bilaga 3).
 
 Bojen meddelar Firman minst **30 dagar** i förväg, via e-post till Firmans ägare, innan ett
 underbiträde läggs till eller byts ut. Firman kan invända av sakliga skäl inom den tiden. Om
@@ -212,7 +212,7 @@ kvar utan koppling till en person.
 
 ## Bilaga 3. Underbiträden
 
-Se den publika listan på [https://bojen.se/underbitraden]. Listan vid avtalets början:
+Se den publika listan på [https://bojen.app/underbitraden]. Listan vid avtalets början:
 
 | Underbiträde | Uppgift | Var |
 | --- | --- | --- |

@@ -42,8 +42,8 @@ Klistra aldrig in dem i chatten.
 | Vad | Varför | Konto och val | Kostnad |
 |---|---|---|---|
 | InOpSoTech AB | Avtalspart i alla konton och i PUB-avtalet. Bolaget finns; organisationsnumret saknas i juridikutkasten. | Finns redan | 0 kr |
-| Domänen `bojen.se` | Webbappen, kortlänkarna `bojen.se/x/…`, e-postdomänen `mg.bojen.se` och `dataskydd@bojen.se` | En svensk registrar med DNS du styr själv | Några hundra kronor per år |
-| E-post för bolaget | `dataskydd@bojen.se` och adressen som äger kontona | Valfri tjänst med servrar inom EU | Från cirka 50 kr per användare och månad |
+| Domänen `bojen.app` | Webbappen, kortlänkarna `bojen.app/x/…`, e-postdomänen `mg.bojen.app` och `dataskydd@bojen.app` | En svensk registrar med DNS du styr själv | Några hundra kronor per år |
+| E-post för bolaget | `dataskydd@bojen.app` och adressen som äger kontona | Valfri tjänst med servrar inom EU | Från cirka 50 kr per användare och månad |
 | GitHub | Koden och CI finns redan. Repot behöver hemligheter för CI (`ANTHROPIC_API_KEY` för testsviten för samtal). | Befintligt konto | 0 kr |
 
 ## 2. Det som behövs för att bygga klart
@@ -134,7 +134,7 @@ piloten om löftet om EU och ljud ska hålla. Variablerna är `LIVEKIT_URL`, `LI
 | **Vercel** | Pro, eftersom Hobby är för privat bruk och har tak för användningen | Stockholm (arn1) | 20 USD per utvecklarplats och månad | Alla webbappens variabler i projektets inställningar |
 | **Server för arbetaren, röstagenten och kartorna** | En virtuell server, till exempel Hetzner Cloud CPX32 (4 vCPU, 8 GB RAM). Två servrar om LiveKit körs själv (alternativ B): en för arbetaren och röstagenten, en för OSRM och Photon. | Helsingfors | 30,49 EUR per månad och server. Nürnberg kostar 35,99 EUR. | `OSRM_URL`, `PHOTON_URL`, `VOICE_AGENT_SIP`, `VOICE_AGENT_HEALTH_URL` |
 | **AWS** | Ett konto med en kundhanterad KMS-nyckel och en IAM-användare som bara får använda nyckeln | Stockholm, eu-north-1 | 1 USD per nyckel och månad, och 0,03 USD per 10 000 anrop. 20 000 anrop per månad är gratis. | `KMS_KEY_ID` och AWS-nycklarna för IAM-användaren |
-| **Mailgun** | En plan med EU-region och egen domän, `mg.bojen.se` | EU | Basic 15 USD per månad för 10 000 mejl. Foundation 35 USD för 50 000 mejl. Kontrollera att planen du väljer har EU-regionen; sidan anger det inte per plan. | `MAILGUN_API_KEY`, `MAILGUN_DOMAIN`, `MAILGUN_FROM` |
+| **Mailgun** | En plan med EU-region och egen domän, `mg.bojen.app` | EU | Basic 15 USD per månad för 10 000 mejl. Foundation 35 USD för 50 000 mejl. Kontrollera att planen du väljer har EU-regionen; sidan anger det inte per plan. | `MAILGUN_API_KEY`, `MAILGUN_DOMAIN`, `MAILGUN_FROM` |
 | **Sentry** | Felövervakning enligt specen 11, med EU som datalagringsregion | EU | Developer är gratis för 1 användare och 5 000 fel per månad. Team kostar 29 USD per månad. | Inte inkopplad i koden ännu; det blir ett litet eget steg |
 
 **Valet av driftleverantör** (juridik, öppen fråga 3) är ditt:

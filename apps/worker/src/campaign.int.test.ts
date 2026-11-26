@@ -107,7 +107,7 @@ describe("the spring campaign (step 5.6)", () => {
         email: createFakeEmail(),
         now: () => clock,
         optOutKey: "campaign-test-opt-out-key-long-enough",
-        link: customerLinks(db, "campaign-test-short-link-key-long-enough", "bojen.se"),
+        link: customerLinks(db, "campaign-test-short-link-key-long-enough", "bojen.app"),
         maps: createFakeMaps(),
       };
       const tasks = taskList(deps);
@@ -249,7 +249,7 @@ describe("the spring campaign (step 5.6)", () => {
         email: createFakeEmail(),
         now: () => clock,
         optOutKey: "campaign-test-opt-out-key-long-enough",
-        link: customerLinks(db, "campaign-test-short-link-key-long-enough", "bojen.se"),
+        link: customerLinks(db, "campaign-test-short-link-key-long-enough", "bojen.app"),
         maps: createFakeMaps(),
       };
       const tasks = taskList(deps);

@@ -51,7 +51,7 @@ export interface WebhookDeps {
   optOutKey: () => string;
   /** The voice agent (step 6.4): its SIP address and whether it answers now. */
   voiceAgent?: { sip: () => string | null; up: () => Promise<boolean> };
-  /** The app's own address, for the voicemail's webhook: `https://bojen.se`. */
+  /** The app's own address, for the voicemail's webhook: `https://bojen.app`. */
   appUrl?: () => string;
 }
 

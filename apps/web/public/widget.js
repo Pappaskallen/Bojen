@@ -2,7 +2,7 @@
 /*
  * Bojen booking widget (W1). One line on the mechanic's site:
  *
- *   <script src="https://boka.bojen.se/widget.js" defer></script>
+ *   <script src="https://boka.bojen.app/widget.js" defer></script>
  *   <bojen-boka firma="jonas-batservice"></bojen-boka>
  *
  * Optional attributes: marina="bullando-marina" (place chosen already) and tjanst="<id>".

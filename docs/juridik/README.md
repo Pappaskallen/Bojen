@@ -8,7 +8,7 @@ Skrivna 2026-11-18 utifrån specifikationen (kapitel 10 och 13) och det som fakt
 | --- | --- | --- |
 | [personuppgiftsbitradesavtal.md](personuppgiftsbitradesavtal.md) | Firman, signeras vid start | Utkast |
 | [allmanna-villkor.md](allmanna-villkor.md) | Firman, godkänns vid start | Utkast |
-| [integritetspolicy.md](integritetspolicy.md) | Bojens egna kontakter och firmornas personal, på bojen.se/integritet | Utkast |
+| [integritetspolicy.md](integritetspolicy.md) | Bojens egna kontakter och firmornas personal, på bojen.app/integritet | Utkast |
 | [kundinformation-mall.md](kundinformation-mall.md) | Firmans kunder (båtägarna), firman publicerar | Mall |
 | [konsekvensbedomning-mall.md](konsekvensbedomning-mall.md) | Firman gör sin DPIA | Mall, förifylld |
 | Listan över underbiträden | Publik, på `/underbitraden` i webbappen | Byggd. Texten finns i `legal` i `sv.ts`. |
@@ -34,7 +34,7 @@ Skrivna 2026-11-18 utifrån specifikationen (kapitel 10 och 13) och det som fakt
    stannar hos Hetzner inom EU. Används LiveKit Cloud för testsamtalen i steg 6.2b gäller det
    bara testnummer med påhittade kunder.
 5. **Bolaget och kontaktadressen.** InOpSoTech AB:s organisationsnummer och adress, och om adressen
-   `dataskydd@bojen.se` ska finnas. Den står på sidan över underbiträden.
+   `dataskydd@bojen.app` ska finnas. Den står på sidan över underbiträden.
 6. **Pilotvillkor.** Pris och period för pilotfirmorna, och utlovad tillgänglighet: mål eller
    garanti.
 7. **Ansvarsbegränsning** i förhållande till artikel 82 i GDPR, och kostnaden för granskning

@@ -33,7 +33,7 @@ export interface OutgoingEmail {
   subject: string;
   text: string;
   html: string;
-  /** For example `Jonas Båtservice <jonas@bojen.se>`; the adapter has a default. */
+  /** For example `Jonas Båtservice <jonas@bojen.app>`; the adapter has a default. */
   from?: string;
   replyTo?: string;
 }

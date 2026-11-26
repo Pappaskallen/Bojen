@@ -119,7 +119,7 @@ async function main() {
         email: createFakeEmail(),
         now: () => new Date(),
         optOutKey: KEY,
-        link: () => "bojen.se/boka/test",
+        link: () => "bojen.app/boka/test",
       }),
     });
 

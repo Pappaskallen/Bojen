@@ -94,7 +94,7 @@ async function setUp(tx: Tx, name: string, phone: string) {
     storage: createFakeStorage(),
     linkKey: "voice-test-short-link-key-long-enough",
     secret: "voice-test-secret-long-enough-0123456789",
-    appBase: "bojen.se",
+    appBase: "bojen.app",
   };
   const begin = async (from: string | null) => {
     const started = await startCall(tx, { to: FIRM, from, now: NOW });

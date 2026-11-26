@@ -15,7 +15,7 @@ export interface MailTransport {
 
 export interface SmtpOptions {
   transport: MailTransport;
-  /** Default sender, for example `Bojen <noreply@bojen.se>`. */
+  /** Default sender, for example `Bojen <noreply@bojen.app>`. */
   from: string;
 }
 

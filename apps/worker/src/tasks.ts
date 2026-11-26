@@ -78,7 +78,7 @@ export interface EscalationDeps {
   recordings: { fetch(wav: string): Promise<{ bytes: Uint8Array; contentType: string }> };
   /** Null until Azure Speech is set up (step 6.2b). */
   transcriber: Transcriber | null;
-  /** The app, for the links to staff and the booking page: `https://bojen.se`. */
+  /** The app, for the links to staff and the booking page: `https://bojen.app`. */
   appBase: string;
 }
 

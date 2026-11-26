@@ -6,7 +6,7 @@ import {
   parseDsn,
 } from "./glitchtip";
 
-const DSN = "https://abc123@fel.bojen.se/2";
+const DSN = "https://abc123@fel.bojen.app/2";
 
 function recorder(status = 200) {
   const calls: { url: string; init: RequestInit }[] = [];
@@ -19,9 +19,12 @@ function recorder(status = 200) {
 
 describe("parseDsn", () => {
   it("gives the store address and the key", () => {
-    expect(parseDsn(DSN)).toEqual({ storeUrl: "https://fel.bojen.se/api/2/store/", key: "abc123" });
-    expect(() => parseDsn("https://fel.bojen.se/2")).toThrow(/not a DSN/);
-    expect(() => parseDsn("https://abc@fel.bojen.se/")).toThrow(/not a DSN/);
+    expect(parseDsn(DSN)).toEqual({
+      storeUrl: "https://fel.bojen.app/api/2/store/",
+      key: "abc123",
+    });
+    expect(() => parseDsn("https://fel.bojen.app/2")).toThrow(/not a DSN/);
+    expect(() => parseDsn("https://abc@fel.bojen.app/")).toThrow(/not a DSN/);
   });
 });
 
@@ -41,7 +44,7 @@ describe("createGlitchTipReporter", () => {
     });
     expect(calls).toHaveLength(1);
     const [call] = calls;
-    expect(call?.url).toBe("https://fel.bojen.se/api/2/store/");
+    expect(call?.url).toBe("https://fel.bojen.app/api/2/store/");
     expect(call?.init.method).toBe("POST");
     expect((call?.init.headers as Record<string, string>)["X-Sentry-Auth"]).toBe(
       "Sentry sentry_version=7, sentry_client=bojen/1.0, sentry_key=abc123",

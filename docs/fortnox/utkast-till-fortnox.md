@@ -85,11 +85,11 @@ obetalt utan att jämföra två system.
 
 **Kategori:** Fakturering (eller närmaste kategori i portalen)
 
-**Webbplats:** [https://bojen.se]
+**Webbplats:** [https://bojen.app]
 
-**Support:** [support@bojen.se]
+**Support:** [support@bojen.app]
 
-**Integritetspolicy:** [https://bojen.se/integritet]. Den finns som utkast i
+**Integritetspolicy:** [https://bojen.app/integritet]. Den finns som utkast i
 `docs/juridik/integritetspolicy.md` och ska publiceras först.
 
 **Omdirigeringsadress (OAuth):** `https://[domän]/api/integrationer/fortnox/callback`. Adressen

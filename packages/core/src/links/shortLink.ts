@@ -1,5 +1,5 @@
 /**
- * The customer's short links, `bojen.se/x/AbC12xYz` (byggplan step 3.4, spec part 1,
+ * The customer's short links, `bojen.app/x/AbC12xYz` (byggplan step 3.4, spec part 1,
  * chapter 7). A code is 8 random characters from 62, about 2·10^14 possible codes, so it
  * cannot be guessed. Only a keyed hash of it is stored; the code is the only key to the page.
  */
@@ -39,13 +39,13 @@ export function linkHash(key: string, code: string): string {
   return createHmac("sha256", key).update(`short_link:${code}`).digest("base64url");
 }
 
-/** `bojen.se/x/AbC12xYz`, without a scheme, as in the sms texts. */
+/** `bojen.app/x/AbC12xYz`, without a scheme, as in the sms texts. */
 export function shortLinkUrl(base: string, code: string): string {
   const host = base.replace(/^https?:\/\//, "").replace(/\/+$/, "");
   return `${host}/x/${code}`;
 }
 
-/** `bojen.se/r/AbC12xYz`: the review link, which counts the click and goes on to the review. */
+/** `bojen.app/r/AbC12xYz`: the review link, which counts the click and goes on to the review. */
 export function reviewLinkUrl(base: string, code: string): string {
   const host = base.replace(/^https?:\/\//, "").replace(/\/+$/, "");
   return `${host}/r/${code}`;

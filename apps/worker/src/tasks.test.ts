@@ -20,7 +20,7 @@ describe("worker tasks", () => {
     now: () => new Date(),
     optOutKey: "k",
     email: createFakeEmail(),
-    link: () => "bojen.se/boka/test",
+    link: () => "bojen.app/boka/test",
   });
 
   it("has the tasks of steps 3.1, 3.3, 4.1, 4.2, 4.3, 5.6 and 7.1", () => {
@@ -48,7 +48,7 @@ describe("worker tasks", () => {
       now: () => new Date(),
       optOutKey: "k",
       email: createFakeEmail(),
-      link: () => "bojen.se/boka/test",
+      link: () => "bojen.app/boka/test",
       postCall: {
         summarizer: createFakeSummarizer(),
         reader: createFakeNameplateReader(),
@@ -70,7 +70,7 @@ describe("worker tasks", () => {
       now: () => new Date(),
       optOutKey: "k",
       email: createFakeEmail(),
-      link: () => "bojen.se/boka/test",
+      link: () => "bojen.app/boka/test",
       reports,
     });
     expect(Object.keys(all)).toContain("report_draft");
@@ -86,12 +86,12 @@ describe("worker tasks", () => {
       now: () => new Date(),
       optOutKey: "k",
       email: createFakeEmail(),
-      link: () => "bojen.se/boka/test",
+      link: () => "bojen.app/boka/test",
       escalation: {
         push: createFakePush(),
         recordings: { fetch: () => Promise.reject(new Error("not used")) },
         transcriber: null,
-        appBase: "https://bojen.se",
+        appBase: "https://bojen.app",
       },
     });
     expect(Object.keys(all)).toEqual(
@@ -157,7 +157,7 @@ describe("the nightly clean-up (step 7.4)", () => {
       now: () => new Date(),
       optOutKey: "k",
       email: createFakeEmail(),
-      link: () => "bojen.se/boka/test",
+      link: () => "bojen.app/boka/test",
       privacy: { storage },
     });
     expect(Object.keys(tasks)).toContain("privacy_retention");
